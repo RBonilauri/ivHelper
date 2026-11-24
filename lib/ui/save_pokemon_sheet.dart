@@ -73,6 +73,7 @@ class _SavePokemonSheetState extends State<SavePokemonSheet> {
   late PokeSize _size = widget.initial?.size ?? PokeSize.none;
   late bool _lucky = widget.initial?.lucky ?? false;
   late bool _shiny = widget.initial?.shiny ?? false;
+  late bool _costume = widget.initial?.costume ?? false;
 
   @override
   Widget build(BuildContext context) {
@@ -136,14 +137,20 @@ class _SavePokemonSheetState extends State<SavePokemonSheet> {
           _MoveField(
             label: 'Attaque chargée',
             value: _charged1,
-            options: chargedOptions,
+            options: <Move>[
+              for (final m in chargedOptions)
+                if (m.id != _charged2) m,
+            ],
             onChanged: (v) => setState(() => _charged1 = v),
           ),
           const SizedBox(height: 8),
           _MoveField(
             label: 'Seconde attaque chargée',
             value: _charged2,
-            options: chargedOptions,
+            options: <Move>[
+              for (final m in chargedOptions)
+                if (m.id != _charged1) m,
+            ],
             onChanged: (v) => setState(() => _charged2 = v),
           ),
           const SizedBox(height: 16),
@@ -201,6 +208,13 @@ class _SavePokemonSheetState extends State<SavePokemonSheet> {
                 showCheckmark: false,
                 onSelected: (v) => setState(() => _lucky = v),
               ),
+              FilterChip(
+                avatar: const Icon(Icons.checkroom, size: 18),
+                label: const Text('Costume'),
+                selected: _costume,
+                showCheckmark: false,
+                onSelected: (v) => setState(() => _costume = v),
+              ),
             ],
           ),
           const SizedBox(height: 20),
@@ -216,6 +230,7 @@ class _SavePokemonSheetState extends State<SavePokemonSheet> {
                   size: _size,
                   lucky: _lucky,
                   shiny: _shiny,
+                  costume: _costume,
                 ),
               );
               Navigator.of(context).pop();

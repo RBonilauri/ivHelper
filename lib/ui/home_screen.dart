@@ -164,7 +164,10 @@ class _HomeScreenState extends State<HomeScreen> {
     unawaited(
       Navigator.of(context).push(
         MaterialPageRoute<void>(
-          builder: (_) => TeamBuilderScreen(team: _team),
+          builder: (_) => TeamBuilderScreen(
+            team: _team,
+            collection: _collection,
+          ),
         ),
       ),
     );

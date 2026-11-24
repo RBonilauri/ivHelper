@@ -78,7 +78,8 @@ class LeagueTag extends StatelessWidget {
   }
 }
 
-/// Particularités d'un Pokémon : shiny, chanceux, obscur ou purifié, taille.
+/// Particularités d'un Pokémon : shiny, chanceux, costume, obscur ou
+/// purifié, taille.
 class EntryAttributes extends StatelessWidget {
   /// Crée la ligne de particularités de [entry].
   const EntryAttributes(this.entry, {super.key, this.withLabels = false});
@@ -95,6 +96,7 @@ class EntryAttributes extends StatelessWidget {
     final items = <(IconData?, String, Color?)>[
       if (entry.shiny) (Icons.auto_awesome, 'Shiny', const Color(0xFFE0A800)),
       if (entry.lucky) (Icons.stars, 'Chanceux', const Color(0xFFD4A017)),
+      if (entry.costume) (Icons.checkroom, 'Costume', const Color(0xFFD9488F)),
       if (entry.shadow == ShadowState.shadow)
         (Icons.whatshot, 'Obscur', const Color(0xFF7B3FA0)),
       if (entry.shadow == ShadowState.purified)

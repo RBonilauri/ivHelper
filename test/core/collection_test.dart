@@ -156,8 +156,10 @@ void main() {
       size: PokeSize.xxl,
       lucky: true,
       shiny: true,
+      costume: true,
     );
     final back = CollectionEntry.fromJson(e.toJson())!;
+    expect(back.costume, isTrue);
     expect(back.toJson(), e.toJson());
     expect(back.isRankOne, isTrue);
     expect(back.moveIds, <String>['INCINERATE', 'BRAVE_BIRD']);
@@ -173,7 +175,7 @@ void main() {
     })!;
     expect(minimal.shadow, ShadowState.none);
     expect(minimal.size, PokeSize.none);
-    expect(minimal.lucky || minimal.shiny, isFalse);
+    expect(minimal.lucky || minimal.shiny || minimal.costume, isFalse);
     expect(minimal.moveIds, isEmpty);
     expect(
       CollectionEntry.fromJson(<String, dynamic>{
