@@ -1,0 +1,40 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - run: flutter pub get
+      - run: flutter analyze
+      - run: flutter test
+
+  apk:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - run: flutter create --platforms=android --project-name ivhelper --org fr.ivhelper .
+      - name: Nom et icône de l'application
+        run: |
+          sed -i 's/android:label="[^"]*"/android:label="ivHelper"/' android/app/src/main/AndroidManifest.xml
+          grep -q 'android:label="ivHelper"' android/app/src/main/AndroidManifest.xml
+          cp -r tool/android_icons/* android/app/src/main/res/
+      - run: flutter pub get
+      - run: flutter build apk --release
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ivhelper-apk
+          path: build/app/outputs/flutter-apk/app-release.apk
