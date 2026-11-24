@@ -7,6 +7,7 @@ import 'collection_detail_screen.dart';
 import 'collection_widgets.dart';
 import 'format.dart';
 import 'save_pokemon_sheet.dart';
+import 'search_field.dart';
 import 'type_badge.dart';
 
 /// Collection : Pokémon enregistrés, filtrables, triables, en liste ou en
@@ -269,13 +270,10 @@ class _Controls extends StatelessWidget {
                   style: Theme.of(context).textTheme.bodySmall,
                 ),
                 const SizedBox(height: 8),
-                TextFormField(
+                SearchField(
                   initialValue: collection.filter.moveQuery,
-                  decoration: const InputDecoration(
-                    labelText: 'Nom d\'attaque (ex. Rapace)',
-                    prefixIcon: Icon(Icons.search),
-                    isDense: true,
-                  ),
+                  label: 'Nom d\'attaque (ex. Rapace)',
+                  dense: true,
                   onChanged: (v) => collection.setFilter(
                     collection.filter.copyWith(moveQuery: v),
                   ),

@@ -15,7 +15,7 @@ class LookupController extends ChangeNotifier {
   String _query = '';
   Species? _species;
   Iv _iv = const Iv(15, 15, 15);
-  double _maxLevel = 51;
+  double _maxLevel = 50;
   int _minIv = 0;
   RankResult? _result;
 

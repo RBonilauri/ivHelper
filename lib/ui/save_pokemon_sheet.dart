@@ -147,7 +147,7 @@ class _SavePokemonSheetState extends State<SavePokemonSheet> {
           Padding(
             padding: const EdgeInsets.only(bottom: 6),
             child: Text(
-              '$eliteLegend · ★ en gras : attaque de la méta'
+              '$eliteLegend · en gras : attaque de la méta'
               ' · nombre : puissance en combat',
               style: theme.textTheme.bodySmall,
             ),
@@ -275,9 +275,6 @@ class _SavePokemonSheetState extends State<SavePokemonSheet> {
   }
 }
 
-/// Or des attaques recommandées par la méta.
-const Color metaGold = Color(0xFFE0A800);
-
 class _Label extends StatelessWidget {
   const _Label(this.text);
 
@@ -336,11 +333,6 @@ class _MoveField extends StatelessWidget {
                         : null,
                   ),
                 ),
-                if (metaIds.contains(m.id))
-                  const Padding(
-                    padding: EdgeInsetsDirectional.only(end: 6),
-                    child: Icon(Icons.star, size: 18, color: metaGold),
-                  ),
                 Text('${m.power}', style: small),
               ],
             ),

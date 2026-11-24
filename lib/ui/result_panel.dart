@@ -35,6 +35,9 @@ class ResultPanel extends StatefulWidget {
 class _ResultPanelState extends State<ResultPanel> {
   League _league = League.great;
   bool _details = false;
+
+  /// Nombre de lignes du classement affichées sous la ligne de l'utilisateur.
+  int _shown = 10;
   final Set<int> _open = <int>{};
 
   LeagueResult get _current => switch (_league) {
@@ -78,6 +81,7 @@ class _ResultPanelState extends State<ResultPanel> {
             setState(() {
               _league = selection.first;
               _open.clear();
+              _shown = 10;
             });
           },
         ),
@@ -113,7 +117,7 @@ class _ResultPanelState extends State<ResultPanel> {
           open: _details || _open.contains(mine.rank),
           onTap: () => _toggle(mine.rank),
         ),
-        for (final entry in league.top(10))
+        for (final entry in league.top(_shown))
           _RankRow(
             rowKey: const ValueKey<String>('rank-row'),
             entry: entry,
@@ -121,6 +125,18 @@ class _ResultPanelState extends State<ResultPanel> {
             highlighted: false,
             open: _details || _open.contains(entry.rank),
             onTap: () => _toggle(entry.rank),
+          ),
+        if (_shown < league.table.entries.length)
+          Padding(
+            padding: const EdgeInsets.only(top: 8),
+            child: Center(
+              child: TextButton.icon(
+                key: const ValueKey<String>('show-more'),
+                onPressed: () => setState(() => _shown += 10),
+                icon: const Icon(Icons.expand_more),
+                label: const Text('Afficher 10 de plus'),
+              ),
+            ),
           ),
       ],
     );

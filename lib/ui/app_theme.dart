@@ -98,6 +98,17 @@ ThemeData _common(
       filled: true,
       fillColor: fieldFill,
       border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+      // Champ vide : l'indication est grise et en italique ; une fois remontée
+      // au-dessus du texte, l'étiquette reprend un style normal.
+      labelStyle: TextStyle(
+        color: scheme.onSurfaceVariant,
+        fontStyle: FontStyle.italic,
+      ),
+      hintStyle: TextStyle(
+        color: scheme.onSurfaceVariant,
+        fontStyle: FontStyle.italic,
+      ),
+      floatingLabelStyle: const TextStyle(fontStyle: FontStyle.normal),
     ),
     segmentedButtonTheme: SegmentedButtonThemeData(
       style: SegmentedButton.styleFrom(

@@ -9,17 +9,20 @@ SpeciesRepository _repository() => SpeciesRepository(const <Species>[
     ]);
 
 void main() {
-  test('au départ aucune espèce ni résultat, IV à 15/15/15 et niveau max 51',
+  test('au départ aucune espèce ni résultat, IV à 15/15/15, niveau max 50, tous les IV',
       () {
     final c = LookupController(_repository());
     expect(c.species, isNull);
     expect(c.result, isNull);
     expect(c.iv, const Iv(15, 15, 15));
-    expect(c.maxLevel, 51);
+    expect(c.maxLevel, 50);
+    expect(c.minIv, 0);
   });
 
   test('setQuery avec un nom connu calcule les résultats', () {
-    final c = LookupController(_repository())..setQuery('Flambusard');
+    final c = LookupController(_repository())
+      ..setMaxLevel(51)
+      ..setQuery('Flambusard');
     expect(c.species?.dex, 663);
     expect(c.result?.ultra.mine.rank, 21);
     expect(c.result?.great.mine.rank, 2246);
@@ -46,6 +49,7 @@ void main() {
 
   test('setIv recalcule le rang', () {
     final c = LookupController(_repository())
+      ..setMaxLevel(51)
       ..setQuery('Flambusard')
       ..setIv(const Iv(13, 15, 15));
     expect(c.result?.ultra.mine.rank, 1);
@@ -53,6 +57,7 @@ void main() {
 
   test('setMaxLevel 50 place le 15/15/15 au rang 1 en hyper', () {
     final c = LookupController(_repository())
+      ..setMaxLevel(51)
       ..setQuery('Flambusard')
       ..setMaxLevel(50);
     expect(c.result?.ultra.mine.rank, 1);

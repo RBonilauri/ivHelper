@@ -9,6 +9,7 @@ import '../state/team_controller.dart';
 import 'collection_widgets.dart';
 import 'format.dart';
 import 'move_label.dart';
+import 'search_field.dart';
 import 'type_badge.dart';
 
 const Color _good = Color(0xFF2EAD74);
@@ -281,14 +282,10 @@ class _SpeciesField extends StatelessWidget {
         return list;
       },
       onSelected: onSelected,
-      fieldViewBuilder: (context, controller, focus, onSubmit) => TextField(
+      fieldViewBuilder: (context, controller, focus, onSubmit) => SearchField(
         controller: controller,
         focusNode: focus,
-        autocorrect: false,
-        decoration: InputDecoration(
-          labelText: label,
-          prefixIcon: const Icon(Icons.search),
-        ),
+        label: label,
         onSubmitted: (_) => onSubmit(),
       ),
     );
@@ -537,7 +534,7 @@ class _ChipLine extends StatefulWidget {
   final List<Widget> children;
   final String empty;
 
-  /// Vrai pour une rubrique repliée par défaut, ouverte d'un appui.
+  /// Vrai pour une rubrique repliable d'un appui (ouverte par défaut).
   final bool collapsible;
 
   @override
@@ -545,7 +542,7 @@ class _ChipLine extends StatefulWidget {
 }
 
 class _ChipLineState extends State<_ChipLine> {
-  late bool _open = !widget.collapsible;
+  bool _open = true;
 
   @override
   Widget build(BuildContext context) {

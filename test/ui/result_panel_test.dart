@@ -90,4 +90,23 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Rang 1'), findsOneWidget);
   });
+
+  testWidgets('« Afficher 10 de plus » allonge la liste des IV de 10',
+      (tester) async {
+    tester.view.physicalSize = const Size(800, 4000);
+    await _pumpPanel(tester);
+    tester.view.physicalSize = const Size(800, 4000);
+    await tester.pumpAndSettle();
+    final rows = find.byKey(const ValueKey<String>('rank-row'));
+    expect(rows, findsNWidgets(10));
+    await tester.tap(find.text('Afficher 10 de plus'));
+    await tester.pumpAndSettle();
+    expect(rows, findsNWidgets(20));
+    await tester.tap(find.text('Afficher 10 de plus'));
+    await tester.pumpAndSettle();
+    expect(rows, findsNWidgets(30));
+    await tester.tap(find.text('Hyper'));
+    await tester.pumpAndSettle();
+    expect(rows, findsNWidgets(10));
+  });
 }

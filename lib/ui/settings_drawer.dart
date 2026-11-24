@@ -59,18 +59,6 @@ class SettingsDrawer extends StatelessWidget {
               const SizedBox(height: 16),
               ListTile(
                 contentPadding: EdgeInsets.zero,
-                leading: const Icon(Icons.picture_in_picture_alt),
-                title: const Text('Superposition'),
-                subtitle: const Text(
-                  'Pastille par-dessus Pokémon GO : lit l\'écran et donne le rang',
-                ),
-                onTap: () {
-                  Navigator.of(context).pop();
-                  onStartOverlay();
-                },
-              ),
-              ListTile(
-                contentPadding: EdgeInsets.zero,
                 leading: const Icon(Icons.collections_bookmark),
                 title: const Text('Ma collection'),
                 subtitle: const Text('Tes Pokémon enregistrés, filtres et tri'),
@@ -107,6 +95,18 @@ class SettingsDrawer extends StatelessWidget {
                 onTap: () {
                   Navigator.of(context).pop();
                   onOpenTypes();
+                },
+              ),
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: const Icon(Icons.picture_in_picture_alt),
+                title: const Text('Superposition'),
+                subtitle: const Text(
+                  'Pastille par-dessus Pokémon GO : lit l\'écran et donne le rang',
+                ),
+                onTap: () {
+                  Navigator.of(context).pop();
+                  onStartOverlay();
                 },
               ),
               const Divider(height: 32),
