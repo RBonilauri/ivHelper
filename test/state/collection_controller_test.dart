@@ -129,4 +129,19 @@ void main() {
     c.remove(e.id);
     expect(c.entries, isEmpty);
   });
+
+  test('les entrées de l\'ancien format passent en ligue super avec leur rang',
+      () async {
+    final store = MemorySettingsStore();
+    await store.writeCollection(
+      '[{"id":"x","species":"Flambusard","iv":[15,15,15],"maxLevel":51}]',
+    );
+    final c = _controller(store);
+    await c.load();
+    final e = c.entries.single;
+    expect(e.id, 'x');
+    expect(e.league, League.great);
+    expect(e.rank, 2246);
+    expect(await store.readCollection(), contains('"league":"great"'));
+  });
 }

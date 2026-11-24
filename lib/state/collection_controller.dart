@@ -225,14 +225,42 @@ class CollectionController extends ChangeNotifier {
       return;
     }
     if (decoded is! List<dynamic>) return;
-    _entries
-      ..clear()
-      ..addAll(<CollectionEntry>[
-        for (final item in decoded)
-          if (CollectionEntry.fromJson(item) != null)
-            CollectionEntry.fromJson(item)!,
-      ]);
-    notifyListeners();
+    var migrated = false;
+    _entries.clear();
+    for (final item in decoded) {
+      final entry = CollectionEntry.fromJson(item) ?? _legacy(item);
+      if (entry == null) continue;
+      if (CollectionEntry.fromJson(item) == null) migrated = true;
+      _entries.add(entry);
+    }
+    if (migrated) {
+      _changed();
+    } else {
+      notifyListeners();
+    }
+  }
+
+  /// Entrée de l'ancien format (sans ligue ni rang) : rangée en ligue super,
+  /// rang calculé maintenant.
+  CollectionEntry? _legacy(Object? item) {
+    if (item is! Map<String, dynamic>) return null;
+    final id = item['id'];
+    final name = item['species'];
+    final iv = item['iv'];
+    if (id is! String || name is! String || iv is! List<dynamic>) return null;
+    if (iv.length != 3 || iv.any((v) => v is! int || v < 0 || v > 15)) {
+      return null;
+    }
+    final species = repository.findByName(name);
+    if (species == null || species.nameFr != name) return null;
+    final maxLevel = item['maxLevel'];
+    return _build(
+      id,
+      species,
+      Iv(iv[0] as int, iv[1] as int, iv[2] as int),
+      maxLevel is num ? maxLevel.toDouble() : 51,
+      const SaveOptions(league: League.great),
+    );
   }
 
   CollectionEntry _build(
