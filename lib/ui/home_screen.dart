@@ -2,13 +2,19 @@ import 'dart:async';
 
 import 'package:material_ui/material_ui.dart';
 
+import '../core/collection.dart';
+import '../core/meta.dart';
 import '../core/moves.dart';
 import '../core/species_repository.dart';
 import '../core/stats.dart';
 import '../settings/settings_controller.dart';
+import '../state/collection_controller.dart';
 import '../state/lookup_controller.dart';
+import '../state/meta_controller.dart';
 import '../state/team_controller.dart';
+import 'collection_screen.dart';
 import 'iv_logo.dart';
+import 'meta_screen.dart';
 import 'result_panel.dart';
 import 'settings_drawer.dart';
 import 'team_builder_screen.dart';
@@ -22,7 +28,11 @@ class HomeScreen extends StatefulWidget {
     required this.repository,
     required this.moves,
     required this.settings,
+    required this.metaSource,
   });
+
+  /// Source de la méta PvPoke.
+  final MetaSource metaSource;
 
   /// Espèces connues.
   final SpeciesRepository repository;
@@ -47,16 +57,139 @@ class _HomeScreenState extends State<HomeScreen> {
     store: widget.settings.store,
   );
 
+  late final CollectionController _collection = CollectionController(
+    repository: widget.repository,
+    moves: widget.moves,
+    store: widget.settings.store,
+  );
+  late final MetaController _meta = MetaController(
+    source: widget.metaSource,
+    store: widget.settings.store,
+  );
+
   @override
   void initState() {
     super.initState();
     unawaited(_team.load());
+    unawaited(_collection.load());
+  }
+
+  void _openCollection(BuildContext context) {
+    unawaited(
+      Navigator.of(context).push(
+        MaterialPageRoute<void>(
+          builder: (_) => CollectionScreen(
+            collection: _collection,
+            onOpen: _openEntry,
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _openEntry(BuildContext context, CollectionEntry entry) {
+    final species = widget.repository.findByName(entry.speciesName);
+    if (species == null) return;
+    Navigator.of(context).popUntil((route) => route.isFirst);
+    final iv = entry.iv;
+    final lowest = <int>[iv.atk, iv.def, iv.sta].reduce((a, b) => a < b ? a : b);
+    if (lowest < _controller.minIv) _controller.setMinIv(0);
+    _controller
+      ..selectSpecies(species)
+      ..setMaxLevel(entry.maxLevel)
+      ..setIv(iv);
+    _text.text = species.nameFr;
+  }
+
+  void _save(BuildContext context) {
+    final species = _controller.species;
+    if (species == null) return;
+    final added = _collection.add(species, _controller.iv, _controller.maxLevel);
+    final iv = _controller.iv;
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(
+          content: Text(
+            added
+                ? '${species.nameFr} ${iv.atk}/${iv.def}/${iv.sta} enregistré'
+                : 'Déjà dans ta collection',
+          ),
+          action: SnackBarAction(
+            label: 'Voir',
+            onPressed: () {
+              if (context.mounted) _openCollection(context);
+            },
+          ),
+        ),
+      );
+  }
+
+  void _openTeam(BuildContext context) {
+    unawaited(
+      Navigator.of(context).push(
+        MaterialPageRoute<void>(
+          builder: (_) => TeamBuilderScreen(team: _team),
+        ),
+      ),
+    );
+  }
+
+  void _checkIvs(BuildContext context, MetaEntry entry) {
+    final species = widget.repository.findByName(entry.species ?? '');
+    if (species == null) return;
+    Navigator.of(context).popUntil((route) => route.isFirst);
+    _controller.selectSpecies(species);
+    _text.text = species.nameFr;
+  }
+
+  Future<void> _addToTeam(BuildContext context, MetaEntry entry) async {
+    final species = widget.repository.findByName(entry.species ?? '');
+    if (species == null) return;
+    final messenger = ScaffoldMessenger.of(context);
+    final slots = _team.slots;
+    final index = await showDialog<int>(
+      context: context,
+      builder: (context) => SimpleDialog(
+        title: const Text('Ajouter dans quel emplacement ?'),
+        children: <Widget>[
+          for (var i = 0; i < slots.length; i++)
+            SimpleDialogOption(
+              onPressed: () => Navigator.of(context).pop(i),
+              child: Text(
+                'Emplacement ${i + 1} · '
+                '${slots[i].species?.nameFr ?? 'vide'}',
+              ),
+            ),
+        ],
+      ),
+    );
+    if (index == null || !mounted) return;
+    _team.place(
+      index,
+      species,
+      fastId: entry.fast.id,
+      chargedIds: <String>[for (final c in entry.charged) c.id],
+    );
+    messenger.showSnackBar(
+      SnackBar(
+        content: Text('${species.nameFr} ajouté à l\'emplacement ${index + 1}'),
+        action: SnackBarAction(
+          label: 'Voir',
+          onPressed: () {
+            if (context.mounted) _openTeam(context);
+          },
+        ),
+      ),
+    );
   }
 
   @override
   void dispose() {
     _controller.dispose();
     _team.dispose();
+    _meta.dispose();
+    _collection.dispose();
     _text.dispose();
     super.dispose();
   }
@@ -84,9 +217,20 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
       endDrawer: SettingsDrawer(
         settings: widget.settings,
-        onOpenTeam: () => Navigator.of(context).push(
+        onOpenTeam: () => _openTeam(context),
+        onOpenCollection: () => _openCollection(context),
+        onOpenMeta: () => Navigator.of(context).push(
           MaterialPageRoute<void>(
-            builder: (_) => TeamBuilderScreen(team: _team),
+            builder: (_) => MetaScreen(
+              meta: _meta,
+              actions: MetaActions(
+                isOwned: (name) => _collection.ownedSpecies
+                    .contains(name.replaceFirst(' (Obscur)', '')),
+                checkIvs: _checkIvs,
+                addToTeam: (context, entry) =>
+                    unawaited(_addToTeam(context, entry)),
+              ),
+            ),
           ),
         ),
         onOpenTypes: () => Navigator.of(context).push(
@@ -219,9 +363,20 @@ class _HomeScreenState extends State<HomeScreen> {
     final result = _controller.result;
     if (species == null || result == null) return const <Widget>[];
     return <Widget>[
-      Text(
-        '${species.nameFr} · n° ${species.dex}',
-        style: Theme.of(context).textTheme.titleMedium,
+      Row(
+        children: <Widget>[
+          Expanded(
+            child: Text(
+              '${species.nameFr} · n° ${species.dex}',
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
+          ),
+          FilledButton.tonalIcon(
+            onPressed: () => _save(context),
+            icon: const Icon(Icons.bookmark_add_outlined),
+            label: const Text('Enregistrer'),
+          ),
+        ],
       ),
       const SizedBox(height: 8),
       ResultPanel(species: species, result: result),

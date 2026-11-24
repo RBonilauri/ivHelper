@@ -35,6 +35,7 @@ ThemeData _light() {
     selectedBackground: scheme.primary,
     selectedForeground: _navy,
     thumbOn: _navy,
+    outlinedForeground: _navy,
   );
 }
 
@@ -60,6 +61,7 @@ ThemeData _dark() {
     selectedBackground: _goldContainer,
     selectedForeground: _onGoldContainer,
     thumbOn: _gold,
+    outlinedForeground: _gold,
   );
 }
 
@@ -71,6 +73,7 @@ ThemeData _common(
   required Color selectedBackground,
   required Color selectedForeground,
   required Color thumbOn,
+  required Color outlinedForeground,
 }) {
   return ThemeData(
     useMaterial3: true,
@@ -111,6 +114,12 @@ ThemeData _common(
         (states) => states.contains(WidgetState.selected)
             ? scheme.primaryContainer
             : scheme.surfaceContainerHighest,
+      ),
+    ),
+    outlinedButtonTheme: OutlinedButtonThemeData(
+      style: OutlinedButton.styleFrom(
+        foregroundColor: outlinedForeground,
+        side: BorderSide(color: outlinedForeground.withValues(alpha: 0.6)),
       ),
     ),
     sliderTheme: SliderThemeData(

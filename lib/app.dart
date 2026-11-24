@@ -3,6 +3,7 @@ import 'package:material_ui/material_ui.dart';
 import 'core/moves.dart';
 import 'core/species_repository.dart';
 import 'settings/settings_controller.dart';
+import 'state/meta_controller.dart';
 import 'ui/app_theme.dart';
 import 'ui/home_screen.dart';
 
@@ -14,7 +15,11 @@ class IvHelperApp extends StatelessWidget {
     required this.repository,
     required this.moves,
     required this.settings,
+    required this.metaSource,
   });
+
+  /// Source de la méta PvPoke.
+  final MetaSource metaSource;
 
   /// Espèces connues.
   final SpeciesRepository repository;
@@ -44,6 +49,7 @@ class IvHelperApp extends StatelessWidget {
           repository: repository,
           moves: moves,
           settings: settings,
+          metaSource: metaSource,
         ),
       ),
     );

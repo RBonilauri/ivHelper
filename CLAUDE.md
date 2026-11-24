@@ -17,10 +17,13 @@ Tout est en français : interface, commentaires `///`, messages de commit, répo
 - `lib/core/` : logique pure sans Flutter (stats, `cpm`, `buildRankTable`, `rankIv`, `SpeciesRepository`, `PokeType` et table des types, `MoveBook`, `DefenseProfile`/`OffenseProfile`/`TeamSummary`). Toute règle de calcul va ici, avec ses tests.
 - `lib/state/lookup_controller.dart` : `ChangeNotifier` (espèce, IV, `maxLevel` 50 ou 51, `minIv` 0 ou 10). Pas de Riverpod ni autre gestionnaire d'état : `ListenableBuilder`.
 - `lib/state/team_controller.dart` : 3 emplacements (espèce, attaque immédiate, deux chargées), enregistrés en JSON via `SettingsStore.writeTeam`.
-- `lib/settings/` : `SettingsController` et `SettingsStore` (mémoire en test, `PrefsSettingsStore` en vrai) ; stocke aussi l'équipe.
+- `lib/state/meta_controller.dart` : méta PvPoke la plus récente entre la copie incluse (`assets/meta.json`), le cache et la version en ligne (`HttpMetaSource`, raw.githubusercontent.com du dépôt). `MetaSource` est remplacé par `FakeMetaSource` (`test/support/fake_meta.dart`) dans les tests : aucun réseau en test.
+- `lib/core/collection.dart` + `lib/state/collection_controller.dart` : collection (espèce, IV, niveau max), rang recalculé par ligue (tables en cache par espèce, niveau max et plafond), `CollectionFilter` (filtres combinés en ET) et `filterAndSort`. La fiche méta surligne en jaune les matchs dont l'espèce est possédée (« (Obscur) » ignoré).
+- `lib/settings/` : `SettingsController` et `SettingsStore` (mémoire en test, `PrefsSettingsStore` en vrai) ; stocke aussi l'équipe, la méta en cache et la collection.
 - `lib/ui/` : écrans et widgets ; thème dans `app_theme.dart` (jour jaune vif, nuit or adouci), logo dans `iv_logo.dart`, pastilles de type (couleurs et icônes Material, pas les icônes officielles) dans `type_badge.dart`. Le menu (`settings_drawer.dart`) ouvre le team builder et la table des types.
 - Importer `package:material_ui/material_ui.dart`, jamais `package:flutter/material.dart` (déprécié, `flutter analyze` échoue).
-- `android/` et `ios/` ne sont **pas** committés : le job `apk` de `.github/workflows/ci.yml` les génère, applique le nom « ivHelper » et copie `tool/android_icons/`.
+- `android/` et `ios/` ne sont **pas** committés : le job `apk` de `.github/workflows/ci.yml` les génère, applique le nom « ivHelper », ajoute la permission INTERNET (méta) et copie `tool/android_icons/`.
+- `.github/workflows/meta.yml` : tâche quotidienne qui régénère `assets/meta.json` avec `tool/build_meta.py` et committe sur `main` seulement s'il change. Ses commits (github-actions[bot]) ne relancent pas la CI. Penser à `git pull` avant de travailler.
 
 ## Règles métier à ne pas casser
 
@@ -36,6 +39,7 @@ Tout est en français : interface, commentaires `///`, messages de commit, répo
 
 - Les valeurs attendues des tests se vérifient par un calcul indépendant (port Python), pas à l'œil : deux fois c'était le test qui était faux (cpm, puis 6³ = 216 et non 1331), pas le code.
 - Noms d'espèces : formes régionales « Raichu d'Alola » ; autres formes avec libellé anglais entre parenthèses ; costumes, méga et formes obscures exclus.
+- Les tests de `meta_asset_test.dart` lisent le vrai `meta.json`, qui change chaque jour : n'y tester que la structure, jamais un nom ou un rang précis.
 - Les mises à jour de l'APK peuvent échouer (clé de débogage différente à chaque build) : désinstaller d'abord.
 - Dans le bac à sable, un hook peut refuser une commande Bash très longue avec « Very Good CLI is required » : écrire les fichiers avec l'outil Write.
 

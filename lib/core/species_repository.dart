@@ -211,3 +211,7 @@ int _distance(String a, String b) {
   }
   return previous[b.length];
 }
+
+/// Nom en minuscules, sans accents ni espaces superflus, pour comparer et
+/// filtrer.
+String normalizeName(String input) => _normalize(input);
