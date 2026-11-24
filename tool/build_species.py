@@ -90,6 +90,7 @@ def main(gamemaster, species_csv, moves_csv, move_names_csv, out_species, out_mo
         by_dex.setdefault(p["dex"], []).append(p)
     result = []
     used = set()
+    used_fast = set()
     for dex in sorted(by_dex):
         name = fr.get(dex)
         if name is None:
@@ -116,6 +117,7 @@ def main(gamemaster, species_csv, moves_csv, move_names_csv, out_species, out_mo
             fast = sorted(set(p.get("fastMoves", [])))
             charged = sorted(set(p.get("chargedMoves", [])))
             used.update(fast)
+            used_fast.update(fast)
             used.update(charged)
             result.append({
                 "dex": dex, "name": label,
@@ -129,7 +131,9 @@ def main(gamemaster, species_csv, moves_csv, move_names_csv, out_species, out_mo
         moves[m["moveId"]] = {
             "name": move_name(m["moveId"], m["name"], fr_moves),
             "type": m["type"],
-            "fast": m.get("energyGain", 0) > 0,
+            # Immédiate si une espèce l'a en attaque immédiate (Lutte, Morphing
+            # n'ont pas de gain d'énergie mais sont des attaques immédiates).
+            "fast": m["moveId"] in used_fast,
         }
     for s in result:
         s["fast"] = [m for m in s["fast"] if m in moves]
