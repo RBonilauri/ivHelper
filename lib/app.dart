@@ -1,5 +1,6 @@
 import 'package:material_ui/material_ui.dart';
 
+import 'core/moves.dart';
 import 'core/species_repository.dart';
 import 'settings/settings_controller.dart';
 import 'ui/app_theme.dart';
@@ -11,11 +12,15 @@ class IvHelperApp extends StatelessWidget {
   const IvHelperApp({
     super.key,
     required this.repository,
+    required this.moves,
     required this.settings,
   });
 
   /// Espèces connues.
   final SpeciesRepository repository;
+
+  /// Attaques connues.
+  final MoveBook moves;
 
   /// Réglages d'affichage.
   final SettingsController settings;
@@ -35,7 +40,11 @@ class IvHelperApp extends StatelessWidget {
           ),
           child: child!,
         ),
-        home: HomeScreen(repository: repository, settings: settings),
+        home: HomeScreen(
+          repository: repository,
+          moves: moves,
+          settings: settings,
+        ),
       ),
     );
   }

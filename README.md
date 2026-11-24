@@ -23,7 +23,10 @@ Tu as un Pokémon avec ses IV (Attaque / Défense / PV). Tu veux savoir **où il
 - **Tableau dépliable** : rang, niveau, PC, IV (Atk/Déf/PV) et Parfait (%). Un appui sur une ligne affiche ses stats réelles (Atk, Déf, PV, stat globale) ; l'interrupteur **Détails** déplie tout.
 - **Niveau maximal** : 50, ou 51 (niveau 50 plus bonus meilleur ami).
 - **Plancher d'IV** : « Min 10/10/10 » restreint le classement aux 216 combinaisons dont chaque IV vaut au moins 10.
-- **Paramètres** (bouton aux trois traits, en haut à droite) : mode Auto / Jour / Nuit et taille de police de 85 à 140 %. Les réglages sont conservés.
+- **Menu** (bouton aux trois traits, en haut à droite) :
+  - **Team builder** : 3 Pokémon, une attaque immédiate et deux chargées chacun. Pour chacun : faiblesses et résistances selon ses types (×2,56, ×1,6, ×0,63, ×0,39…), types touchés en super efficace et types sur lesquels il est en difficulté selon ses attaques. Bilan d'équipe : faiblesses partagées, types que personne ne résiste, types qu'aucune attaque ne couvre. L'équipe est conservée.
+  - **Table des types** : forces, faiblesses et résistances des 18 types, avec une pastille colorée par type.
+  - **Paramètres** : mode Auto / Jour / Nuit (or adouci la nuit) et taille de police de 85 à 140 %. Les réglages sont conservés.
 
 > Pas encore de lecture d'écran ni de bulle flottante : voir la [feuille de route](#feuille-de-route).
 
@@ -69,18 +72,19 @@ Les dossiers `android/` et `ios/` ne sont pas committés. La CI les génère ave
 
 | Dossier | Contenu |
 |---|---|
-| `lib/core/` | Logique pure, sans Flutter : stats, multiplicateurs de PC, table de rangs, espèces |
-| `lib/state/` | `LookupController` : espèce, IV, niveau max, plancher d'IV, résultats |
-| `lib/settings/` | Réglages (mode, police) et leur stockage |
-| `lib/ui/` | Écrans, thème jaune, logo dessiné en code, barre latérale |
-| `assets/species.json` | 1 117 espèces et formes régionales (nom français, stats de base) |
+| `lib/core/` | Logique pure, sans Flutter : stats, multiplicateurs de PC, table de rangs, espèces, types, attaques, analyse d'équipe |
+| `lib/state/` | `LookupController` (rang) et `TeamController` (team builder) |
+| `lib/settings/` | Réglages (mode, police, équipe) et leur stockage |
+| `lib/ui/` | Écrans (rang, team builder, table des types), thème, logo et pastilles de type dessinés en code |
+| `assets/species.json` | 1 117 espèces et formes régionales (nom français, stats de base, types, attaques) |
+| `assets/moves.json` | 319 attaques (nom français, type, immédiate ou chargée) |
 | `tool/` | `build_species.py` (données), `build_icon.py` (icônes), `ci_wait.sh` (attente de la CI) |
 | `docs/` | Sources des données, design et plan d'implémentation |
 
 ### Régénérer les données et les icônes
 
 ```bash
-python3 tool/build_species.py GAMEMASTER NOMS assets/species.json   # voir docs/data-sources.md
+python3 tool/build_species.py GAMEMASTER NOMS MOVES NOMS_ATTAQUES assets/species.json assets/moves.json   # voir docs/data-sources.md
 python3 tool/build_icon.py                                          # icônes Android + assets/logo.png
 ```
 
@@ -91,6 +95,7 @@ Chaque couche a ses tests : `test/core` (formules, table, espèces), `test/state
 ## Feuille de route
 
 - [x] **Phase 1** : saisie manuelle, rang Super et Hyper, tableau dépliable, thème, réglages
+- [x] **Phase 1 bis** : team builder et table des types
 - [ ] **Phase 2** : lecture des IV depuis une capture d'écran (nom, PC, PV, barres d'évaluation)
 - [ ] **Phase 3** : pastille flottante Android qui ouvre le tableau par-dessus Pokémon GO
 - [ ] **Phase 4** : parcours iPhone (analyse de la dernière capture d'écran)

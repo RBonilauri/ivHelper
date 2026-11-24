@@ -6,10 +6,21 @@ import 'iv_logo.dart';
 /// Barre latérale des réglages : mode d'affichage et taille de police.
 class SettingsDrawer extends StatelessWidget {
   /// Crée la barre latérale pour [settings].
-  const SettingsDrawer({super.key, required this.settings});
+  const SettingsDrawer({
+    super.key,
+    required this.settings,
+    required this.onOpenTeam,
+    required this.onOpenTypes,
+  });
 
   /// Réglages modifiés par la barre latérale.
   final SettingsController settings;
+
+  /// Ouvre le team builder.
+  final VoidCallback onOpenTeam;
+
+  /// Ouvre la table des types.
+  final VoidCallback onOpenTypes;
 
   @override
   Widget build(BuildContext context) {
@@ -25,10 +36,33 @@ class SettingsDrawer extends StatelessWidget {
                 children: <Widget>[
                   const IvLogo(size: 40),
                   const SizedBox(width: 12),
-                  Text('Paramètres', style: theme.textTheme.titleLarge),
+                  Text('ivHelper', style: theme.textTheme.titleLarge),
                 ],
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: 16),
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: const Icon(Icons.groups),
+                title: const Text('Team builder'),
+                subtitle: const Text('3 Pokémon, attaques, forces et faiblesses'),
+                onTap: () {
+                  Navigator.of(context).pop();
+                  onOpenTeam();
+                },
+              ),
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: const Icon(Icons.grid_view),
+                title: const Text('Table des types'),
+                subtitle: const Text('Forces et faiblesses des 18 types'),
+                onTap: () {
+                  Navigator.of(context).pop();
+                  onOpenTypes();
+                },
+              ),
+              const Divider(height: 32),
+              Text('Paramètres', style: theme.textTheme.titleMedium),
+              const SizedBox(height: 16),
               Text('Mode d\'affichage', style: theme.textTheme.titleSmall),
               const SizedBox(height: 8),
               SegmentedButton<ThemeMode>(

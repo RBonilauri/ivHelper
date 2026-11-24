@@ -10,14 +10,15 @@ Tout est en français : interface, commentaires `///`, messages de commit, répo
 
 - `flutter pub get`, `flutter analyze`, `flutter test`
 - Le bac à sable de Claude **n'a pas Flutter** : la CI GitHub Actions fait foi. Pousser, puis `./tool/ci_wait.sh` (attend la CI du commit courant via `gh`). Les erreurs réseau Gradle du job `apk` sont passagères : `gh run rerun <id> --failed`.
-- `python3 tool/build_icon.py` regénère les icônes ; `tool/build_species.py` regénère `assets/species.json` (voir `docs/data-sources.md`).
+- `python3 tool/build_icon.py` regénère les icônes ; `tool/build_species.py` regénère `assets/species.json` et `assets/moves.json` (voir `docs/data-sources.md`).
 
 ## Architecture
 
-- `lib/core/` : logique pure sans Flutter (stats, `cpm`, `buildRankTable`, `rankIv`, `SpeciesRepository`). Toute règle de calcul va ici, avec ses tests.
+- `lib/core/` : logique pure sans Flutter (stats, `cpm`, `buildRankTable`, `rankIv`, `SpeciesRepository`, `PokeType` et table des types, `MoveBook`, `DefenseProfile`/`OffenseProfile`/`TeamSummary`). Toute règle de calcul va ici, avec ses tests.
 - `lib/state/lookup_controller.dart` : `ChangeNotifier` (espèce, IV, `maxLevel` 50 ou 51, `minIv` 0 ou 10). Pas de Riverpod ni autre gestionnaire d'état : `ListenableBuilder`.
-- `lib/settings/` : `SettingsController` et `SettingsStore` (mémoire en test, `PrefsSettingsStore` en vrai).
-- `lib/ui/` : écrans et widgets ; thème dans `app_theme.dart`, logo dessiné en code dans `iv_logo.dart`.
+- `lib/state/team_controller.dart` : 3 emplacements (espèce, attaque immédiate, deux chargées), enregistrés en JSON via `SettingsStore.writeTeam`.
+- `lib/settings/` : `SettingsController` et `SettingsStore` (mémoire en test, `PrefsSettingsStore` en vrai) ; stocke aussi l'équipe.
+- `lib/ui/` : écrans et widgets ; thème dans `app_theme.dart` (jour jaune vif, nuit or adouci), logo dans `iv_logo.dart`, pastilles de type (couleurs et icônes Material, pas les icônes officielles) dans `type_badge.dart`. Le menu (`settings_drawer.dart`) ouvre le team builder et la table des types.
 - Importer `package:material_ui/material_ui.dart`, jamais `package:flutter/material.dart` (déprécié, `flutter analyze` échoue).
 - `android/` et `ios/` ne sont **pas** committés : le job `apk` de `.github/workflows/ci.yml` les génère, applique le nom « ivHelper » et copie `tool/android_icons/`.
 
@@ -28,6 +29,7 @@ Tout est en français : interface, commentaires `///`, messages de commit, répo
 - `PC = ⌊atk·√def·√pv·cpm²/10⌋` (min 10), `PV = ⌊pv·cpm⌋` (min 10).
 - Valeurs de référence testées (Flambusard 176/155/186) : 15/15/15 est rang 2246 en Super, 21 en Hyper ; rangs 1 et 2 Hyper : 13/15/15 et 13/15/14 ; niveau max 50 : rang 1 Hyper.
 - `minIv` 10 : le classement ne porte que sur 6³ = 216 combinaisons, et les IV saisis sont relevés au plancher.
+- Table des types Pokémon GO : ×1,6 super efficace, ×0,625 peu efficace, ×0,390625 immunité ; multiplicateurs cumulés sur double type. Offensive : meilleur multiplicateur parmi les attaques, sur types simples.
 - Format : décimales avec virgule, espaces insécables (U+00A0) pour les milliers, stats tronquées à 1 décimale, pourcentage à 2 décimales, « 100 % ».
 
 ## Pièges connus
