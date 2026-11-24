@@ -13,6 +13,7 @@ const _flambusard = Species(
   base: BaseStats(176, 155, 186),
   types: <PokeType>[PokeType.fire, PokeType.flying],
   fastMoves: <String>['INCINERATE'],
+  chargedMoves: <String>['BRAVE_BIRD'],
 );
 
 CollectionController _controller(SettingsStore store) => CollectionController(
@@ -24,58 +25,108 @@ CollectionController _controller(SettingsStore store) => CollectionController(
           type: PokeType.fire,
           isFast: true,
         ),
+        Move(
+          id: 'BRAVE_BIRD',
+          nameFr: 'Rapace',
+          type: PokeType.flying,
+          isFast: false,
+        ),
       ]),
       store: store,
     );
 
+const _max = Iv(15, 15, 15);
+
 void main() {
-  test('un même Pokémon n\'est enregistré qu\'une fois', () {
+  test('le rang de la ligue choisie est figé à l\'enregistrement', () {
     final c = _controller(MemorySettingsStore());
-    expect(c.add(_flambusard, const Iv(15, 15, 15), 51), isTrue);
-    expect(c.add(_flambusard, const Iv(15, 15, 15), 51), isFalse);
-    expect(c.add(_flambusard, const Iv(15, 15, 15), 50), isTrue);
-    expect(c.entries.length, 2);
-    expect(c.ownedSpecies, <String>{'Flambusard'});
+    final great = c.add(_flambusard, _max, 51, const SaveOptions(league: League.great));
+    final ultra = c.add(_flambusard, _max, 51, const SaveOptions(league: League.ultra));
+    final little = c.add(_flambusard, _max, 51, const SaveOptions(league: League.little));
+    final master = c.add(_flambusard, _max, 51, const SaveOptions(league: League.master));
+    expect(great.rank, 2246);
+    expect(ultra.rank, 21);
+    expect(little.rank, 550);
+    expect(little.cp, 497);
+    expect(little.level, 8);
+    expect(master.rank, 1);
+    expect(master.isRankOne, isTrue);
   });
 
-  test('le rang suit la ligue affichée', () {
+  test('les doublons sont autorisés', () {
     final c = _controller(MemorySettingsStore())
-      ..add(_flambusard, const Iv(15, 15, 15), 51);
-    expect(c.visibleRows.single.rank.rank, 2246);
-    c.setLeague(League.ultra);
-    expect(c.visibleRows.single.rank.rank, 21);
-    c.setLeague(League.little);
-    expect(c.visibleRows.single.rank.rank, 550);
-    c.setLeague(League.master);
-    expect(c.visibleRows.single.rank.rank, 1);
+      ..add(_flambusard, _max, 51, const SaveOptions(league: League.great))
+      ..add(_flambusard, _max, 51, const SaveOptions(league: League.great));
+    expect(c.entries.length, 2);
+    expect(c.entries[0].id, isNot(c.entries[1].id));
+  });
+
+  test('options enregistrées ; attaque que l\'espèce n\'apprend pas ignorée',
+      () {
+    final c = _controller(MemorySettingsStore());
+    final e = c.add(
+      _flambusard,
+      _max,
+      51,
+      const SaveOptions(
+        league: League.ultra,
+        fastMove: 'INCINERATE',
+        chargedMove1: 'BRAVE_BIRD',
+        chargedMove2: 'HYDRO_PUMP',
+        shadow: ShadowState.shadow,
+        size: PokeSize.xl,
+        lucky: true,
+        shiny: true,
+      ),
+    );
+    expect(e.moveIds, <String>['INCINERATE', 'BRAVE_BIRD']);
+    expect(e.shadow, ShadowState.shadow);
+    expect(e.size, PokeSize.xl);
+    expect(e.lucky && e.shiny, isTrue);
+    expect(c.rowOf(e.id)!.recordedMoves.map((m) => m.nameFr),
+        <String>['Calcination', 'Rapace']);
+  });
+
+  test('modifier : options remplacées, rang refigé si la ligue change', () {
+    final c = _controller(MemorySettingsStore());
+    final e = c.add(_flambusard, _max, 51, const SaveOptions(league: League.great));
+    c.update(e.id, const SaveOptions(league: League.great, shiny: true));
+    expect(c.entries.single.shiny, isTrue);
+    expect(c.entries.single.rank, 2246);
+    c.update(e.id, const SaveOptions(league: League.ultra));
+    expect(c.entries.single.league, League.ultra);
+    expect(c.entries.single.rank, 21);
+    expect(c.entries.single.shiny, isFalse);
   });
 
   test('la collection est enregistrée puis rechargée', () async {
     final store = MemorySettingsStore();
-    _controller(store).add(_flambusard, const Iv(0, 14, 2), 50);
+    _controller(store).add(
+      _flambusard,
+      const Iv(0, 14, 2),
+      50,
+      const SaveOptions(league: League.little, size: PokeSize.xxs),
+    );
     final again = _controller(store);
     await again.load();
-    expect(again.entries.single.iv, const Iv(0, 14, 2));
-    expect(again.entries.single.maxLevel, 50);
+    final e = again.entries.single;
+    expect(e.iv, const Iv(0, 14, 2));
+    expect(e.maxLevel, 50);
+    expect(e.league, League.little);
+    expect(e.size, PokeSize.xxs);
   });
 
-  test('retirer puis annuler remet le Pokémon', () {
-    final c = _controller(MemorySettingsStore())
-      ..add(_flambusard, const Iv(15, 15, 15), 51);
-    final entry = c.entries.single;
-    c.remove(entry.id);
-    expect(c.entries, isEmpty);
-    c.restore(entry);
-    expect(c.entries.single.id, entry.id);
-  });
-
-  test('les filtres s\'appliquent aux lignes visibles', () {
-    final c = _controller(MemorySettingsStore())
-      ..add(_flambusard, const Iv(15, 15, 15), 51)
-      ..setFilter(const CollectionFilter(types: <PokeType>{PokeType.water}));
+  test('filtres, suppression et affichage', () {
+    final c = _controller(MemorySettingsStore());
+    final e = c.add(_flambusard, _max, 51, const SaveOptions(league: League.ultra));
+    c.setFilter(const CollectionFilter(league: League.great));
     expect(c.visibleRows, isEmpty);
     expect(c.total, 1);
-    c.setFilter(const CollectionFilter(moveQuery: 'calcin'));
+    c.setFilter(const CollectionFilter(league: League.ultra, maxRank: 50));
     expect(c.visibleRows.length, 1);
+    c.setView(CollectionView.grid);
+    expect(c.view, CollectionView.grid);
+    c.remove(e.id);
+    expect(c.entries, isEmpty);
   });
 }

@@ -201,30 +201,90 @@ void main() {
     await tester.pumpAndSettle();
   });
 
-  testWidgets('enregistrer puis retrouver le Pokémon dans la collection',
+  testWidgets('enregistrer avec ligue et options, filtrer, voir, supprimer',
       (tester) async {
     await _pumpApp(tester);
     await tester.enterText(find.byType(TextField), 'Flambusard');
     await tester.pumpAndSettle();
+    await tester.tap(find.text('Hyper'));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('Enregistrer'));
     await tester.pumpAndSettle();
-    expect(find.text('Flambusard 15/15/15 enregistré'), findsOneWidget);
-    await tester.tap(find.text('Enregistrer'));
+    expect(
+      find.byKey(const ValueKey<String>('save-rank')),
+      findsOneWidget,
+    );
+    expect(find.textContaining('Rang 21 ·'), findsOneWidget);
+    await tester.tap(find.text('Shiny'));
+    await tester.tap(find.text('XXL'));
     await tester.pumpAndSettle();
-    expect(find.text('Déjà dans ta collection'), findsOneWidget);
+    await tester.ensureVisible(find.text('Enregistrer dans la collection'));
+    await tester.tap(find.text('Enregistrer dans la collection'));
+    await tester.pumpAndSettle();
+    expect(
+      find.text('Flambusard 15/15/15 enregistré (Hyper, rang 21)'),
+      findsOneWidget,
+    );
 
     await tester.tap(find.byTooltip('Paramètres'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Ma collection'));
     await tester.pumpAndSettle();
     expect(find.text('1 Pokémon sur 1'), findsOneWidget);
-    expect(find.text('2 246'), findsOneWidget);
-    await tester.tap(find.text('Hyper'));
+    expect(find.text('Hyper · rang 21'), findsOneWidget);
+    expect(find.text('XXL'), findsOneWidget);
+    await tester.tap(find.text('Super'));
     await tester.pumpAndSettle();
-    expect(find.text('21'), findsOneWidget);
+    expect(find.text('0 Pokémon sur 1'), findsOneWidget);
+    await tester.tap(find.text('Toutes'));
+    await tester.tap(find.text('Top 50'));
+    await tester.pumpAndSettle();
+    expect(find.text('1 Pokémon sur 1'), findsOneWidget);
     await tester.tap(find.text('Top 10'));
     await tester.pumpAndSettle();
     expect(find.text('0 Pokémon sur 1'), findsOneWidget);
+    await tester.tap(find.text('Tous'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byTooltip('Afficher en mosaïque'));
+    await tester.pumpAndSettle();
+    expect(find.byTooltip('Afficher en liste'), findsOneWidget);
+    await tester.tap(find.text('Flambusard'));
+    await tester.pumpAndSettle();
+    expect(find.text('Hyper · rang 21'), findsOneWidget);
+    expect(find.text('Shiny'), findsOneWidget);
+
+    await tester.tap(find.byTooltip('Supprimer'));
+    await tester.pumpAndSettle();
+    expect(find.text('Supprimer ce Pokémon ?'), findsOneWidget);
+    await tester.tap(find.text('Annuler'));
+    await tester.pumpAndSettle();
+    expect(find.text('Hyper · rang 21'), findsOneWidget);
+    await tester.tap(find.byTooltip('Supprimer'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(FilledButton, 'Supprimer'));
+    await tester.pumpAndSettle();
+    expect(find.text('Aucun Pokémon enregistré'), findsOneWidget);
+    await tester.pump(const Duration(seconds: 10));
+    await tester.pumpAndSettle();
+  });
+
+  testWidgets('un rang 1 porte le badge doré', (tester) async {
+    await _pumpApp(tester);
+    await tester.enterText(find.byType(TextField), 'Flambusard');
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Master'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Enregistrer'));
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('Enregistrer dans la collection'));
+    await tester.tap(find.text('Enregistrer dans la collection'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('Paramètres'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Ma collection'));
+    await tester.pumpAndSettle();
+    expect(find.text('★ Rang 1'), findsOneWidget);
     await tester.pump(const Duration(seconds: 10));
     await tester.pumpAndSettle();
   });
@@ -237,6 +297,9 @@ void main() {
     await tester.enterText(find.byType(TextField), 'Flambusard');
     await tester.pumpAndSettle();
     await tester.tap(find.text('Enregistrer'));
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('Enregistrer dans la collection'));
+    await tester.tap(find.text('Enregistrer dans la collection'));
     await tester.pumpAndSettle();
     await tester.tap(find.byTooltip('Paramètres'));
     await tester.pumpAndSettle();

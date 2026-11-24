@@ -2,148 +2,198 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:ivhelper/core/collection.dart';
 import 'package:ivhelper/core/moves.dart';
 import 'package:ivhelper/core/poke_type.dart';
-import 'package:ivhelper/core/rank_table.dart';
 import 'package:ivhelper/core/species_repository.dart';
 import 'package:ivhelper/core/stats.dart';
 
-const _ember = Move(id: 'EMBER', nameFr: 'Flammèche', type: PokeType.fire, isFast: true);
-const _bubble = Move(id: 'BUBBLE', nameFr: 'Écume', type: PokeType.water, isFast: true);
-const _braveBird = Move(id: 'BRAVE_BIRD', nameFr: 'Rapace', type: PokeType.flying, isFast: false);
+const _ember =
+    Move(id: 'EMBER', nameFr: 'Flammèche', type: PokeType.fire, isFast: true);
+const _bubble =
+    Move(id: 'BUBBLE', nameFr: 'Écume', type: PokeType.water, isFast: true);
+const _braveBird = Move(
+  id: 'BRAVE_BIRD',
+  nameFr: 'Rapace',
+  type: PokeType.flying,
+  isFast: false,
+);
 
 CollectionRow _row(
   String name,
   int dex,
   List<PokeType> types,
-  int rank,
-  List<Move> moves,
-) {
-  const iv = Iv(15, 15, 15);
+  League league,
+  int rank, {
+  List<Move> recorded = const <Move>[],
+  List<Move> learnable = const <Move>[],
+}) {
   return CollectionRow(
-    entry: CollectionEntry(id: name, speciesName: name, iv: iv, maxLevel: 51),
+    entry: CollectionEntry(
+      id: name,
+      speciesName: name,
+      iv: const Iv(15, 15, 15),
+      maxLevel: 51,
+      league: league,
+      rank: rank,
+      percent: 90,
+      cp: 1500,
+      level: 40,
+    ),
     species: Species(
       dex: dex,
       nameFr: name,
       base: const BaseStats(100, 100, 100),
       types: types,
     ),
-    rank: RankEntry(
-      rank: rank,
-      level: 40,
-      cp: 1500,
-      iv: iv,
-      statProduct: 1,
-      percent: 90,
-    ),
-    moves: moves,
+    recordedMoves: recorded,
+    learnableMoves: learnable,
   );
 }
 
 final _rows = <CollectionRow>[
-  _row('Flambusard', 663, <PokeType>[PokeType.fire, PokeType.flying], 120,
-      <Move>[_ember, _braveBird]),
-  _row('Carapuce', 7, <PokeType>[PokeType.water], 8, <Move>[_bubble]),
-  _row('Écayon', 550, <PokeType>[PokeType.water], 45, <Move>[_bubble]),
-  _row('Salamèche', 4, <PokeType>[PokeType.fire], 600, <Move>[_ember]),
+  _row(
+    'Flambusard',
+    663,
+    <PokeType>[PokeType.fire, PokeType.flying],
+    League.ultra,
+    1,
+    recorded: <Move>[_braveBird],
+    learnable: <Move>[_ember, _braveBird],
+  ),
+  _row('Carapuce', 7, <PokeType>[PokeType.water], League.little, 8,
+      learnable: <Move>[_bubble]),
+  _row('Écayon', 550, <PokeType>[PokeType.water], League.great, 45,
+      learnable: <Move>[_bubble]),
+  _row('Salamèche', 4, <PokeType>[PokeType.fire], League.great, 600,
+      learnable: <Move>[_ember]),
 ];
 
-List<String> _names(List<CollectionRow> rows) =>
+List<String> _names(Iterable<CollectionRow> rows) =>
     <String>[for (final r in rows) r.species.nameFr];
 
+List<String> _apply(CollectionFilter f, [CollectionSort s = CollectionSort.dex]) =>
+    _names(filterAndSort(_rows, f, s));
+
 void main() {
-  test('tri par rang, par Pokédex, par nom (accents ignorés) et par type', () {
+  test('tri par rang, Pokédex, nom (accents ignorés) et type', () {
     const all = CollectionFilter();
-    expect(
-      _names(filterAndSort(_rows, all, CollectionSort.rank)),
-      <String>['Carapuce', 'Écayon', 'Flambusard', 'Salamèche'],
-    );
-    expect(
-      _names(filterAndSort(_rows, all, CollectionSort.dex)),
-      <String>['Salamèche', 'Carapuce', 'Écayon', 'Flambusard'],
-    );
-    expect(
-      _names(filterAndSort(_rows, all, CollectionSort.name)),
-      <String>['Carapuce', 'Écayon', 'Flambusard', 'Salamèche'],
-    );
-    expect(
-      _names(filterAndSort(_rows, all, CollectionSort.type)),
-      <String>['Salamèche', 'Flambusard', 'Carapuce', 'Écayon'],
-    );
+    expect(_apply(all, CollectionSort.rank),
+        <String>['Flambusard', 'Carapuce', 'Écayon', 'Salamèche']);
+    expect(_apply(all, CollectionSort.dex),
+        <String>['Salamèche', 'Carapuce', 'Écayon', 'Flambusard']);
+    expect(_apply(all, CollectionSort.name),
+        <String>['Carapuce', 'Écayon', 'Flambusard', 'Salamèche']);
+    expect(_apply(all, CollectionSort.type),
+        <String>['Salamèche', 'Flambusard', 'Carapuce', 'Écayon']);
   });
 
-  test('filtre de rang', () {
-    final rows = filterAndSort(
-      _rows,
-      const CollectionFilter(maxRank: 50),
-      CollectionSort.rank,
+  test('filtre de ligue : celle du tag', () {
+    expect(_apply(const CollectionFilter(league: League.great)),
+        <String>['Salamèche', 'Écayon']);
+    expect(_apply(const CollectionFilter(league: League.master)), isEmpty);
+  });
+
+  test('filtre de rang Top 10 et Top 50, combiné à la ligue', () {
+    expect(_apply(const CollectionFilter(maxRank: 10)),
+        <String>['Carapuce', 'Flambusard']);
+    expect(_apply(const CollectionFilter(maxRank: 50)),
+        <String>['Carapuce', 'Écayon', 'Flambusard']);
+    expect(
+      _apply(const CollectionFilter(maxRank: 50, league: League.great)),
+      <String>['Écayon'],
     );
-    expect(_names(rows), <String>['Carapuce', 'Écayon']);
+    expect(rankThresholds, <int?>[null, 10, 50]);
   });
 
   test('filtre de type : au moins un des types choisis', () {
-    final rows = filterAndSort(
-      _rows,
-      const CollectionFilter(types: <PokeType>{PokeType.flying, PokeType.water}),
-      CollectionSort.dex,
-    );
-    expect(_names(rows), <String>['Carapuce', 'Écayon', 'Flambusard']);
-  });
-
-  test('filtres d\'attaque par type et par nom, combinés aux autres', () {
     expect(
-      _names(filterAndSort(
-        _rows,
-        const CollectionFilter(moveTypes: <PokeType>{PokeType.flying}),
-        CollectionSort.dex,
+      _apply(const CollectionFilter(
+        types: <PokeType>{PokeType.flying, PokeType.water},
       )),
-      <String>['Flambusard'],
-    );
-    expect(
-      _names(filterAndSort(
-        _rows,
-        const CollectionFilter(moveQuery: 'flammeche'),
-        CollectionSort.dex,
-      )),
-      <String>['Salamèche', 'Flambusard'],
-    );
-    expect(
-      _names(filterAndSort(
-        _rows,
-        const CollectionFilter(moveQuery: 'Flammèche', maxRank: 500),
-        CollectionSort.dex,
-      )),
-      <String>['Flambusard'],
+      <String>['Carapuce', 'Écayon', 'Flambusard'],
     );
   });
 
-  test('activeCount compte les filtres actifs, copyWith retire le rang', () {
+  test('filtre d\'attaque : attaques enregistrées, sinon apprenables', () {
+    // Flambusard a enregistré Rapace seulement : Flammèche ne compte plus.
+    expect(_apply(const CollectionFilter(moveQuery: 'flammeche')),
+        <String>['Salamèche']);
+    expect(
+      _apply(const CollectionFilter(moveTypes: <PokeType>{PokeType.flying})),
+      <String>['Flambusard'],
+    );
+    expect(
+      _apply(const CollectionFilter(moveTypes: <PokeType>{PokeType.water})),
+      <String>['Carapuce', 'Écayon'],
+    );
+  });
+
+  test('activeCount et copyWith (retrait de la ligue et du rang)', () {
     const f = CollectionFilter(
+      league: League.great,
       maxRank: 10,
       types: <PokeType>{PokeType.fire},
-      moveQuery: 'x',
     );
     expect(f.activeCount, 3);
-    expect(f.copyWith(clearMaxRank: true).maxRank, isNull);
-    expect(f.copyWith(clearMaxRank: true).activeCount, 2);
+    final cleared = f.copyWith(clearLeague: true, clearMaxRank: true);
+    expect(cleared.league, isNull);
+    expect(cleared.maxRank, isNull);
+    expect(cleared.activeCount, 1);
   });
 
-  test('CollectionEntry : aller-retour JSON et rejet des entrées invalides', () {
+  test('CollectionEntry : aller-retour JSON complet', () {
     const e = CollectionEntry(
       id: 'a',
       speciesName: 'Flambusard',
       iv: Iv(1, 2, 3),
       maxLevel: 50,
+      league: League.ultra,
+      rank: 1,
+      percent: 100,
+      cp: 2500,
+      level: 39.5,
+      fastMove: 'INCINERATE',
+      chargedMove2: 'BRAVE_BIRD',
+      shadow: ShadowState.purified,
+      size: PokeSize.xxl,
+      lucky: true,
+      shiny: true,
     );
     final back = CollectionEntry.fromJson(e.toJson())!;
-    expect(back.sameAs(e), isTrue);
-    expect(back.maxLevel, 50);
+    expect(back.toJson(), e.toJson());
+    expect(back.isRankOne, isTrue);
+    expect(back.moveIds, <String>['INCINERATE', 'BRAVE_BIRD']);
+  });
+
+  test('CollectionEntry : options absentes par défaut, entrées invalides', () {
+    final minimal = CollectionEntry.fromJson(<String, dynamic>{
+      'id': 'b',
+      'species': 'X',
+      'iv': <int>[0, 0, 0],
+      'league': 'great',
+      'rank': 12,
+    })!;
+    expect(minimal.shadow, ShadowState.none);
+    expect(minimal.size, PokeSize.none);
+    expect(minimal.lucky || minimal.shiny, isFalse);
+    expect(minimal.moveIds, isEmpty);
     expect(
       CollectionEntry.fromJson(<String, dynamic>{
-        'id': 'b',
+        'id': 'c',
         'species': 'X',
         'iv': <int>[16, 0, 0],
+        'league': 'great',
+        'rank': 1,
       }),
       isNull,
     );
-    expect(CollectionEntry.fromJson('nimporte'), isNull);
+    expect(
+      CollectionEntry.fromJson(<String, dynamic>{
+        'id': 'd',
+        'species': 'X',
+        'iv': <int>[1, 0, 0],
+        'league': 'inconnue',
+        'rank': 1,
+      }),
+      isNull,
+    );
   });
 }

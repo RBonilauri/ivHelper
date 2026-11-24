@@ -1,28 +1,26 @@
 import 'package:material_ui/material_ui.dart';
 
+import '../core/league.dart';
 import '../core/rank_service.dart';
 import '../core/rank_table.dart';
 import '../core/species_repository.dart';
 import '../core/stat_line.dart';
 import 'format.dart';
 
-enum _League {
-  little('Mini', '500'),
-  great('Super', '1500'),
-  ultra('Hyper', '2500'),
-  master('Master', 'sans limite');
-
-  const _League(this.label, this.cap);
-
-  final String label;
-  final String cap;
-}
 
 /// Résultats d'une espèce en ligue super et hyper : rang, tableau du haut du
 /// classement et détails dépliables.
 class ResultPanel extends StatefulWidget {
   /// Crée le panneau de résultats.
-  const ResultPanel({super.key, required this.species, required this.result});
+  const ResultPanel({
+    super.key,
+    required this.species,
+    required this.result,
+    this.onLeagueChanged,
+  });
+
+  /// Appelé quand l'utilisateur change de volet.
+  final ValueChanged<League>? onLeagueChanged;
 
   /// Espèce évaluée.
   final Species species;
@@ -35,15 +33,15 @@ class ResultPanel extends StatefulWidget {
 }
 
 class _ResultPanelState extends State<ResultPanel> {
-  _League _league = _League.great;
+  League _league = League.great;
   bool _details = false;
   final Set<int> _open = <int>{};
 
   LeagueResult get _current => switch (_league) {
-        _League.little => widget.result.little,
-        _League.great => widget.result.great,
-        _League.ultra => widget.result.ultra,
-        _League.master => widget.result.master,
+        League.little => widget.result.little,
+        League.great => widget.result.great,
+        League.ultra => widget.result.ultra,
+        League.master => widget.result.master,
       };
 
   @override
@@ -54,28 +52,29 @@ class _ResultPanelState extends State<ResultPanel> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
-        SegmentedButton<_League>(
+        SegmentedButton<League>(
           showSelectedIcon: false,
           style: const ButtonStyle(
             padding: WidgetStatePropertyAll<EdgeInsetsGeometry>(
               EdgeInsets.symmetric(horizontal: 4, vertical: 6),
             ),
           ),
-          segments: <ButtonSegment<_League>>[
-            for (final l in _League.values)
-              ButtonSegment<_League>(
+          segments: <ButtonSegment<League>>[
+            for (final l in League.values)
+              ButtonSegment<League>(
                 value: l,
                 label: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: <Widget>[
                     Text(l.label),
-                    Text(l.cap, style: theme.textTheme.labelSmall),
+                    Text(l.capLabel, style: theme.textTheme.labelSmall),
                   ],
                 ),
               ),
           ],
-          selected: <_League>{_league},
+          selected: <League>{_league},
           onSelectionChanged: (selection) {
+            widget.onLeagueChanged?.call(selection.first);
             setState(() {
               _league = selection.first;
               _open.clear();
