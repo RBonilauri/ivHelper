@@ -82,7 +82,7 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.text('Min 10/10/10'));
     await tester.pumpAndSettle();
-    expect(find.textContaining('sur 1 331'), findsOneWidget);
+    expect(find.textContaining('sur 216'), findsOneWidget);
   });
 
   testWidgets('le bouton Paramètres ouvre la barre latérale', (tester) async {

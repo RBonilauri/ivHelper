@@ -77,7 +77,7 @@ void main() {
       ..setIv(const Iv(3, 12, 0))
       ..setMinIv(10);
     expect(c.iv, const Iv(10, 12, 10));
-    expect(c.result!.great.table.entries.length, 1331);
+    expect(c.result!.great.table.entries.length, 216);
     c.setMinIv(0);
     expect(c.result!.great.table.entries.length, 4096);
   });

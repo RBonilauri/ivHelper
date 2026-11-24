@@ -49,9 +49,9 @@ void main() {
     expect(capped.entries.every((e) => e.level <= 50), isTrue);
   });
 
-  test('minIv 10 ne classe que les 1331 combinaisons 10 à 15', () {
+  test('minIv 10 ne classe que les 216 combinaisons 10 à 15', () {
     final t = buildRankTable(flambusard, cpCap: 1500, minIv: 10);
-    expect(t.entries.length, 1331);
+    expect(t.entries.length, 216);
     expect(t.entries.first.rank, 1);
     expect(t.entries.first.percent, 100);
     expect(
