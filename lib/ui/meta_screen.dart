@@ -114,7 +114,7 @@ class _MetaScreenState extends State<MetaScreen> {
     );
   }
 
-  Widget _header(ThemeData theme, MetaData data) {
+  Widget _header(ThemeData theme, MetaSnapshot data) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[

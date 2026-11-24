@@ -8,7 +8,7 @@ void main() {
 
   test('la méta incluse couvre Super, Hyper et Master, rangs sans trou',
       () async {
-    final data = MetaData.fromJson(
+    final data = MetaSnapshot.fromJson(
       await rootBundle.loadString('assets/meta.json'),
     );
     for (final league in MetaLeague.values) {
@@ -23,7 +23,7 @@ void main() {
   });
 
   test('chaque espèce citée par la méta existe dans species.json', () async {
-    final data = MetaData.fromJson(
+    final data = MetaSnapshot.fromJson(
       await rootBundle.loadString('assets/meta.json'),
     );
     final repo = await SpeciesRepository.load();

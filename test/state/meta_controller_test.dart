@@ -8,7 +8,7 @@ import '../support/fake_meta.dart';
 
 void main() {
   test('fromJson lit les ligues, les attaques et les matchs', () {
-    final data = MetaData.fromJson(fakeMetaJson());
+    final data = MetaSnapshot.fromJson(fakeMetaJson());
     final first = data.leagues[MetaLeague.great]!.single;
     expect(first.name, 'Flambusard');
     expect(first.types, <PokeType>[PokeType.fire, PokeType.flying]);
@@ -20,8 +20,8 @@ void main() {
   });
 
   test('fromJson refuse un contenu illisible', () {
-    expect(() => MetaData.fromJson('{"leagues": 3}'), throwsFormatException);
-    expect(() => MetaData.fromJson('pas du json'), throwsFormatException);
+    expect(() => MetaSnapshot.fromJson('{"leagues": 3}'), throwsFormatException);
+    expect(() => MetaSnapshot.fromJson('pas du json'), throwsFormatException);
   });
 
   test('une méta en ligne plus récente remplace la copie et va en cache',

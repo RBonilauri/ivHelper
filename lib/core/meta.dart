@@ -88,18 +88,18 @@ class MetaEntry {
 }
 
 /// La méta d'une date donnée, par ligue.
-class MetaData {
+class MetaSnapshot {
   /// Crée une méta.
-  const MetaData({required this.updated, required this.leagues});
+  const MetaSnapshot({required this.updated, required this.leagues});
 
   /// Lit `meta.json` produit par `tool/build_meta.py`.
   ///
   /// Lève une [FormatException] si le contenu est illisible.
-  factory MetaData.fromJson(String source) {
+  factory MetaSnapshot.fromJson(String source) {
     try {
       final root = jsonDecode(source) as Map<String, dynamic>;
       final leaguesRaw = root['leagues'] as Map<String, dynamic>;
-      return MetaData(
+      return MetaSnapshot(
         updated: root['updated'] as String,
         leagues: <MetaLeague, List<MetaEntry>>{
           for (final league in MetaLeague.values)
@@ -131,7 +131,7 @@ class MetaData {
   }
 
   /// Vrai si cette méta est plus récente que [other].
-  bool isNewerThan(MetaData other) => updated.compareTo(other.updated) > 0;
+  bool isNewerThan(MetaSnapshot other) => updated.compareTo(other.updated) > 0;
 }
 
 MetaEntry _entry(Map<String, dynamic> raw) => MetaEntry(

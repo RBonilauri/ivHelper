@@ -24,14 +24,14 @@ class MetaController extends ChangeNotifier {
   /// Cache de la dernière méta téléchargée.
   final SettingsStore store;
 
-  MetaData? _data;
+  MetaSnapshot? _data;
   bool _refreshing = false;
   String? _message;
   Future<void>? _loading;
   bool _disposed = false;
 
   /// Méta affichée, ou `null` avant le premier chargement.
-  MetaData? get data => _data;
+  MetaSnapshot? get data => _data;
 
   /// Vrai pendant une vérification en ligne.
   bool get refreshing => _refreshing;
@@ -79,13 +79,13 @@ class MetaController extends ChangeNotifier {
     _notify();
   }
 
-  void _consider(MetaData? candidate) {
+  void _consider(MetaSnapshot? candidate) {
     if (candidate == null) return;
     final current = _data;
     if (current == null || !current.isNewerThan(candidate)) _data = candidate;
   }
 
-  static Future<MetaData?> _tryParse(Future<String> Function() read) async {
+  static Future<MetaSnapshot?> _tryParse(Future<String> Function() read) async {
     try {
       return _parse(await read());
     } on Object {
@@ -93,9 +93,9 @@ class MetaController extends ChangeNotifier {
     }
   }
 
-  static MetaData? _parse(String raw) {
+  static MetaSnapshot? _parse(String raw) {
     try {
-      return MetaData.fromJson(raw);
+      return MetaSnapshot.fromJson(raw);
     } on FormatException {
       return null;
     }
