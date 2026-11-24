@@ -1,6 +1,6 @@
 # ivHelper
 
-App Flutter personnelle : rang PvP (ligue Super 1500 PC, Hyper 2500 PC) d'un Pokémon GO à partir de son nom ou numéro et de ses IV. Phase 1 faite (saisie manuelle). Voir `README.md` et `docs/superpowers/plans/2026-11-24-ivhelper.md` pour la suite.
+App Flutter personnelle : rang PvP (ligues Mini 500 PC, Super 1500, Hyper 2500, Master sans limite, plafond technique 10 000 comme PvPoke) d'un Pokémon GO à partir de son nom ou numéro et de ses IV. Phase 1 faite (saisie manuelle). Voir `README.md` et `docs/superpowers/plans/2026-11-24-ivhelper.md` pour la suite.
 
 ## Langue
 
@@ -27,7 +27,7 @@ Tout est en français : interface, commentaires `///`, messages de commit, répo
 - Niveau maximal 51 par défaut (50 plus bonus meilleur ami) ; 50 aussi sélectionnable.
 - Pour chaque combinaison d'IV : plus haut niveau (demi-pas) dont le PC ≤ plafond ; tri par produit de stats décroissant, puis PC décroissant, puis IV décroissants ; pourcentage = produit / meilleur × 100.
 - `PC = ⌊atk·√def·√pv·cpm²/10⌋` (min 10), `PV = ⌊pv·cpm⌋` (min 10).
-- Valeurs de référence testées (Flambusard 176/155/186) : 15/15/15 est rang 2246 en Super, 21 en Hyper ; rangs 1 et 2 Hyper : 13/15/15 et 13/15/14 ; niveau max 50 : rang 1 Hyper.
+- Valeurs de référence testées (Flambusard 176/155/186) : 15/15/15 est rang 2246 en Super, 21 en Hyper ; rangs 1 et 2 Hyper : 13/15/15 et 13/15/14 ; niveau max 50 : rang 1 Hyper. Mini : 15/15/15 rang 550 (niveau 8, 497 PC), rang 1 = 0/14/2. Master : 15/15/15 rang 1 (niveau 51, 2522 PC).
 - `minIv` 10 : le classement ne porte que sur 6³ = 216 combinaisons, et les IV saisis sont relevés au plancher.
 - Table des types Pokémon GO : ×1,6 super efficace, ×0,625 peu efficace, ×0,390625 immunité ; multiplicateurs cumulés sur double type. Offensive : meilleur multiplicateur parmi les attaques, sur types simples.
 - Format : décimales avec virgule, espaces insécables (U+00A0) pour les milliers, stats tronquées à 1 décimale, pourcentage à 2 décimales, « 100 % ».

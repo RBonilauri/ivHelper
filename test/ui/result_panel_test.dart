@@ -31,8 +31,8 @@ void main() {
   testWidgets('le volet Super s\'affiche en premier avec le rang 2 246',
       (tester) async {
     await _pumpPanel(tester);
-    expect(find.text('Super · 1500'), findsOneWidget);
-    expect(find.text('Hyper · 2500'), findsOneWidget);
+    expect(find.text('Super'), findsOneWidget);
+    expect(find.text('Hyper'), findsOneWidget);
     expect(find.text('Rang 2 246'), findsOneWidget);
     expect(find.textContaining('sur 4 096'), findsOneWidget);
   });
@@ -40,7 +40,7 @@ void main() {
   testWidgets('le volet Hyper affiche le rang 21 et la ligne mise en avant',
       (tester) async {
     await _pumpPanel(tester);
-    await tester.tap(find.text('Hyper · 2500'));
+    await tester.tap(find.text('Hyper'));
     await tester.pumpAndSettle();
     expect(find.text('Rang 21'), findsOneWidget);
     expect(find.byKey(const ValueKey<String>('mine-row')), findsOneWidget);
@@ -50,14 +50,14 @@ void main() {
   testWidgets('le tableau montre la ligne de l\'utilisateur puis le top 10',
       (tester) async {
     await _pumpPanel(tester);
-    await tester.tap(find.text('Hyper · 2500'));
+    await tester.tap(find.text('Hyper'));
     await tester.pumpAndSettle();
     expect(find.byKey(const ValueKey<String>('rank-row')), findsNWidgets(10));
   });
 
   testWidgets('toucher une ligne déplie ses stats réelles', (tester) async {
     await _pumpPanel(tester);
-    await tester.tap(find.text('Hyper · 2500'));
+    await tester.tap(find.text('Hyper'));
     await tester.pumpAndSettle();
     expect(find.textContaining('Stat globale'), findsNothing);
     await tester.tap(find.text('13/15/15'));
@@ -72,10 +72,22 @@ void main() {
   testWidgets('l\'interrupteur Détails déplie toutes les lignes',
       (tester) async {
     await _pumpPanel(tester);
-    await tester.tap(find.text('Hyper · 2500'));
+    await tester.tap(find.text('Hyper'));
     await tester.pumpAndSettle();
     await tester.tap(find.byType(Switch));
     await tester.pumpAndSettle();
     expect(find.textContaining('Stat globale'), findsNWidgets(11));
+  });
+
+  testWidgets('les volets Mini et Master sont proposés', (tester) async {
+    await _pumpPanel(tester);
+    expect(find.text('Mini'), findsOneWidget);
+    expect(find.text('Master'), findsOneWidget);
+    await tester.tap(find.text('Mini'));
+    await tester.pumpAndSettle();
+    expect(find.text('Rang 550'), findsOneWidget);
+    await tester.tap(find.text('Master'));
+    await tester.pumpAndSettle();
+    expect(find.text('Rang 1'), findsOneWidget);
   });
 }

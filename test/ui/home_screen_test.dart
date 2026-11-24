@@ -95,7 +95,7 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.text('Max 50'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Hyper · 2500'));
+    await tester.tap(find.text('Hyper'));
     await tester.pumpAndSettle();
     expect(find.text('Rang 1'), findsOneWidget);
   });
