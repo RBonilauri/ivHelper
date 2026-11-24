@@ -162,8 +162,8 @@ public class CaptureService extends Service {
         return START_NOT_STICKY;
     }
 
-    /** Écrit la dernière image de l'écran dans [file] et renvoie sa taille. */
-    int[] grabToFile(File file) throws IOException {
+    /** Copie la dernière image de l'écran dans un Bitmap opaque. */
+    Bitmap grab() throws IOException {
         Bitmap bitmap;
         synchronized (lock) {
             if (latest == null) {
@@ -182,6 +182,11 @@ public class CaptureService extends Service {
         // L'écran est opaque : certains téléphones livrent un alpha nul, qui
         // effacerait l'image une fois décodée.
         bitmap.setHasAlpha(false);
+        return bitmap;
+    }
+
+    /** Écrit [bitmap] en PNG dans [file]. */
+    static void writePng(Bitmap bitmap, File file) throws IOException {
         boolean written;
         try (FileOutputStream out = new FileOutputStream(file)) {
             written = bitmap.compress(Bitmap.CompressFormat.PNG, 100, out);
@@ -189,7 +194,6 @@ public class CaptureService extends Service {
         if (!written || file.length() == 0) {
             throw new IOException("Enregistrement de la capture impossible");
         }
-        return new int[] {width, height};
     }
 
     private void startInForeground() {

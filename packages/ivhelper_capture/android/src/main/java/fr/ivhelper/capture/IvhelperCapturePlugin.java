@@ -2,6 +2,7 @@ package fr.ivhelper.capture;
 
 import android.content.Context;
 import android.content.Intent;
+import android.graphics.Bitmap;
 import android.os.Handler;
 import android.os.Looper;
 
@@ -71,15 +72,19 @@ public class IvhelperCapturePlugin implements FlutterPlugin, MethodChannel.Metho
                 }
                 new Thread(() -> {
                     try {
+                        Bitmap bitmap = service.grab();
                         File file = new File(context.getCacheDir(), "ivhelper_capture.png");
-                        int[] size = service.grabToFile(file);
+                        CaptureService.writePng(bitmap, file);
                         final Map<String, Object> map = new HashMap<>();
                         map.put("path", file.getAbsolutePath());
-                        map.put("width", size[0]);
-                        map.put("height", size[1]);
+                        map.put("width", bitmap.getWidth());
+                        map.put("height", bitmap.getHeight());
+                        map.put("lines", TextReader.read(bitmap));
                         MAIN.post(() -> result.success(map));
                     } catch (final Exception e) {
-                        MAIN.post(() -> result.error("CAPTURE_FAILED", e.getMessage(), null));
+                        final String message =
+                                e.getMessage() != null ? e.getMessage() : e.getClass().getSimpleName();
+                        MAIN.post(() -> result.error("CAPTURE_FAILED", message, null));
                     }
                 }).start();
                 break;

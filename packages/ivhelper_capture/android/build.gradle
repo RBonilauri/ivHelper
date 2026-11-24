@@ -24,3 +24,9 @@ android {
         consumerProguardFiles 'consumer-rules.pro'
     }
 }
+
+dependencies {
+    // Reconnaissance de texte latin, modèle inclus dans l'APK (hors ligne).
+    implementation 'com.google.mlkit:text-recognition:16.0.1'
+    implementation 'com.google.android.gms:play-services-tasks:18.2.0'
+}
