@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// Stockage des réglages : mémoire en test, préférences sur l'appareil.
