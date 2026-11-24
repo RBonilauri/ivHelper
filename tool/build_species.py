@@ -147,6 +147,7 @@ def main(gamemaster, species_csv, moves_csv, move_names_csv, out_species, out_mo
         types = [t for t in p["types"] if t in TYPES_FR]
         fast = sorted(set(p.get("fastMoves", [])))
         charged = sorted(set(p.get("chargedMoves", [])))
+        elite = sorted(set(p.get("eliteMoves", [])))
         used.update(fast)
         used_fast.update(fast)
         used.update(charged)
@@ -154,6 +155,7 @@ def main(gamemaster, species_csv, moves_csv, move_names_csv, out_species, out_mo
             "dex": p["dex"], "name": label,
             "atk": b["atk"], "def": b["def"], "sta": b["hp"],
             "types": types, "fast": fast, "charged": charged,
+            "elite": elite,
         })
     moves = {}
     for m in data["moves"]:
@@ -162,6 +164,7 @@ def main(gamemaster, species_csv, moves_csv, move_names_csv, out_species, out_mo
         moves[m["moveId"]] = {
             "name": move_name(m["moveId"], m["name"], fr_moves),
             "type": m["type"],
+            "power": m.get("power", 0),
             # Immédiate si elle rapporte de l'énergie ; Morphing (ni gain ni coût)
             # l'est aussi. Lutte coûte de l'énergie : elle est chargée.
             "fast": m.get("energyGain", 0) > 0
@@ -170,6 +173,7 @@ def main(gamemaster, species_csv, moves_csv, move_names_csv, out_species, out_mo
     for s in result:
         s["fast"] = [m for m in s["fast"] if m in moves and moves[m]["fast"]]
         s["charged"] = [m for m in s["charged"] if m in moves and not moves[m]["fast"]]
+        s["elite"] = [m for m in s["elite"] if m in s["fast"] or m in s["charged"]]
     with open(out_species, "w", encoding="utf-8") as f:
         json.dump(result, f, ensure_ascii=False, separators=(",", ":"))
     with open(out_moves, "w", encoding="utf-8") as f:

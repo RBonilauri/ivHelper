@@ -80,11 +80,17 @@ def build(src, top, known_species):
     pokemon = {p["speciesId"]: p for p in gm["pokemon"]}
     moves = {m["moveId"]: m for m in gm["moves"]}
 
-    def move(mid):
+    def move(mid, elite):
         m = moves.get(mid)
         if m is None or m["type"] not in TYPES_FR:
             return None
-        return {"id": mid, "name": move_name(mid, m["name"], fr_moves), "type": m["type"]}
+        return {
+            "id": mid,
+            "name": move_name(mid, m["name"], fr_moves),
+            "type": m["type"],
+            "power": m.get("power", 0),
+            "elite": mid in elite,
+        }
 
     leagues = {}
     for key, cap in LEAGUES.items():
@@ -99,7 +105,8 @@ def build(src, top, known_species):
             label, lookup = names[sid]
             if lookup not in known_species:
                 lookup = None
-            moveset = [move(m) for m in e.get("moveset", [])]
+            elite = set(p.get("eliteMoves", []))
+            moveset = [move(m, elite) for m in e.get("moveset", [])]
             moveset = [m for m in moveset if m is not None]
             if not moveset:
                 continue

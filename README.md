@@ -27,7 +27,7 @@ Tu as un Pokémon avec ses IV (Attaque / Défense / PV). Tu veux savoir **où il
 - **Menu** (bouton aux trois traits, en haut à droite) :
   - **Ma collection** : en liste ou en mosaïque, chaque case à la couleur du premier type, avec bordure dorée et badge « ★ Rang 1 » pour un rang 1 de sa ligue. Filtres combinables : ligue (Toutes, Mini, Super, Hyper, Master), rang d'IV (Tous, Top 10, Top 50), types du Pokémon, attaques (enregistrées, à défaut apprenables, par type ou par nom). Tri par rang, Pokédex, nom ou type. Un appui ouvre la fiche : modifier, voir le rang, supprimer (avec confirmation).
   - **Méta** : le top 100 PvPoke en Super, Hyper et Master (formes obscures comprises), chaque case à la couleur du premier type, avec la note, les types et le jeu d'attaques recommandé. La fiche d'un Pokémon montre ses meilleurs matchs et ses pires adversaires (en jaune, ceux que tu as dans ta collection), et propose « Voir le rang de mes IV » et « Ajouter à mon équipe ». Un Pokémon que tu possèdes tagué dans cette ligue (et obscur s'il l'est dans la méta) a une bordure jaune et son meilleur rang. La méta se met à jour toute seule (voir plus bas), avec un filtre par nom et un bouton pour vérifier.
-  - **Team builder** : 3 Pokémon, une attaque immédiate et deux chargées chacun (jamais deux fois la même chargée), saisis à la main ou importés de ta collection avec leurs attaques (un même Pokémon de la collection ne peut être importé qu'une fois dans l'équipe). Pour chacun : faiblesses et résistances selon ses types (×2,56, ×1,6, ×0,63, ×0,39…), types touchés en super efficace et types sur lesquels il est en difficulté selon ses attaques. Bilan d'équipe : faiblesses partagées, types que personne ne résiste, types qu'aucune attaque ne couvre. L'équipe est conservée.
+  - **Team builder** : 3 Pokémon, une attaque immédiate et deux chargées chacun (jamais deux fois la même chargée), saisis à la main ou importés de ta collection avec leurs attaques (un même Pokémon de la collection ne peut être importé qu'une fois dans l'équipe). Pour chacun : faiblesses et résistances selon ses types (×2,56, ×1,6, ×0,63, ×0,39…), types touchés en super efficace et types sur lesquels il est en difficulté selon ses attaques. Bilan d'équipe : compteurs (types touchés en super efficace sur 18, types résistés sur 18, faiblesses partagées), types touchés en super efficace, types d'attaque de l'équipe, types résistés, faiblesses partagées, types que personne ne résiste, types qu'aucune attaque ne couvre. L'équipe est conservée.
   - **Table des types** : forces, faiblesses et résistances des 18 types, avec une pastille colorée par type.
   - **Paramètres** : mode Auto / Jour / Nuit (or adouci la nuit) et taille de police de 85 à 140 %. Les réglages sont conservés.
 
@@ -46,6 +46,8 @@ L'app n'est pas sur le Play Store.
 **Méta à jour sans réinstaller** : une tâche planifiée du dépôt (`.github/workflows/meta.yml`, chaque jour à 4 h 17 UTC, ou à la main depuis l'onglet Actions) régénère `assets/meta.json` depuis PvPoke et ne le publie que s'il a changé. L'app télécharge ce fichier à l'ouverture de l'onglet Méta, le garde en cache, et retombe sur la copie incluse sans réseau.
 
 **iPhone** : pas de version pour l'instant. Une installation personnelle passera soit par un Mac, soit par TestFlight avec un compte développeur Apple.
+
+Partout, une attaque d'événement (Élite) porte un astérisque (ex. Hydroblast*) et la puissance en combat est affichée à côté.
 
 ## Comment le rang est calculé
 

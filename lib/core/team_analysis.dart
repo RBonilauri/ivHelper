@@ -103,6 +103,18 @@ class TeamSummary {
           if (offenses.isNotEmpty)
             for (final d in PokeType.values)
               if (offenses.every((o) => o.best[d]! <= 1)) d,
+        ],
+        coverage = <PokeType>[
+          for (final d in PokeType.values)
+            if (offenses.any((o) => o.best[d]! > 1)) d,
+        ],
+        resisted = <PokeType>[
+          for (final a in PokeType.values)
+            if (defenses.any((d) => d.factors[a]! < 1)) a,
+        ],
+        moveTypes = <PokeType>[
+          for (final t in PokeType.values)
+            if (offenses.any((o) => o.moves.any((m) => m.type == t))) t,
         ];
 
   /// Types d'attaque auxquels au moins deux membres sont faibles.
@@ -113,4 +125,13 @@ class TeamSummary {
 
   /// Types qu'aucune attaque de l'équipe ne touche en super efficace.
   final List<PokeType> uncovered;
+
+  /// Types que au moins une attaque de l'équipe touche en super efficace.
+  final List<PokeType> coverage;
+
+  /// Types d'attaque auxquels au moins un membre résiste.
+  final List<PokeType> resisted;
+
+  /// Types des attaques choisies dans l'équipe, sans doublon.
+  final List<PokeType> moveTypes;
 }

@@ -8,6 +8,7 @@ import '../state/collection_controller.dart';
 import '../state/team_controller.dart';
 import 'collection_widgets.dart';
 import 'format.dart';
+import 'move_label.dart';
 import 'type_badge.dart';
 
 const Color _good = Color(0xFF2EAD74);
@@ -137,6 +138,7 @@ class _SlotCard extends StatelessWidget {
             if (species != null) ...<Widget>[
               const SizedBox(height: 10),
               _MovePicker(
+                species: species,
                 label: 'Attaque immédiate',
                 value: slot.fast,
                 options: team.fastOptions(index),
@@ -144,6 +146,7 @@ class _SlotCard extends StatelessWidget {
               ),
               const SizedBox(height: 8),
               _MovePicker(
+                species: species,
                 label: 'Attaque chargée 1',
                 value: slot.charged1,
                 options: team.chargedOptionsFor(index, 1),
@@ -151,10 +154,16 @@ class _SlotCard extends StatelessWidget {
               ),
               const SizedBox(height: 8),
               _MovePicker(
+                species: species,
                 label: 'Attaque chargée 2',
                 value: slot.charged2,
                 options: team.chargedOptionsFor(index, 2),
                 onChanged: (m) => team.setCharged(index, 2, m),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                '$eliteLegend · nombre : puissance en combat',
+                style: theme.textTheme.bodySmall,
               ),
             ],
             if (defense != null) ...<Widget>[
@@ -288,12 +297,14 @@ class _SpeciesField extends StatelessWidget {
 
 class _MovePicker extends StatelessWidget {
   const _MovePicker({
+    required this.species,
     required this.label,
     required this.value,
     required this.options,
     required this.onChanged,
   });
 
+  final Species species;
   final String label;
   final Move? value;
   final List<Move> options;
@@ -302,6 +313,7 @@ class _MovePicker extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final current = value;
+    final small = Theme.of(context).textTheme.bodySmall;
     return DropdownButtonFormField<String>(
       key: ValueKey<String>('$label-${current?.id}'),
       initialValue: current?.id,
@@ -320,8 +332,12 @@ class _MovePicker extends StatelessWidget {
                 TypeBadge(m.type, size: 22),
                 const SizedBox(width: 8),
                 Expanded(
-                  child: Text(m.nameFr, overflow: TextOverflow.ellipsis),
+                  child: Text(
+                    moveLabel(m, species),
+                    overflow: TextOverflow.ellipsis,
+                  ),
                 ),
+                Text('${m.power}', style: small),
               ],
             ),
           ),
@@ -367,7 +383,52 @@ class _SummaryCard extends StatelessWidget {
                 color: theme.colorScheme.onPrimaryContainer,
               ),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 10),
+            Row(
+              children: <Widget>[
+                _Stat(
+                  key: const ValueKey<String>('stat-coverage'),
+                  value: '${summary.coverage.length}/18',
+                  label: 'types touchés\nen super efficace',
+                ),
+                const SizedBox(width: 8),
+                _Stat(
+                  key: const ValueKey<String>('stat-resisted'),
+                  value: '${summary.resisted.length}/18',
+                  label: 'types résistés\npar au moins un',
+                ),
+                const SizedBox(width: 8),
+                _Stat(
+                  key: const ValueKey<String>('stat-shared'),
+                  value: '${summary.sharedWeaknesses.length}',
+                  label: 'faiblesses\npartagées',
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+            _ChipLine(
+              label: 'Super efficace contre (${summary.coverage.length}/18)',
+              color: _good,
+              empty: 'Choisis des attaques pour voir la couverture',
+              children: <Widget>[
+                for (final t in summary.coverage) TypeChip(t),
+              ],
+            ),
+            _ChipLine(
+              label: 'Types d\'attaque de l\'équipe',
+              color: _good,
+              empty: 'Aucune attaque choisie',
+              children: <Widget>[
+                for (final t in summary.moveTypes) TypeChip(t),
+              ],
+            ),
+            _ChipLine(
+              label: 'Au moins un résiste à (${summary.resisted.length}/18)',
+              color: _good,
+              children: <Widget>[
+                for (final t in summary.resisted) TypeChip(t),
+              ],
+            ),
             _ChipLine(
               label: 'Faiblesses partagées',
               color: _bad,
@@ -391,6 +452,42 @@ class _SummaryCard extends StatelessWidget {
               children: <Widget>[
                 for (final t in summary.uncovered) TypeChip(t),
               ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _Stat extends StatelessWidget {
+  const _Stat({super.key, required this.value, required this.label});
+
+  final String value;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 6),
+        decoration: BoxDecoration(
+          color: theme.colorScheme.surface.withValues(alpha: 0.7),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Column(
+          children: <Widget>[
+            Text(
+              value,
+              style: theme.textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+            Text(
+              label,
+              textAlign: TextAlign.center,
+              style: theme.textTheme.labelSmall,
             ),
           ],
         ),

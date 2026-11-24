@@ -34,6 +34,8 @@ Tout est en français : interface, commentaires `///`, messages de commit, répo
 - Valeurs de référence testées (Flambusard 176/155/186) : 15/15/15 est rang 2246 en Super, 21 en Hyper ; rangs 1 et 2 Hyper : 13/15/15 et 13/15/14 ; niveau max 50 : rang 1 Hyper. Mini : 15/15/15 rang 550 (niveau 8, 497 PC), rang 1 = 0/14/2. Master : 15/15/15 rang 1 (niveau 51, 2522 PC).
 - `minIv` 10 : le classement ne porte que sur 6³ = 216 combinaisons, et les IV saisis sont relevés au plancher.
 - Table des types Pokémon GO : ×1,6 super efficace, ×0,625 peu efficace, ×0,390625 immunité ; multiplicateurs cumulés sur double type. Offensive : meilleur multiplicateur parmi les attaques, sur types simples.
+- Attaques d'événement : `Species.eliteMoves` (champ `elite` de `species.json`, `eliteMoves` PvPoke) et `MetaMove.elite`, affichées avec un astérisque (`moveLabel`). Puissance PvP : `Move.power` / `MetaMove.power`.
+- Les bandeaux avec action (« Voir ») disparaissent après 5 s (`duration` + `persist: false`).
 - Format : décimales avec virgule, espaces insécables (U+00A0) pour les milliers, stats tronquées à 1 décimale, pourcentage à 2 décimales, « 100 % ».
 
 ## Pièges connus
