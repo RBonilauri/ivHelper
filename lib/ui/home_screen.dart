@@ -142,6 +142,8 @@ class _HomeScreenState extends State<HomeScreen> {
               ..hideCurrentSnackBar()
               ..showSnackBar(
                 SnackBar(
+                  duration: const Duration(seconds: 5),
+                  persist: false,
                   content: Text(
                     '${species.nameFr} ${iv.atk}/${iv.def}/${iv.sta} '
                     'enregistré (${entry.league.label}, rang ${entry.rank})',
@@ -224,6 +226,8 @@ class _HomeScreenState extends State<HomeScreen> {
     );
     messenger.showSnackBar(
       SnackBar(
+        duration: const Duration(seconds: 5),
+        persist: false,
         content: Text('${species.nameFr} ajouté à l\'emplacement ${index + 1}'),
         action: SnackBarAction(
           label: 'Voir',

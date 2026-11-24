@@ -16,6 +16,7 @@ class Species {
     this.types = const <PokeType>[],
     this.fastMoves = const <String>[],
     this.chargedMoves = const <String>[],
+    this.eliteMoves = const <String>[],
   });
 
   /// Numéro du Pokédex national.
@@ -35,6 +36,12 @@ class Species {
 
   /// Identifiants des attaques chargées possibles.
   final List<String> chargedMoves;
+
+  /// Identifiants des attaques d'événement (Élite) parmi les précédentes.
+  final List<String> eliteMoves;
+
+  /// Vrai si [moveId] est une attaque d'événement pour cette espèce.
+  bool isElite(String moveId) => eliteMoves.contains(moveId);
 }
 
 List<String> _strings(Object? raw) =>
@@ -67,6 +74,7 @@ class SpeciesRepository {
           ],
           fastMoves: _strings(raw['fast']),
           chargedMoves: _strings(raw['charged']),
+          eliteMoves: _strings(raw['elite']),
         ),
     ]);
   }

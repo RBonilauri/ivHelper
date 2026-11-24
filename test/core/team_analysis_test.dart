@@ -77,4 +77,27 @@ void main() {
     expect(o.effectiveAgainst, isEmpty);
     expect(o.strugglesAgainst, isEmpty);
   });
+
+  test('bilan : couverture, résistances et types d\'attaque de l\'équipe', () {
+    final summary = TeamSummary(
+      defenses: <DefenseProfile>[talonflame],
+      offenses: <OffenseProfile>[
+        OffenseProfile(const <Move>[_incinerate, _braveBird]),
+      ],
+    );
+    expect(
+      summary.coverage.toSet(),
+      <PokeType>{
+        PokeType.grass,
+        PokeType.ice,
+        PokeType.bug,
+        PokeType.steel,
+        PokeType.fighting,
+      },
+    );
+    expect(summary.moveTypes, <PokeType>[PokeType.fire, PokeType.flying]);
+    expect(summary.resisted, contains(PokeType.ground));
+    expect(summary.resisted, isNot(contains(PokeType.rock)));
+    expect(summary.resisted.length, 7);
+  });
 }

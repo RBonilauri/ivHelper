@@ -4,6 +4,7 @@ import '../core/collection.dart';
 import '../state/collection_controller.dart';
 import 'collection_widgets.dart';
 import 'format.dart';
+import 'move_label.dart';
 import 'save_pokemon_sheet.dart';
 import 'type_badge.dart';
 
@@ -176,15 +177,21 @@ class _Detail extends StatelessWidget {
                       TypeBadge(m.type, size: 26),
                       const SizedBox(width: 10),
                       Expanded(
-                        child: Text(m.nameFr, style: theme.textTheme.bodyLarge),
+                        child: Text(
+                          moveLabel(m, row.species),
+                          style: theme.textTheme.bodyLarge,
+                        ),
                       ),
                       Text(
-                        m.isFast ? 'Immédiate' : 'Chargée',
+                        '${m.isFast ? 'Immédiate' : 'Chargée'} · '
+                        'puissance ${m.power}',
                         style: theme.textTheme.bodySmall,
                       ),
                     ],
                   ),
                 ),
+            if (row.recordedMoves.any((m) => row.species.isElite(m.id)))
+              Text(eliteLegend, style: theme.textTheme.bodySmall),
             const SizedBox(height: 20),
             FilledButton.icon(
               onPressed: onOpen,

@@ -397,4 +397,59 @@ void main() {
     await tester.pump(const Duration(seconds: 10));
     await tester.pumpAndSettle();
   });
+
+  testWidgets('le bandeau « Voir » disparaît après 5 secondes', (tester) async {
+    await _pumpApp(tester);
+    await tester.enterText(find.byType(TextField), 'Flambusard');
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Enregistrer'));
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('Enregistrer dans la collection'));
+    await tester.tap(find.text('Enregistrer dans la collection'));
+    await tester.pumpAndSettle();
+    expect(find.byType(SnackBar), findsOneWidget);
+    await tester.pump(const Duration(seconds: 4));
+    expect(find.byType(SnackBar), findsOneWidget);
+    await tester.pump(const Duration(seconds: 2));
+    await tester.pumpAndSettle();
+    expect(find.byType(SnackBar), findsNothing);
+  });
+
+  testWidgets('le bilan d\'équipe montre la couverture offensive',
+      (tester) async {
+    await _pumpApp(tester);
+    await tester.tap(find.byTooltip('Paramètres'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Team builder'));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.descendant(
+        of: find.byKey(const ValueKey<String>('slot-0')),
+        matching: find.byType(TextField),
+      ),
+      'Flambus',
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Flambusard').last);
+    await tester.pumpAndSettle();
+    await tester.tap(
+      find
+          .descendant(
+            of: find.byKey(const ValueKey<String>('slot-0')),
+            matching: find.text('Aucune'),
+          )
+          .first,
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Calcination').last);
+    await tester.pumpAndSettle();
+    expect(find.text('Super efficace contre (4/18)'), findsOneWidget);
+    expect(
+      find.descendant(
+        of: find.byKey(const ValueKey<String>('stat-coverage')),
+        matching: find.text('4/18'),
+      ),
+      findsOneWidget,
+    );
+  });
 }

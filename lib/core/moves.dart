@@ -12,6 +12,7 @@ class Move {
     required this.nameFr,
     required this.type,
     required this.isFast,
+    this.power = 0,
   });
 
   /// Identifiant des données (par exemple `INCINERATE`).
@@ -25,6 +26,9 @@ class Move {
 
   /// Vrai pour une attaque immédiate, faux pour une attaque chargée.
   final bool isFast;
+
+  /// Puissance en combat de dresseurs (PvP).
+  final int power;
 }
 
 /// Toutes les attaques connues, par identifiant.
@@ -46,6 +50,7 @@ class MoveBook {
           nameFr: raw['name'] as String,
           type: type,
           isFast: raw['fast'] as bool,
+          power: (raw['power'] as num?)?.toInt() ?? 0,
         ),
       );
     }

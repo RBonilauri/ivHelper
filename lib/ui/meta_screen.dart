@@ -270,8 +270,8 @@ class _MetaTile extends StatelessWidget {
                     const SizedBox(height: 4),
                     Text(
                       <String>[
-                        entry.fast.nameFr,
-                        for (final c in entry.charged) c.nameFr,
+                        entry.fast.label,
+                        for (final c in entry.charged) c.label,
                       ].join(' · '),
                       style: theme.textTheme.bodySmall,
                     ),
@@ -383,6 +383,11 @@ class MetaDetailScreen extends StatelessWidget {
             _MoveRow(label: 'Immédiate', move: entry.fast),
             for (final c in entry.charged)
               _MoveRow(label: 'Chargée', move: c),
+            if (<MetaMove>[entry.fast, ...entry.charged].any((m) => m.elite))
+              Text(
+                '* attaque d\'événement (Élite)',
+                style: theme.textTheme.bodySmall,
+              ),
             const SizedBox(height: 16),
             _NameList(
               title: 'Meilleurs matchs',
@@ -453,8 +458,11 @@ class _MoveRow extends StatelessWidget {
         children: <Widget>[
           TypeBadge(move.type, size: 28),
           const SizedBox(width: 10),
-          Expanded(child: Text(move.nameFr, style: theme.textTheme.bodyLarge)),
-          Text(label, style: theme.textTheme.bodySmall),
+          Expanded(child: Text(move.label, style: theme.textTheme.bodyLarge)),
+          Text(
+            '$label · puissance ${move.power}',
+            style: theme.textTheme.bodySmall,
+          ),
         ],
       ),
     );

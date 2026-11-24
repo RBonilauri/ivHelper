@@ -28,7 +28,13 @@ enum MetaLeague {
 /// Une attaque du jeu d'attaques recommandé.
 class MetaMove {
   /// Crée une attaque.
-  const MetaMove({required this.id, required this.nameFr, required this.type});
+  const MetaMove({
+    required this.id,
+    required this.nameFr,
+    required this.type,
+    this.power = 0,
+    this.elite = false,
+  });
 
   /// Identifiant des données (par exemple `INCINERATE`).
   final String id;
@@ -38,6 +44,15 @@ class MetaMove {
 
   /// Type de l'attaque.
   final PokeType type;
+
+  /// Puissance en combat de dresseurs (PvP).
+  final int power;
+
+  /// Vrai pour une attaque d'événement (Élite).
+  final bool elite;
+
+  /// Nom suivi d'un astérisque pour une attaque d'événement.
+  String get label => elite ? '$nameFr*' : nameFr;
 }
 
 /// Un Pokémon du classement de la méta.
@@ -154,6 +169,8 @@ MetaMove _move(Map<String, dynamic> raw) => MetaMove(
       id: raw['id'] as String,
       nameFr: raw['name'] as String,
       type: PokeType.fromId(raw['type'] as String) ?? PokeType.normal,
+      power: (raw['power'] as num?)?.toInt() ?? 0,
+      elite: raw['elite'] as bool? ?? false,
     );
 
 List<PokeType> _types(List<dynamic> raw) => <PokeType>[

@@ -7,6 +7,7 @@ import '../core/species_repository.dart';
 import '../core/stats.dart';
 import '../state/collection_controller.dart';
 import 'format.dart';
+import 'move_label.dart';
 import 'type_badge.dart';
 
 /// Ouvre [sheet] en feuille du bas.
@@ -127,7 +128,15 @@ class _SavePokemonSheetState extends State<SavePokemonSheet> {
           ),
           const SizedBox(height: 16),
           _Label('Attaques (facultatif)'),
+          Padding(
+            padding: const EdgeInsets.only(bottom: 6),
+            child: Text(
+              '$eliteLegend · nombre : puissance en combat',
+              style: theme.textTheme.bodySmall,
+            ),
+          ),
           _MoveField(
+            species: widget.species,
             label: 'Attaque immédiate',
             value: _fast,
             options: fastOptions,
@@ -135,6 +144,7 @@ class _SavePokemonSheetState extends State<SavePokemonSheet> {
           ),
           const SizedBox(height: 8),
           _MoveField(
+            species: widget.species,
             label: 'Attaque chargée',
             value: _charged1,
             options: <Move>[
@@ -145,6 +155,7 @@ class _SavePokemonSheetState extends State<SavePokemonSheet> {
           ),
           const SizedBox(height: 8),
           _MoveField(
+            species: widget.species,
             label: 'Seconde attaque chargée',
             value: _charged2,
             options: <Move>[
@@ -260,12 +271,14 @@ class _Label extends StatelessWidget {
 
 class _MoveField extends StatelessWidget {
   const _MoveField({
+    required this.species,
     required this.label,
     required this.value,
     required this.options,
     required this.onChanged,
   });
 
+  final Species species;
   final String label;
   final String? value;
   final List<Move> options;
@@ -273,6 +286,7 @@ class _MoveField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final small = Theme.of(context).textTheme.bodySmall;
     final current = options.any((m) => m.id == value) ? value : null;
     return DropdownButtonFormField<String>(
       key: ValueKey<String>('$label-$current'),
@@ -289,8 +303,12 @@ class _MoveField extends StatelessWidget {
                 TypeBadge(m.type, size: 22),
                 const SizedBox(width: 8),
                 Expanded(
-                  child: Text(m.nameFr, overflow: TextOverflow.ellipsis),
+                  child: Text(
+                    moveLabel(m, species),
+                    overflow: TextOverflow.ellipsis,
+                  ),
                 ),
+                Text('${m.power}', style: small),
               ],
             ),
           ),
