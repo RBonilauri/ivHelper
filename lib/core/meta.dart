@@ -171,6 +171,21 @@ class MetaSnapshot {
     return <String>[pick.fast.id, for (final c in pick.charged) c.id];
   }
 
+  /// Comme [movesetFor] dans la ligue [leagueKey] ; si l'espèce n'y est pas
+  /// classée (ou en ligue mini, sans méta), prend la première ligue où elle
+  /// l'est : super, puis hyper, puis master.
+  List<String> movesetForAnyLeague(
+    String speciesName,
+    String leagueKey, {
+    bool shadow = false,
+  }) {
+    for (final key in <String>[leagueKey, 'great', 'ultra', 'master']) {
+      final moves = movesetFor(speciesName, key, shadow: shadow);
+      if (moves.isNotEmpty) return moves;
+    }
+    return const <String>[];
+  }
+
   /// Vrai si cette méta est plus récente que [other].
   bool isNewerThan(MetaSnapshot other) => updated.compareTo(other.updated) > 0;
 }

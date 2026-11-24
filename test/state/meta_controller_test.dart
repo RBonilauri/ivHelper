@@ -96,4 +96,17 @@ void main() {
     expect(data.movesetFor('Flambusard', 'little'), isEmpty);
     expect(data.movesetFor('Altaria', 'great'), isEmpty);
   });
+
+  test('movesetForAnyLeague se replie sur une autre ligue', () {
+    final data = MetaSnapshot.fromJson(fakeMetaJson());
+    expect(
+      data.movesetForAnyLeague('Flambusard', 'master'),
+      <String>['INCINERATE', 'BRAVE_BIRD'],
+    );
+    expect(
+      data.movesetForAnyLeague('Flambusard', 'little'),
+      <String>['INCINERATE', 'BRAVE_BIRD'],
+    );
+    expect(data.movesetForAnyLeague('Altaria', 'great'), isEmpty);
+  });
 }

@@ -453,22 +453,27 @@ void main() {
     );
   });
 
-  testWidgets('le menu d\'enregistrement met en évidence les attaques méta',
+  testWidgets('le menu d\'enregistrement met les attaques méta en gras ★',
       (tester) async {
     await _pumpApp(tester);
     await tester.enterText(find.byType(TextField).first, 'Flambusard');
     await tester.pumpAndSettle();
     await tester.tap(find.text('Enregistrer'));
     await tester.pumpAndSettle();
-    expect(find.byKey(const ValueKey<String>('meta-moves')), findsOneWidget);
-    expect(find.text('Méta Super : Calcination · Rapace'), findsOneWidget);
-    await tester.tap(find.text('Utiliser'));
-    await tester.pumpAndSettle();
-    expect(find.text('Calcination'), findsOneWidget);
-    expect(find.text('Rapace'), findsOneWidget);
-    await tester.tap(find.text('Hyper').last);
-    await tester.pumpAndSettle();
     expect(find.byKey(const ValueKey<String>('meta-moves')), findsNothing);
+    expect(find.text('Utiliser'), findsNothing);
+    // Flambusard n'est classé qu'en Super dans la méta de test : en Master,
+    // ses attaques de la méta Super restent en gras.
+    await tester.tap(find.text('Master').last);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Aucune').first);
+    await tester.pumpAndSettle();
+    final calcination = find.text('Calcination').last;
+    expect(
+      tester.widget<Text>(calcination).style?.fontWeight,
+      FontWeight.w800,
+    );
+    expect(find.byIcon(Icons.star), findsWidgets);
   });
 
   testWidgets('saisie des IV : barre à toucher et saisie rapide',
