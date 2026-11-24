@@ -10,6 +10,14 @@ import 'format.dart';
 import 'move_label.dart';
 import 'type_badge.dart';
 
+/// Attaques recommandées par la méta pour une espèce, une ligue et une forme
+/// (immédiate puis chargées), vide si inconnues.
+typedef MetaMovesFor = List<String> Function(
+  Species species,
+  League league,
+  ShadowState shadow,
+);
+
 /// Ouvre [sheet] en feuille du bas.
 Future<void> showSaveSheet(BuildContext context, SavePokemonSheet sheet) {
   return showModalBottomSheet<void>(
@@ -35,7 +43,11 @@ class SavePokemonSheet extends StatefulWidget {
     required this.onSave,
     this.initial,
     this.saveLabel = 'Enregistrer dans la collection',
+    this.metaMoves,
   });
+
+  /// Attaques recommandées par la méta, mises en évidence.
+  final MetaMovesFor? metaMoves;
 
   /// Espèce enregistrée.
   final Species species;
@@ -83,6 +95,17 @@ class _SavePokemonSheetState extends State<SavePokemonSheet> {
     final rank = widget.rankFor(_league);
     final fastOptions = widget.moves.resolve(widget.species.fastMoves);
     final chargedOptions = widget.moves.resolve(widget.species.chargedMoves);
+    final meta = widget.metaMoves?.call(widget.species, _league, _shadow) ??
+        const <String>[];
+    final metaIds = meta.toSet();
+    final metaFast = meta.isNotEmpty &&
+            widget.species.fastMoves.contains(meta.first)
+        ? meta.first
+        : null;
+    final metaCharged = <String>[
+      for (final id in meta.skip(1))
+        if (widget.species.chargedMoves.contains(id)) id,
+    ];
     return Padding(
       padding: EdgeInsets.only(
         bottom: MediaQuery.viewInsetsOf(context).bottom,
@@ -135,8 +158,47 @@ class _SavePokemonSheetState extends State<SavePokemonSheet> {
               style: theme.textTheme.bodySmall,
             ),
           ),
+          if (metaIds.isNotEmpty)
+            Container(
+              key: const ValueKey<String>('meta-moves'),
+              margin: const EdgeInsets.only(bottom: 10),
+              padding: const EdgeInsets.fromLTRB(10, 6, 4, 6),
+              decoration: BoxDecoration(
+                color: metaGold.withValues(alpha: 0.18),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: metaGold),
+              ),
+              child: Row(
+                children: <Widget>[
+                  const Icon(Icons.star, size: 18, color: metaGold),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Text(
+                      'Méta ${_league.label} : '
+                      '${<String>[
+                        for (final id in meta)
+                          if (widget.moves[id] != null)
+                            moveLabel(widget.moves[id]!, widget.species),
+                      ].join(' · ')}',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                  TextButton(
+                    onPressed: () => setState(() {
+                      _fast = metaFast ?? _fast;
+                      _charged1 = metaCharged.isNotEmpty ? metaCharged[0] : null;
+                      _charged2 = metaCharged.length > 1 ? metaCharged[1] : null;
+                    }),
+                    child: const Text('Utiliser'),
+                  ),
+                ],
+              ),
+            ),
           _MoveField(
             species: widget.species,
+            metaIds: metaIds,
             label: 'Attaque immédiate',
             value: _fast,
             options: fastOptions,
@@ -145,6 +207,7 @@ class _SavePokemonSheetState extends State<SavePokemonSheet> {
           const SizedBox(height: 8),
           _MoveField(
             species: widget.species,
+            metaIds: metaIds,
             label: 'Attaque chargée',
             value: _charged1,
             options: <Move>[
@@ -156,6 +219,7 @@ class _SavePokemonSheetState extends State<SavePokemonSheet> {
           const SizedBox(height: 8),
           _MoveField(
             species: widget.species,
+            metaIds: metaIds,
             label: 'Seconde attaque chargée',
             value: _charged2,
             options: <Move>[
@@ -255,6 +319,9 @@ class _SavePokemonSheetState extends State<SavePokemonSheet> {
   }
 }
 
+/// Or des attaques recommandées par la méta.
+const Color metaGold = Color(0xFFE0A800);
+
 class _Label extends StatelessWidget {
   const _Label(this.text);
 
@@ -272,6 +339,7 @@ class _Label extends StatelessWidget {
 class _MoveField extends StatelessWidget {
   const _MoveField({
     required this.species,
+    required this.metaIds,
     required this.label,
     required this.value,
     required this.options,
@@ -279,6 +347,7 @@ class _MoveField extends StatelessWidget {
   });
 
   final Species species;
+  final Set<String> metaIds;
   final String label;
   final String? value;
   final List<Move> options;
@@ -306,8 +375,16 @@ class _MoveField extends StatelessWidget {
                   child: Text(
                     moveLabel(m, species),
                     overflow: TextOverflow.ellipsis,
+                    style: metaIds.contains(m.id)
+                        ? const TextStyle(fontWeight: FontWeight.w800)
+                        : null,
                   ),
                 ),
+                if (metaIds.contains(m.id))
+                  const Padding(
+                    padding: EdgeInsetsDirectional.only(end: 6),
+                    child: Icon(Icons.star, size: 18, color: metaGold),
+                  ),
                 Text('${m.power}', style: small),
               ],
             ),

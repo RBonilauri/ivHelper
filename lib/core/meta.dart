@@ -145,6 +145,32 @@ class MetaSnapshot {
     return '${parts[2]}/${parts[1]}/${parts[0]}';
   }
 
+  /// Attaques recommandées (immédiate puis chargées) pour l'espèce
+  /// [speciesName] dans la ligue de clé [leagueKey] (`great`, `ultra`,
+  /// `master`) : la forme obscure si [shadow], sinon la forme normale, à
+  /// défaut l'autre. Vide si l'espèce n'est pas dans le classement.
+  List<String> movesetFor(
+    String speciesName,
+    String leagueKey, {
+    bool shadow = false,
+  }) {
+    MetaLeague? league;
+    for (final l in MetaLeague.values) {
+      if (l.key == leagueKey) league = l;
+    }
+    if (league == null) return const <String>[];
+    final matches = <MetaEntry>[
+      for (final e in leagues[league] ?? const <MetaEntry>[])
+        if (e.species == speciesName) e,
+    ];
+    if (matches.isEmpty) return const <String>[];
+    final pick = matches.firstWhere(
+      (e) => e.shadow == shadow,
+      orElse: () => matches.first,
+    );
+    return <String>[pick.fast.id, for (final c in pick.charged) c.id];
+  }
+
   /// Vrai si cette méta est plus récente que [other].
   bool isNewerThan(MetaSnapshot other) => updated.compareTo(other.updated) > 0;
 }

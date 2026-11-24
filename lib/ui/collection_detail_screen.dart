@@ -17,7 +17,11 @@ class CollectionDetailScreen extends StatelessWidget {
     required this.collection,
     required this.entryId,
     required this.onOpen,
+    this.metaMoves,
   });
+
+  /// Attaques recommandées par la méta (menu de modification).
+  final MetaMovesFor? metaMoves;
 
   /// État de la collection.
   final CollectionController collection;
@@ -61,6 +65,7 @@ class CollectionDetailScreen extends StatelessWidget {
         initialLeague: e.league,
         initial: e,
         saveLabel: 'Mettre à jour',
+        metaMoves: metaMoves,
         rankFor: (league) =>
             collection.rankFor(row.species, e.iv, e.maxLevel, league),
         onSave: (options) => collection.update(e.id, options),

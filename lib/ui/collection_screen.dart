@@ -6,6 +6,7 @@ import '../state/collection_controller.dart';
 import 'collection_detail_screen.dart';
 import 'collection_widgets.dart';
 import 'format.dart';
+import 'save_pokemon_sheet.dart';
 import 'type_badge.dart';
 
 /// Collection : Pokémon enregistrés, filtrables, triables, en liste ou en
@@ -16,7 +17,11 @@ class CollectionScreen extends StatelessWidget {
     super.key,
     required this.collection,
     required this.onOpen,
+    this.metaMoves,
   });
+
+  /// Attaques recommandées par la méta (menu de modification).
+  final MetaMovesFor? metaMoves;
 
   /// État de la collection.
   final CollectionController collection;
@@ -101,6 +106,7 @@ class CollectionScreen extends StatelessWidget {
           collection: collection,
           entryId: row.entry.id,
           onOpen: onOpen,
+          metaMoves: metaMoves,
         ),
       ),
     );
