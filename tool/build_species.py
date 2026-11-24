@@ -131,13 +131,14 @@ def main(gamemaster, species_csv, moves_csv, move_names_csv, out_species, out_mo
         moves[m["moveId"]] = {
             "name": move_name(m["moveId"], m["name"], fr_moves),
             "type": m["type"],
-            # Immédiate si une espèce l'a en attaque immédiate (Lutte, Morphing
-            # n'ont pas de gain d'énergie mais sont des attaques immédiates).
-            "fast": m["moveId"] in used_fast,
+            # Immédiate si elle rapporte de l'énergie ; Morphing (ni gain ni coût)
+            # l'est aussi. Lutte coûte de l'énergie : elle est chargée.
+            "fast": m.get("energyGain", 0) > 0
+            or (m.get("energy", 0) == 0 and m["moveId"] in used_fast),
         }
     for s in result:
-        s["fast"] = [m for m in s["fast"] if m in moves]
-        s["charged"] = [m for m in s["charged"] if m in moves]
+        s["fast"] = [m for m in s["fast"] if m in moves and moves[m]["fast"]]
+        s["charged"] = [m for m in s["charged"] if m in moves and not moves[m]["fast"]]
     with open(out_species, "w", encoding="utf-8") as f:
         json.dump(result, f, ensure_ascii=False, separators=(",", ":"))
     with open(out_moves, "w", encoding="utf-8") as f:
