@@ -64,4 +64,7 @@ class PrefsSettingsStore implements SettingsStore {
   Future<void> writeHistory(String value) async {
     await prefs.setString(_historyKey, value);
   }
+
+  @override
+  Future<void> refresh() => prefs.reload();
 }

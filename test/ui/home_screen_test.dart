@@ -8,6 +8,7 @@ import 'package:ivhelper/core/stats.dart';
 import 'package:ivhelper/settings/settings_controller.dart';
 
 import '../support/fake_meta.dart';
+import '../support/fake_overlay.dart';
 import '../support/fake_update.dart';
 
 SpeciesRepository _repository() => SpeciesRepository(const <Species>[
@@ -52,6 +53,7 @@ Future<void> _pumpApp(
       settings: SettingsController(MemorySettingsStore()),
       metaSource: FakeMetaSource(local: meta ?? fakeMetaJson()),
       updateSource: FakeUpdateSource(latest: releaseJson(5)),
+      overlayLauncher: FakeOverlayLauncher(),
       currentBuild: currentBuild,
     ),
   );
@@ -539,6 +541,17 @@ void main() {
     await tester.tap(find.text('Tous les types'));
     await tester.pumpAndSettle();
     expect(find.text('Types (touche pour filtrer)'), findsOneWidget);
+    await tester.pump(const Duration(seconds: 10));
+    await tester.pumpAndSettle();
+  });
+
+  testWidgets('le menu lance la superposition', (tester) async {
+    await _pumpApp(tester);
+    await tester.tap(find.byTooltip('Paramètres'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Superposition'));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('Pastille lancée'), findsOneWidget);
     await tester.pump(const Duration(seconds: 10));
     await tester.pumpAndSettle();
   });

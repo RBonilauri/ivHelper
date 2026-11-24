@@ -4,6 +4,9 @@ import 'dart:convert';
 /// Vaut 0 pour une compilation locale.
 const int currentBuildNumber = int.fromEnvironment('BUILD_NUMBER');
 
+/// Nom de version fixé par la CI (`--dart-define=VERSION_NAME`, ex. `1.1.52`).
+const String currentVersionName = String.fromEnvironment('VERSION_NAME');
+
 /// Une version publiée sur GitHub (Release) avec son APK.
 class AppRelease {
   /// Crée une version.

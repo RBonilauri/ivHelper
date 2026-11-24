@@ -7,6 +7,7 @@ import '../core/meta.dart';
 import '../core/moves.dart';
 import '../core/species_repository.dart';
 import '../core/stats.dart';
+import '../overlay/overlay_services.dart';
 import '../settings/settings_controller.dart';
 import '../state/collection_controller.dart';
 import '../state/history_controller.dart';
@@ -37,7 +38,11 @@ class HomeScreen extends StatefulWidget {
     required this.metaSource,
     required this.updateSource,
     required this.currentBuild,
+    required this.overlayLauncher,
   });
+
+  /// Lancement de la pastille flottante.
+  final OverlayLauncher overlayLauncher;
 
   /// Source des mises à jour de l'app.
   final UpdateSource updateSource;
@@ -61,7 +66,7 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
+class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   late final LookupController _controller =
       LookupController(widget.repository);
   final TextEditingController _text = TextEditingController();
@@ -95,6 +100,7 @@ class _HomeScreenState extends State<HomeScreen> {
     unawaited(_collection.load());
     unawaited(_history.load());
     _controller.addListener(_recordHistory);
+    WidgetsBinding.instance.addObserver(this);
     // La méta sert aussi à mettre en évidence les attaques recommandées.
     unawaited(_meta.ensureLoaded());
     // Les compilations locales (build 0) ne cherchent pas de mise à jour au
@@ -114,6 +120,36 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
       ),
     );
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state != AppLifecycleState.resumed) return;
+    // La pastille a pu enregistrer des Pokémon pendant que l'app était en
+    // arrière-plan : on relit le stockage.
+    unawaited(_reloadShared());
+  }
+
+  Future<void> _reloadShared() async {
+    await widget.settings.store.refresh();
+    await _collection.load();
+  }
+
+  Future<void> _startOverlay(BuildContext context) async {
+    final messenger = ScaffoldMessenger.of(context);
+    final error = await widget.overlayLauncher.start();
+    messenger
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(
+          duration: const Duration(seconds: 6),
+          content: Text(
+            error ??
+                'Pastille lancée : ouvre un Pokémon dans Pokémon GO, touche '
+                    'Évaluer pour voir les barres, puis touche la pastille.',
+          ),
+        ),
+      );
   }
 
   void _recordHistory() {
@@ -282,6 +318,7 @@ class _HomeScreenState extends State<HomeScreen> {
     _team.dispose();
     _meta.dispose();
     _collection.dispose();
+    WidgetsBinding.instance.removeObserver(this);
     _controller.removeListener(_recordHistory);
     _history.dispose();
     _update.dispose();
@@ -314,6 +351,7 @@ class _HomeScreenState extends State<HomeScreen> {
         settings: widget.settings,
         onOpenTeam: () => _openTeam(context),
         onOpenCollection: () => _openCollection(context),
+        onStartOverlay: () => unawaited(_startOverlay(context)),
         update: _update,
         onOpenMeta: () => Navigator.of(context).push(
           MaterialPageRoute<void>(

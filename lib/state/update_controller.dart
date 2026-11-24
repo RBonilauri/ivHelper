@@ -57,8 +57,11 @@ class UpdateController extends ChangeNotifier {
   String? get message => _message;
 
   /// Version installée, pour l'affichage.
-  String get currentVersion =>
-      currentBuild == 0 ? 'développement' : '1.0.$currentBuild';
+  String get currentVersion => currentBuild == 0
+      ? 'développement'
+      : (currentVersionName.isNotEmpty
+          ? currentVersionName
+          : '1.1.$currentBuild');
 
   /// Cherche une version plus récente.
   Future<void> check() async {

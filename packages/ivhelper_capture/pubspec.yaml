@@ -1,0 +1,19 @@
+name: ivhelper_capture
+description: Capture de l'écran (MediaProjection) pour la superposition d'ivHelper.
+version: 0.1.0
+publish_to: none
+
+environment:
+  sdk: ^3.5.0
+  flutter: ">=3.22.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+flutter:
+  plugin:
+    platforms:
+      android:
+        package: fr.ivhelper.capture
+        pluginClass: IvhelperCapturePlugin

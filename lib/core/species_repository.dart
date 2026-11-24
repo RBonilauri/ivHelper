@@ -17,6 +17,8 @@ class Species {
     this.fastMoves = const <String>[],
     this.chargedMoves = const <String>[],
     this.eliteMoves = const <String>[],
+    this.familyId,
+    this.stage = 0,
   });
 
   /// Numéro du Pokédex national.
@@ -39,6 +41,12 @@ class Species {
 
   /// Identifiants des attaques d'événement (Élite) parmi les précédentes.
   final List<String> eliteMoves;
+
+  /// Famille d'évolution (`FAMILY_ZUBAT`…), ou `null` si inconnue.
+  final String? familyId;
+
+  /// Stade d'évolution : 0 pour la forme de base, 1, 2…
+  final int stage;
 
   /// Vrai si [moveId] est une attaque d'événement pour cette espèce.
   bool isElite(String moveId) => eliteMoves.contains(moveId);
@@ -75,6 +83,8 @@ class SpeciesRepository {
           fastMoves: _strings(raw['fast']),
           chargedMoves: _strings(raw['charged']),
           eliteMoves: _strings(raw['elite']),
+          familyId: raw['family'] as String?,
+          stage: (raw['stage'] as int?) ?? 0,
         ),
     ]);
   }
@@ -90,6 +100,21 @@ class SpeciesRepository {
   final List<Species> all;
 
   final List<String> _normalized;
+
+  /// Membres de la famille d'évolution de [species], du premier stade au
+  /// dernier ; l'espèce seule si sa famille est inconnue.
+  List<Species> familyOf(Species species) {
+    final id = species.familyId;
+    if (id == null) return <Species>[species];
+    final members = <Species>[
+      for (final s in all)
+        if (s.familyId == id) s,
+    ]..sort((a, b) {
+        final byStage = a.stage.compareTo(b.stage);
+        return byStage != 0 ? byStage : a.dex.compareTo(b.dex);
+      });
+    return members;
+  }
 
   /// Espèce de base portant le numéro [dex], ou `null` si inconnu.
   Species? findByDex(int dex) {

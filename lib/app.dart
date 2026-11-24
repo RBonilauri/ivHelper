@@ -3,6 +3,7 @@ import 'package:material_ui/material_ui.dart';
 import 'core/moves.dart';
 import 'core/species_repository.dart';
 import 'settings/settings_controller.dart';
+import 'overlay/overlay_services.dart';
 import 'state/meta_controller.dart';
 import 'state/update_controller.dart';
 import 'ui/app_theme.dart';
@@ -18,8 +19,12 @@ class IvHelperApp extends StatelessWidget {
     required this.settings,
     required this.metaSource,
     required this.updateSource,
+    required this.overlayLauncher,
     this.currentBuild = 0,
   });
+
+  /// Lancement de la pastille flottante.
+  final OverlayLauncher overlayLauncher;
 
   /// Source des mises à jour de l'app.
   final UpdateSource updateSource;
@@ -60,6 +65,7 @@ class IvHelperApp extends StatelessWidget {
           settings: settings,
           metaSource: metaSource,
           updateSource: updateSource,
+          overlayLauncher: overlayLauncher,
           currentBuild: currentBuild,
         ),
       ),
