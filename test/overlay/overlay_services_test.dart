@@ -1,6 +1,3 @@
-import 'dart:typed_data';
-import 'dart:ui' show Size;
-
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:google_mlkit_text_recognition/google_mlkit_text_recognition.dart';
