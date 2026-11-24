@@ -36,6 +36,8 @@ Tout est en français : interface, commentaires `///`, messages de commit, répo
 - Table des types Pokémon GO : ×1,6 super efficace, ×0,625 peu efficace, ×0,390625 immunité ; multiplicateurs cumulés sur double type. Offensive : meilleur multiplicateur parmi les attaques, sur types simples.
 - Attaques d'événement : `Species.eliteMoves` (champ `elite` de `species.json`, `eliteMoves` PvPoke) et `MetaMove.elite`, affichées avec un astérisque (`moveLabel`). Puissance PvP : `Move.power` / `MetaMove.power`.
 - Menu d'enregistrement et de modification : attaques de la méta (`MetaSnapshot.movesetFor`, ligue choisie, forme obscure si cochée) en gras avec ★ et encadré « Utiliser » ; rien en Mini (pas de méta). La méta est chargée au démarrage pour ça.
+- Saisie des IV : `IvBar` (`lib/ui/iv_bar.dart`, segments à toucher ou glisser, − et + gardés avec les infobulles « Diminuer/Augmenter Atk|Déf|PV ») et saisie rapide (`parseIvText`). Dernières recherches : `HistoryController` (8 max, une par espèce, `SettingsStore.readHistory`), affichées quand aucune espèce n'est saisie. Dans les tests, le champ d'espèce est `find.byType(TextField).first`.
+- Collection : filtre de type en ligne (`_TypeFilterRow`, types présents seulement, avec compte). Bilan d'équipe : rubriques repliables (`_ChipLine(collapsible: true)`).
 - Les bandeaux avec action (« Voir ») disparaissent après 5 s (`duration` + `persist: false`).
 - Format : décimales avec virgule, espaces insécables (U+00A0) pour les milliers, stats tronquées à 1 décimale, pourcentage à 2 décimales, « 100 % ».
 

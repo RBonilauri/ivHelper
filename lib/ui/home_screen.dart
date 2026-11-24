@@ -9,16 +9,19 @@ import '../core/species_repository.dart';
 import '../core/stats.dart';
 import '../settings/settings_controller.dart';
 import '../state/collection_controller.dart';
+import '../state/history_controller.dart';
 import '../state/lookup_controller.dart';
 import '../state/meta_controller.dart';
 import '../state/team_controller.dart';
 import '../state/update_controller.dart';
 import 'collection_screen.dart';
+import 'iv_bar.dart';
 import 'iv_logo.dart';
 import 'meta_screen.dart';
 import 'result_panel.dart';
 import 'save_pokemon_sheet.dart';
 import 'settings_drawer.dart';
+import 'type_badge.dart';
 import 'update_banner.dart';
 import 'team_builder_screen.dart';
 import 'type_chart_screen.dart';
@@ -68,6 +71,8 @@ class _HomeScreenState extends State<HomeScreen> {
     store: widget.settings.store,
   );
 
+  late final HistoryController _history =
+      HistoryController(widget.settings.store);
   late final CollectionController _collection = CollectionController(
     repository: widget.repository,
     moves: widget.moves,
@@ -88,6 +93,8 @@ class _HomeScreenState extends State<HomeScreen> {
     super.initState();
     unawaited(_team.load());
     unawaited(_collection.load());
+    unawaited(_history.load());
+    _controller.addListener(_recordHistory);
     // La méta sert aussi à mettre en évidence les attaques recommandées.
     unawaited(_meta.ensureLoaded());
     // Les compilations locales (build 0) ne cherchent pas de mise à jour au
@@ -109,18 +116,35 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  void _recordHistory() {
+    final species = _controller.species;
+    if (species != null) _history.record(species.nameFr, _controller.iv);
+  }
+
+  /// Affiche [species] avec [iv] sur l'écran de rang.
+  void _show(Species species, Iv iv, {double? maxLevel}) {
+    final lowest = <int>[iv.atk, iv.def, iv.sta].reduce((a, b) => a < b ? a : b);
+    if (lowest < _controller.minIv) _controller.setMinIv(0);
+    _controller.selectSpecies(species);
+    if (maxLevel != null) _controller.setMaxLevel(maxLevel);
+    _controller.setIv(iv);
+    _text.text = species.nameFr;
+  }
+
+  /// Applique une saisie rapide « 15/14/13 ».
+  void _quickIv(String text) {
+    final v = parseIvText(text);
+    if (v == null) return;
+    final iv = Iv(v[0], v[1], v[2]);
+    if (v.any((x) => x < _controller.minIv)) _controller.setMinIv(0);
+    _controller.setIv(iv);
+  }
+
   void _openEntry(BuildContext context, CollectionEntry entry) {
     final species = widget.repository.findByName(entry.speciesName);
     if (species == null) return;
     Navigator.of(context).popUntil((route) => route.isFirst);
-    final iv = entry.iv;
-    final lowest = <int>[iv.atk, iv.def, iv.sta].reduce((a, b) => a < b ? a : b);
-    if (lowest < _controller.minIv) _controller.setMinIv(0);
-    _controller
-      ..selectSpecies(species)
-      ..setMaxLevel(entry.maxLevel)
-      ..setIv(iv);
-    _text.text = species.nameFr;
+    _show(species, entry.iv, maxLevel: entry.maxLevel);
   }
 
   void _save(BuildContext context) {
@@ -258,6 +282,8 @@ class _HomeScreenState extends State<HomeScreen> {
     _team.dispose();
     _meta.dispose();
     _collection.dispose();
+    _controller.removeListener(_recordHistory);
+    _history.dispose();
     _update.dispose();
     _text.dispose();
     super.dispose();
@@ -311,7 +337,7 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
       body: SafeArea(
         child: ListenableBuilder(
-          listenable: Listenable.merge(<Listenable>[_controller, _update]),
+          listenable: Listenable.merge(<Listenable>[_controller, _update, _history]),
           builder: (context, _) => ListView(
             padding: const EdgeInsets.all(16),
             children: <Widget>[
@@ -402,42 +428,84 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _ivRow() {
     final iv = _controller.iv;
-    return Row(
+    final min = _controller.minIv;
+    return Column(
       children: <Widget>[
-        Expanded(
-          child: _IvStepper(
-            label: 'Atk',
-            value: iv.atk,
-            min: _controller.minIv,
-            onChanged: (v) => _controller.setIv(Iv(v, iv.def, iv.sta)),
-          ),
+        IvBar(
+          label: 'Atk',
+          value: iv.atk,
+          min: min,
+          onChanged: (v) => _controller.setIv(Iv(v, iv.def, iv.sta)),
         ),
-        const SizedBox(width: 8),
-        Expanded(
-          child: _IvStepper(
-            label: 'Déf',
-            value: iv.def,
-            min: _controller.minIv,
-            onChanged: (v) => _controller.setIv(Iv(iv.atk, v, iv.sta)),
-          ),
+        IvBar(
+          label: 'Déf',
+          value: iv.def,
+          min: min,
+          onChanged: (v) => _controller.setIv(Iv(iv.atk, v, iv.sta)),
         ),
-        const SizedBox(width: 8),
-        Expanded(
-          child: _IvStepper(
-            label: 'PV',
-            value: iv.sta,
-            min: _controller.minIv,
-            onChanged: (v) => _controller.setIv(Iv(iv.atk, iv.def, v)),
+        IvBar(
+          label: 'PV',
+          value: iv.sta,
+          min: min,
+          onChanged: (v) => _controller.setIv(Iv(iv.atk, iv.def, v)),
+        ),
+        const SizedBox(height: 4),
+        TextField(
+          key: const ValueKey<String>('quick-iv'),
+          keyboardType: TextInputType.number,
+          decoration: const InputDecoration(
+            labelText: 'Saisie rapide des IV',
+            hintText: '15/14/13 ou 151413',
+            prefixIcon: Icon(Icons.bolt),
+            isDense: true,
           ),
+          onChanged: _quickIv,
+          onSubmitted: _quickIv,
         ),
       ],
     );
   }
 
+  List<Widget> _recent() {
+    final items = _history.items;
+    if (items.isEmpty) return const <Widget>[];
+    final theme = Theme.of(context);
+    return <Widget>[
+      Row(
+        children: <Widget>[
+          const Icon(Icons.history, size: 20),
+          const SizedBox(width: 6),
+          Expanded(
+            child: Text('Dernières recherches', style: theme.textTheme.titleSmall),
+          ),
+          TextButton(onPressed: _history.clear, child: const Text('Effacer')),
+        ],
+      ),
+      Wrap(
+        spacing: 6,
+        runSpacing: 6,
+        children: <Widget>[
+          for (final h in items)
+            if (widget.repository.findByName(h.speciesName) case final s?)
+              ActionChip(
+                key: ValueKey<String>('recent-${h.speciesName}'),
+                avatar: s.types.isEmpty
+                    ? null
+                    : ExcludeSemantics(child: TypeBadge(s.types.first, size: 22)),
+                label: Text(
+                  '${h.speciesName} · ${h.iv.atk}/${h.iv.def}/${h.iv.sta}',
+                ),
+                onPressed: () => _show(s, h.iv),
+              ),
+        ],
+      ),
+    ];
+  }
+
   List<Widget> _results(BuildContext context) {
     final species = _controller.species;
     final result = _controller.result;
-    if (species == null || result == null) return const <Widget>[];
+    if (species == null || result == null) return _recent();
     return <Widget>[
       Row(
         children: <Widget>[
@@ -461,54 +529,5 @@ class _HomeScreenState extends State<HomeScreen> {
         onLeagueChanged: (league) => _league = league,
       ),
     ];
-  }
-}
-
-class _IvStepper extends StatelessWidget {
-  const _IvStepper({
-    required this.label,
-    required this.value,
-    required this.min,
-    required this.onChanged,
-  });
-
-  final String label;
-  final int value;
-  final int min;
-  final ValueChanged<int> onChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      decoration: BoxDecoration(
-        border: Border.all(color: theme.colorScheme.outline),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Column(
-        children: <Widget>[
-          Text(label, style: theme.textTheme.labelSmall),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: <Widget>[
-              IconButton(
-                tooltip: 'Diminuer $label',
-                visualDensity: VisualDensity.compact,
-                onPressed: value > min ? () => onChanged(value - 1) : null,
-                icon: const Icon(Icons.remove),
-              ),
-              Text('$value', style: theme.textTheme.titleMedium),
-              IconButton(
-                tooltip: 'Augmenter $label',
-                visualDensity: VisualDensity.compact,
-                onPressed: value < 15 ? () => onChanged(value + 1) : null,
-                icon: const Icon(Icons.add),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
   }
 }

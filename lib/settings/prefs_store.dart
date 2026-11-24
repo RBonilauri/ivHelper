@@ -15,6 +15,7 @@ class PrefsSettingsStore implements SettingsStore {
   static const String _teamKey = 'team';
   static const String _metaKey = 'meta';
   static const String _collectionKey = 'collection';
+  static const String _historyKey = 'history';
 
   @override
   Future<String?> readThemeMode() async => prefs.getString(_modeKey);
@@ -54,5 +55,13 @@ class PrefsSettingsStore implements SettingsStore {
   @override
   Future<void> writeCollection(String value) async {
     await prefs.setString(_collectionKey, value);
+  }
+
+  @override
+  Future<String?> readHistory() async => prefs.getString(_historyKey);
+
+  @override
+  Future<void> writeHistory(String value) async {
+    await prefs.setString(_historyKey, value);
   }
 }
