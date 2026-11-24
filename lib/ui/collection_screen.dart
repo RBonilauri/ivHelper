@@ -137,14 +137,14 @@ class _Controls extends StatelessWidget {
               label: const Text('Toutes'),
               selected: filter.league == null,
               onSelected: (_) =>
-                  collection.setFilter(filter.copyWith(clearLeague: true)),
+                  collection.setFilter(collection.filter.copyWith(clearLeague: true)),
             ),
             for (final l in League.values)
               ChoiceChip(
                 label: Text(l.label),
                 selected: filter.league == l,
                 onSelected: (_) =>
-                    collection.setFilter(filter.copyWith(league: l)),
+                    collection.setFilter(collection.filter.copyWith(league: l)),
               ),
           ],
         ),
@@ -161,8 +161,8 @@ class _Controls extends StatelessWidget {
                 selected: filter.maxRank == t,
                 onSelected: (_) => collection.setFilter(
                   t == null
-                      ? filter.copyWith(clearMaxRank: true)
-                      : filter.copyWith(maxRank: t),
+                      ? collection.filter.copyWith(clearMaxRank: true)
+                      : collection.filter.copyWith(maxRank: t),
                 ),
               ),
           ],
