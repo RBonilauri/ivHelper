@@ -319,6 +319,7 @@ class _TypeFilterRow extends StatelessWidget {
       for (final t in PokeType.values)
         if (counts.containsKey(t) || selected.contains(t)) t,
     ];
+    if (types.isEmpty) return const SizedBox.shrink();
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
@@ -341,10 +342,7 @@ class _TypeFilterRow extends StatelessWidget {
               ),
           ],
         ),
-        if (types.isEmpty)
-          Text('Aucun Pokémon enregistré', style: theme.textTheme.bodySmall)
-        else
-          SizedBox(
+        SizedBox(
             height: 64,
             child: ListView.separated(
               scrollDirection: Axis.horizontal,
