@@ -1,12 +1,18 @@
+import 'dart:async';
+
 import 'package:material_ui/material_ui.dart';
 
+import '../core/moves.dart';
 import '../core/species_repository.dart';
 import '../core/stats.dart';
 import '../settings/settings_controller.dart';
 import '../state/lookup_controller.dart';
+import '../state/team_controller.dart';
 import 'iv_logo.dart';
 import 'result_panel.dart';
 import 'settings_drawer.dart';
+import 'team_builder_screen.dart';
+import 'type_chart_screen.dart';
 
 /// Écran unique : saisie de l'espèce et des IV, résultats Super et Hyper.
 class HomeScreen extends StatefulWidget {
@@ -14,11 +20,15 @@ class HomeScreen extends StatefulWidget {
   const HomeScreen({
     super.key,
     required this.repository,
+    required this.moves,
     required this.settings,
   });
 
   /// Espèces connues.
   final SpeciesRepository repository;
+
+  /// Attaques connues, pour le team builder.
+  final MoveBook moves;
 
   /// Réglages d'affichage, modifiables depuis la barre latérale.
   final SettingsController settings;
@@ -31,10 +41,22 @@ class _HomeScreenState extends State<HomeScreen> {
   late final LookupController _controller =
       LookupController(widget.repository);
   final TextEditingController _text = TextEditingController();
+  late final TeamController _team = TeamController(
+    repository: widget.repository,
+    moves: widget.moves,
+    store: widget.settings.store,
+  );
+
+  @override
+  void initState() {
+    super.initState();
+    unawaited(_team.load());
+  }
 
   @override
   void dispose() {
     _controller.dispose();
+    _team.dispose();
     _text.dispose();
     super.dispose();
   }
@@ -60,7 +82,17 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ],
       ),
-      endDrawer: SettingsDrawer(settings: widget.settings),
+      endDrawer: SettingsDrawer(
+        settings: widget.settings,
+        onOpenTeam: () => Navigator.of(context).push(
+          MaterialPageRoute<void>(
+            builder: (_) => TeamBuilderScreen(team: _team),
+          ),
+        ),
+        onOpenTypes: () => Navigator.of(context).push(
+          MaterialPageRoute<void>(builder: (_) => const TypeChartScreen()),
+        ),
+      ),
       body: SafeArea(
         child: ListenableBuilder(
           listenable: _controller,

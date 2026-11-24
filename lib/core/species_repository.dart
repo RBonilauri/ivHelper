@@ -2,12 +2,21 @@ import 'dart:convert';
 
 import 'package:flutter/services.dart' show rootBundle;
 
+import 'poke_type.dart';
 import 'stats.dart';
 
-/// Une espèce (ou une forme régionale) avec ses stats de base.
+/// Une espèce (ou une forme régionale) avec ses stats de base, ses types et
+/// ses attaques possibles.
 class Species {
   /// Crée une espèce.
-  const Species({required this.dex, required this.nameFr, required this.base});
+  const Species({
+    required this.dex,
+    required this.nameFr,
+    required this.base,
+    this.types = const <PokeType>[],
+    this.fastMoves = const <String>[],
+    this.chargedMoves = const <String>[],
+  });
 
   /// Numéro du Pokédex national.
   final int dex;
@@ -17,7 +26,19 @@ class Species {
 
   /// Stats de base de l'espèce.
   final BaseStats base;
+
+  /// Un ou deux types.
+  final List<PokeType> types;
+
+  /// Identifiants des attaques immédiates possibles.
+  final List<String> fastMoves;
+
+  /// Identifiants des attaques chargées possibles.
+  final List<String> chargedMoves;
 }
+
+List<String> _strings(Object? raw) =>
+    <String>[for (final v in (raw as List<dynamic>?) ?? const <dynamic>[]) v as String];
 
 /// Recherche d'espèces par nom (tolérante aux fautes) ou par numéro.
 class SpeciesRepository {
@@ -40,6 +61,12 @@ class SpeciesRepository {
             raw['def'] as int,
             raw['sta'] as int,
           ),
+          types: <PokeType>[
+            for (final id in _strings(raw['types']))
+              if (PokeType.fromId(id) != null) PokeType.fromId(id)!,
+          ],
+          fastMoves: _strings(raw['fast']),
+          chargedMoves: _strings(raw['charged']),
         ),
     ]);
   }

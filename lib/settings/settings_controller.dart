@@ -13,12 +13,19 @@ abstract interface class SettingsStore {
 
   /// Enregistre l'échelle de police.
   Future<void> writeFontScale(double value);
+
+  /// Lit l'équipe enregistrée (JSON), ou `null`.
+  Future<String?> readTeam();
+
+  /// Enregistre l'équipe (JSON).
+  Future<void> writeTeam(String value);
 }
 
 /// Stockage en mémoire, sans persistance.
 class MemorySettingsStore implements SettingsStore {
   String? _mode;
   double? _scale;
+  String? _team;
 
   @override
   Future<String?> readThemeMode() async => _mode;
@@ -31,6 +38,12 @@ class MemorySettingsStore implements SettingsStore {
 
   @override
   Future<void> writeFontScale(double value) async => _scale = value;
+
+  @override
+  Future<String?> readTeam() async => _team;
+
+  @override
+  Future<void> writeTeam(String value) async => _team = value;
 }
 
 /// Réglages de l'application : mode d'affichage et taille de police.
