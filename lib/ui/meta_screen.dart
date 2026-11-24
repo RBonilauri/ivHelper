@@ -448,7 +448,6 @@ class _NameList extends StatelessWidget {
                         fontWeight: FontWeight.w700,
                       ),
                     ),
-                    tooltip: 'Dans ta collection',
                     backgroundColor: _owned,
                     visualDensity: VisualDensity.compact,
                     side: BorderSide(color: color),
