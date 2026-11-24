@@ -4,6 +4,7 @@ import 'core/moves.dart';
 import 'core/species_repository.dart';
 import 'settings/settings_controller.dart';
 import 'state/meta_controller.dart';
+import 'state/update_controller.dart';
 import 'ui/app_theme.dart';
 import 'ui/home_screen.dart';
 
@@ -16,7 +17,15 @@ class IvHelperApp extends StatelessWidget {
     required this.moves,
     required this.settings,
     required this.metaSource,
+    required this.updateSource,
+    this.currentBuild = 0,
   });
+
+  /// Source des mises à jour de l'app.
+  final UpdateSource updateSource;
+
+  /// Numéro de build de l'app installée (0 en compilation locale).
+  final int currentBuild;
 
   /// Source de la méta PvPoke.
   final MetaSource metaSource;
@@ -50,6 +59,8 @@ class IvHelperApp extends StatelessWidget {
           moves: moves,
           settings: settings,
           metaSource: metaSource,
+          updateSource: updateSource,
+          currentBuild: currentBuild,
         ),
       ),
     );

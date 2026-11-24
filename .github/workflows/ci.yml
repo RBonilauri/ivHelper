@@ -20,6 +20,12 @@ jobs:
   apk:
     needs: test
     runs-on: ubuntu-latest
+    outputs:
+      signed: ${{ steps.key.outputs.signed }}
+    env:
+      # Numéro de build croissant : Android n'installe une mise à jour que si
+      # ce numéro augmente, et l'app le compare à la dernière Release.
+      BUILD_NUMBER: ${{ github.run_number }}
     steps:
       - uses: actions/checkout@v4
       - uses: subosito/flutter-action@v2
@@ -27,16 +33,68 @@ jobs:
           channel: stable
           cache: true
       - run: flutter create --platforms=android --project-name ivhelper --org fr.ivhelper .
-      - name: Nom et icône de l'application
+      - name: Nom, permissions et icône de l'application
         run: |
-          sed -i 's/android:label="[^"]*"/android:label="ivHelper"/' android/app/src/main/AndroidManifest.xml
-          grep -q 'android:label="ivHelper"' android/app/src/main/AndroidManifest.xml
-          sed -i '0,/<application/s##<uses-permission android:name="android.permission.INTERNET"/>\n    <application#' android/app/src/main/AndroidManifest.xml
-          grep -q 'android.permission.INTERNET' android/app/src/main/AndroidManifest.xml
+          M=android/app/src/main/AndroidManifest.xml
+          sed -i 's/android:label="[^"]*"/android:label="ivHelper"/' $M
+          grep -q 'android:label="ivHelper"' $M
+          sed -i '0,/<application/s##<uses-permission android:name="android.permission.INTERNET"/>\n    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES"/>\n    <application#' $M
+          grep -q 'android.permission.INTERNET' $M
+          grep -q 'android.permission.REQUEST_INSTALL_PACKAGES' $M
           cp -r tool/android_icons/* android/app/src/main/res/
+      - name: Clé de signature fixe
+        id: key
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          if [ -z "$ANDROID_KEYSTORE_BASE64" ]; then
+            echo "Secrets absents : APK signé avec la clé de débogage."
+            echo "signed=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          echo "$ANDROID_KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/ivhelper-release.jks"
+          echo "KEYSTORE_PATH=$RUNNER_TEMP/ivhelper-release.jks" >> "$GITHUB_ENV"
+          KEYSTORE_PATH="$RUNNER_TEMP/ivhelper-release.jks" python3 tool/configure_signing.py
+          echo "signed=true" >> "$GITHUB_OUTPUT"
       - run: flutter pub get
-      - run: flutter build apk --release
+      - name: Compiler l'APK
+        env:
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: >
+          flutter build apk --release
+          --build-name=1.0.$BUILD_NUMBER
+          --build-number=$BUILD_NUMBER
+          --dart-define=BUILD_NUMBER=$BUILD_NUMBER
       - uses: actions/upload-artifact@v4
         with:
           name: ivhelper-apk
           path: build/app/outputs/flutter-apk/app-release.apk
+
+  release:
+    # Une Release par fusion dans main, seulement avec la clé fixe : l'app la
+    # propose comme mise à jour et Android l'installe par-dessus.
+    needs: apk
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && needs.apk.outputs.signed == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: ivhelper-apk
+      - name: Publier la Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mv app-release.apk ivhelper.apk
+          gh release create "v1.0.${{ github.run_number }}" ivhelper.apk \
+            --repo "${{ github.repository }}" \
+            --target "${{ github.sha }}" \
+            --title "ivHelper 1.0.${{ github.run_number }}" \
+            --generate-notes \
+            --latest

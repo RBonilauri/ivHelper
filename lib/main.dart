@@ -2,10 +2,12 @@ import 'package:flutter/widgets.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'app.dart';
+import 'core/app_update.dart';
 import 'core/moves.dart';
 import 'core/species_repository.dart';
 import 'settings/prefs_store.dart';
 import 'settings/settings_controller.dart';
+import 'state/github_update_source.dart';
 import 'state/http_meta_source.dart';
 
 Future<void> main() async {
@@ -21,6 +23,8 @@ Future<void> main() async {
       moves: moves,
       settings: settings,
       metaSource: const HttpMetaSource(),
+      updateSource: const GitHubUpdateSource(),
+      currentBuild: currentBuildNumber,
     ),
   );
 }

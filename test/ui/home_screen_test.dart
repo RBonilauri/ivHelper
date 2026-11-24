@@ -8,6 +8,7 @@ import 'package:ivhelper/core/stats.dart';
 import 'package:ivhelper/settings/settings_controller.dart';
 
 import '../support/fake_meta.dart';
+import '../support/fake_update.dart';
 
 SpeciesRepository _repository() => SpeciesRepository(const <Species>[
       Species(
@@ -36,7 +37,11 @@ MoveBook _moves() => MoveBook(const <Move>[
       ),
     ]);
 
-Future<void> _pumpApp(WidgetTester tester, {String? meta}) async {
+Future<void> _pumpApp(
+  WidgetTester tester, {
+  String? meta,
+  int currentBuild = 0,
+}) async {
   tester.view.physicalSize = const Size(800, 2200);
   tester.view.devicePixelRatio = 1;
   addTearDown(tester.view.reset);
@@ -46,6 +51,8 @@ Future<void> _pumpApp(WidgetTester tester, {String? meta}) async {
       moves: _moves(),
       settings: SettingsController(MemorySettingsStore()),
       metaSource: FakeMetaSource(local: meta ?? fakeMetaJson()),
+      updateSource: FakeUpdateSource(latest: releaseJson(5)),
+      currentBuild: currentBuild,
     ),
   );
 }
@@ -245,5 +252,24 @@ void main() {
     expect(find.text('En jaune : tu l\'as dans ta collection'), findsOneWidget);
     await tester.pump(const Duration(seconds: 10));
     await tester.pumpAndSettle();
+  });
+
+  testWidgets('une nouvelle version s\'affiche et s\'installe', (tester) async {
+    await _pumpApp(tester, currentBuild: 3);
+    await tester.pumpAndSettle();
+    expect(find.text('Nouvelle version 1.0.5 disponible'), findsOneWidget);
+    await tester.tap(find.text('Mettre à jour'));
+    await tester.pumpAndSettle();
+    expect(
+      find.text('Confirme l\'installation dans la fenêtre d\'Android.'),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('une compilation locale ne cherche pas de mise à jour',
+      (tester) async {
+    await _pumpApp(tester);
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey<String>('update-banner')), findsNothing);
   });
 }
