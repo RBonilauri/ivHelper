@@ -15,7 +15,6 @@ dependencies:
   open_filex: ^4.5.0
   url_launcher: ^6.3.0
   flutter_overlay_window: ^1.0.2
-  google_mlkit_text_recognition: ^1.0.2
   ivhelper_capture:
     path: packages/ivhelper_capture
 

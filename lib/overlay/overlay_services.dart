@@ -4,7 +4,6 @@ import 'dart:ui' as ui;
 
 import 'package:flutter/services.dart';
 import 'package:flutter_overlay_window/flutter_overlay_window.dart';
-import 'package:google_mlkit_text_recognition/google_mlkit_text_recognition.dart';
 import 'package:ivhelper_capture/ivhelper_capture.dart';
 
 import '../core/screen_reading.dart';
@@ -42,9 +41,6 @@ class DeviceScreenScanner implements ScreenScanner {
   /// Fenêtre à masquer pendant la capture.
   final OverlayWindow window;
 
-  final TextRecognizer _recognizer =
-      TextRecognizer(script: TextRecognitionScript.latin);
-
   @override
   Future<ScanResult> scan() async {
     await window.setVisible(visible: false);
@@ -56,24 +52,11 @@ class DeviceScreenScanner implements ScreenScanner {
       await window.setVisible(visible: true);
     }
     final image = await _decode(shot.path);
-    final recognized = await _recognizer.processImage(ocrInputFor(image));
-    final lines = <OcrLine>[
-      for (final block in recognized.blocks)
-        for (final line in block.lines)
-          OcrLine(
-            line.text,
-            line.boundingBox.left,
-            line.boundingBox.top,
-            line.boundingBox.right,
-            line.boundingBox.bottom,
-          ),
-    ];
-    final text = parseScreenText(lines);
+    final text = parseScreenText(ocrLinesOf(shot));
     return identify(repository, text, readAppraisal(image, text));
   }
 
-  /// Décode la capture PNG en pixels RGBA (une seule fois, pour l'OCR et
-  /// les barres).
+  /// Décode la capture PNG en pixels RGBA pour lire les barres.
   static Future<RgbaImage> _decode(String path) async {
     final bytes = await File(path).readAsBytes();
     if (bytes.isEmpty) {
@@ -94,13 +77,17 @@ class DeviceScreenScanner implements ScreenScanner {
   }
 }
 
-/// Image à lire par ML Kit : les pixels déjà décodés, et non le fichier PNG
-/// (ML Kit décode mal le fichier sur certains téléphones : `NullPointerException`).
-InputImage ocrInputFor(RgbaImage image) => InputImage.fromBitmap(
-      bitmap: image.bytes,
-      width: image.width,
-      height: image.height,
-    );
+/// Lignes lues par ML Kit (côté Android, sur le Bitmap de la capture).
+List<OcrLine> ocrLinesOf(CapturedScreen shot) => <OcrLine>[
+      for (final l in shot.lines)
+        OcrLine(
+          l.text,
+          l.left.toDouble(),
+          l.top.toDouble(),
+          l.right.toDouble(),
+          l.bottom.toDouble(),
+        ),
+    ];
 
 /// Message court d'un échec de lecture, sans la pile Java des erreurs natives.
 String describeScanError(Object error) {
