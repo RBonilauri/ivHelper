@@ -1,18 +1,45 @@
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:google_mlkit_text_recognition/google_mlkit_text_recognition.dart';
-import 'package:ivhelper/core/screen_reading.dart';
 import 'package:ivhelper/overlay/overlay_services.dart';
+import 'package:ivhelper_capture/ivhelper_capture.dart';
 
 void main() {
-  test('la reconnaissance de texte reçoit les pixels, pas un fichier', () {
-    final bytes = Uint8List(2 * 3 * 4);
-    final input = ocrInputFor(RgbaImage(2, 3, bytes));
+  test('la capture renvoie aussi les lignes lues par ML Kit côté Android', () {
+    final shot = CapturedScreen.fromMap(<Object?, Object?>{
+      'path': '/cache/ivhelper_capture.png',
+      'width': 1160,
+      'height': 2576,
+      'lines': <Object?>[
+        <Object?, Object?>{
+          'text': 'Attaque',
+          'left': 138,
+          'top': 1880,
+          'right': 275,
+          'bottom': 1915,
+        },
+      ],
+    });
 
-    expect(input.type, InputImageType.bitmap);
-    expect(input.filePath, isNull);
-    expect(input.bitmapData, same(bytes));
-    expect(input.metadata!.size, const Size(2, 3));
+    expect(shot.path, '/cache/ivhelper_capture.png');
+    expect(shot.width, 1160);
+    expect(shot.height, 2576);
+    expect(shot.lines, hasLength(1));
+    final line = ocrLinesOf(shot).single;
+    expect(line.text, 'Attaque');
+    expect(
+      [line.left, line.top, line.right, line.bottom],
+      [138.0, 1880.0, 275.0, 1915.0],
+    );
+  });
+
+  test('une capture sans texte lu donne une liste vide', () {
+    final shot = CapturedScreen.fromMap(<Object?, Object?>{
+      'path': '/cache/ivhelper_capture.png',
+      'width': 10,
+      'height': 20,
+    });
+
+    expect(ocrLinesOf(shot), isEmpty);
   });
 
   test("le message d'erreur de lecture n'affiche pas la pile Java", () {
