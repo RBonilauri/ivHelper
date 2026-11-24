@@ -205,7 +205,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   /// Attaques recommandées par la méta pour [species] dans [league].
   List<String> _metaMoves(Species species, League league, ShadowState shadow) =>
-      _meta.data?.movesetFor(
+      _meta.data?.movesetForAnyLeague(
         species.nameFr,
         league.key,
         shadow: shadow == ShadowState.shadow,
