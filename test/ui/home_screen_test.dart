@@ -181,7 +181,16 @@ void main() {
     expect(find.text('Plante ×0,39'), findsOneWidget);
     expect(find.text('Bilan de l\'équipe'), findsOneWidget);
     // Rubriques du bilan ouvertes par défaut.
-    await tester.scrollUntilVisible(find.text('Aucune attaque choisie'), 200);
+    await tester.scrollUntilVisible(
+      find.text('Aucune attaque choisie'),
+      200,
+      scrollable: find
+          .descendant(
+            of: find.byType(ListView).first,
+            matching: find.byType(Scrollable),
+          )
+          .first,
+    );
     expect(find.text('Aucune attaque choisie'), findsOneWidget);
   });
 
