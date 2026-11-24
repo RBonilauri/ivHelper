@@ -113,6 +113,31 @@ class TeamController extends ChangeNotifier {
     _changed();
   }
 
+  /// Place [species] dans l'emplacement [index] avec ses attaques [fastId] et
+  /// [chargedIds], en ignorant celles que l'espèce ne peut pas apprendre
+  /// (par exemple Frustration, propre aux formes obscures).
+  void place(
+    int index,
+    Species species, {
+    String? fastId,
+    List<String> chargedIds = const <String>[],
+  }) {
+    Move? pick(String? id, List<String> allowed) =>
+        id != null && allowed.contains(id) ? moves[id] : null;
+    final charged = <Move>[
+      for (final id in chargedIds)
+        if (pick(id, species.chargedMoves) != null)
+          pick(id, species.chargedMoves)!,
+    ];
+    _slots[index] = TeamSlot(
+      species: species,
+      fast: pick(fastId, species.fastMoves),
+      charged1: charged.isNotEmpty ? charged[0] : null,
+      charged2: charged.length > 1 ? charged[1] : null,
+    );
+    _changed();
+  }
+
   /// Choisit l'attaque immédiate de l'emplacement [index].
   void setFast(int index, Move? move) {
     final s = _slots[index];

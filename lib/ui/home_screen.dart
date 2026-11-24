@@ -2,13 +2,16 @@ import 'dart:async';
 
 import 'package:material_ui/material_ui.dart';
 
+import '../core/meta.dart';
 import '../core/moves.dart';
 import '../core/species_repository.dart';
 import '../core/stats.dart';
 import '../settings/settings_controller.dart';
 import '../state/lookup_controller.dart';
+import '../state/meta_controller.dart';
 import '../state/team_controller.dart';
 import 'iv_logo.dart';
+import 'meta_screen.dart';
 import 'result_panel.dart';
 import 'settings_drawer.dart';
 import 'team_builder_screen.dart';
@@ -22,7 +25,11 @@ class HomeScreen extends StatefulWidget {
     required this.repository,
     required this.moves,
     required this.settings,
+    required this.metaSource,
   });
+
+  /// Source de la méta PvPoke.
+  final MetaSource metaSource;
 
   /// Espèces connues.
   final SpeciesRepository repository;
@@ -47,16 +54,81 @@ class _HomeScreenState extends State<HomeScreen> {
     store: widget.settings.store,
   );
 
+  late final MetaController _meta = MetaController(
+    source: widget.metaSource,
+    store: widget.settings.store,
+  );
+
   @override
   void initState() {
     super.initState();
     unawaited(_team.load());
   }
 
+  void _openTeam(BuildContext context) {
+    unawaited(
+      Navigator.of(context).push(
+        MaterialPageRoute<void>(
+          builder: (_) => TeamBuilderScreen(team: _team),
+        ),
+      ),
+    );
+  }
+
+  void _checkIvs(BuildContext context, MetaEntry entry) {
+    final species = widget.repository.findByName(entry.species ?? '');
+    if (species == null) return;
+    Navigator.of(context).popUntil((route) => route.isFirst);
+    _controller.selectSpecies(species);
+    _text.text = species.nameFr;
+  }
+
+  Future<void> _addToTeam(BuildContext context, MetaEntry entry) async {
+    final species = widget.repository.findByName(entry.species ?? '');
+    if (species == null) return;
+    final messenger = ScaffoldMessenger.of(context);
+    final slots = _team.slots;
+    final index = await showDialog<int>(
+      context: context,
+      builder: (context) => SimpleDialog(
+        title: const Text('Ajouter dans quel emplacement ?'),
+        children: <Widget>[
+          for (var i = 0; i < slots.length; i++)
+            SimpleDialogOption(
+              onPressed: () => Navigator.of(context).pop(i),
+              child: Text(
+                'Emplacement ${i + 1} · '
+                '${slots[i].species?.nameFr ?? 'vide'}',
+              ),
+            ),
+        ],
+      ),
+    );
+    if (index == null || !mounted) return;
+    _team.place(
+      index,
+      species,
+      fastId: entry.fast.id,
+      chargedIds: <String>[for (final c in entry.charged) c.id],
+    );
+    messenger.showSnackBar(
+      SnackBar(
+        content: Text('${species.nameFr} ajouté à l\'emplacement ${index + 1}'),
+        action: SnackBarAction(
+          label: 'Voir',
+          onPressed: () {
+            if (context.mounted) _openTeam(context);
+          },
+        ),
+      ),
+    );
+  }
+
   @override
   void dispose() {
     _controller.dispose();
     _team.dispose();
+    _meta.dispose();
     _text.dispose();
     super.dispose();
   }
@@ -84,9 +156,17 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
       endDrawer: SettingsDrawer(
         settings: widget.settings,
-        onOpenTeam: () => Navigator.of(context).push(
+        onOpenTeam: () => _openTeam(context),
+        onOpenMeta: () => Navigator.of(context).push(
           MaterialPageRoute<void>(
-            builder: (_) => TeamBuilderScreen(team: _team),
+            builder: (_) => MetaScreen(
+              meta: _meta,
+              actions: MetaActions(
+                checkIvs: _checkIvs,
+                addToTeam: (context, entry) =>
+                    unawaited(_addToTeam(context, entry)),
+              ),
+            ),
           ),
         ),
         onOpenTypes: () => Navigator.of(context).push(

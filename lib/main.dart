@@ -6,6 +6,7 @@ import 'core/moves.dart';
 import 'core/species_repository.dart';
 import 'settings/prefs_store.dart';
 import 'settings/settings_controller.dart';
+import 'state/http_meta_source.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -15,6 +16,11 @@ Future<void> main() async {
   final settings = SettingsController(PrefsSettingsStore(prefs));
   await settings.load();
   runApp(
-    IvHelperApp(repository: repository, moves: moves, settings: settings),
+    IvHelperApp(
+      repository: repository,
+      moves: moves,
+      settings: settings,
+      metaSource: const HttpMetaSource(),
+    ),
   );
 }

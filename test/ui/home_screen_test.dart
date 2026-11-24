@@ -7,6 +7,8 @@ import 'package:ivhelper/core/species_repository.dart';
 import 'package:ivhelper/core/stats.dart';
 import 'package:ivhelper/settings/settings_controller.dart';
 
+import '../support/fake_meta.dart';
+
 SpeciesRepository _repository() => SpeciesRepository(const <Species>[
       Species(
         dex: 663,
@@ -43,6 +45,7 @@ Future<void> _pumpApp(WidgetTester tester) async {
       repository: _repository(),
       moves: _moves(),
       settings: SettingsController(MemorySettingsStore()),
+      metaSource: FakeMetaSource(local: fakeMetaJson()),
     ),
   );
 }
@@ -160,5 +163,34 @@ void main() {
     expect(find.text('Roche ×2,56'), findsOneWidget);
     expect(find.text('Plante ×0,39'), findsOneWidget);
     expect(find.text('Bilan de l\'équipe'), findsOneWidget);
+  });
+
+  testWidgets('la méta propose d\'ajouter à l\'équipe et de voir les IV',
+      (tester) async {
+    await _pumpApp(tester);
+    await tester.tap(find.byTooltip('Paramètres'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Méta'));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('mis à jour le 20/11/2026'), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey<String>('meta-1')));
+    await tester.pumpAndSettle();
+    expect(find.text('Pires adversaires'), findsOneWidget);
+    expect(find.text('Altaria'), findsOneWidget);
+
+    await tester.tap(find.text('Ajouter à mon équipe'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Emplacement 1 · vide'));
+    await tester.pumpAndSettle();
+    expect(
+      find.text('Flambusard ajouté à l\'emplacement 1'),
+      findsOneWidget,
+    );
+
+    await tester.tap(find.text('Voir le rang de mes IV'));
+    await tester.pumpAndSettle();
+    expect(find.text('Flambusard · n° 663'), findsOneWidget);
+    await tester.pump(const Duration(seconds: 10));
+    await tester.pumpAndSettle();
   });
 }

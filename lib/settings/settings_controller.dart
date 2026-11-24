@@ -19,6 +19,12 @@ abstract interface class SettingsStore {
 
   /// Enregistre l'équipe (JSON).
   Future<void> writeTeam(String value);
+
+  /// Lit la dernière méta téléchargée (JSON), ou `null`.
+  Future<String?> readMeta();
+
+  /// Enregistre la dernière méta téléchargée (JSON).
+  Future<void> writeMeta(String value);
 }
 
 /// Stockage en mémoire, sans persistance.
@@ -26,6 +32,7 @@ class MemorySettingsStore implements SettingsStore {
   String? _mode;
   double? _scale;
   String? _team;
+  String? _meta;
 
   @override
   Future<String?> readThemeMode() async => _mode;
@@ -44,6 +51,12 @@ class MemorySettingsStore implements SettingsStore {
 
   @override
   Future<void> writeTeam(String value) async => _team = value;
+
+  @override
+  Future<String?> readMeta() async => _meta;
+
+  @override
+  Future<void> writeMeta(String value) async => _meta = value;
 }
 
 /// Réglages de l'application : mode d'affichage et taille de police.

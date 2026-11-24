@@ -24,6 +24,7 @@ Tu as un Pokémon avec ses IV (Attaque / Défense / PV). Tu veux savoir **où il
 - **Niveau maximal** : 50, ou 51 (niveau 50 plus bonus meilleur ami).
 - **Plancher d'IV** : « Min 10/10/10 » restreint le classement aux 216 combinaisons dont chaque IV vaut au moins 10.
 - **Menu** (bouton aux trois traits, en haut à droite) :
+  - **Méta** : le top 100 PvPoke en Super, Hyper et Master (formes obscures comprises), avec la note, les types et le jeu d'attaques recommandé. La fiche d'un Pokémon montre ses meilleurs matchs et ses pires adversaires, et propose « Voir le rang de mes IV » et « Ajouter à mon équipe ». La méta se met à jour toute seule (voir plus bas), avec un filtre par nom et un bouton pour vérifier.
   - **Team builder** : 3 Pokémon, une attaque immédiate et deux chargées chacun. Pour chacun : faiblesses et résistances selon ses types (×2,56, ×1,6, ×0,63, ×0,39…), types touchés en super efficace et types sur lesquels il est en difficulté selon ses attaques. Bilan d'équipe : faiblesses partagées, types que personne ne résiste, types qu'aucune attaque ne couvre. L'équipe est conservée.
   - **Table des types** : forces, faiblesses et résistances des 18 types, avec une pastille colorée par type.
   - **Paramètres** : mode Auto / Jour / Nuit (or adouci la nuit) et taille de police de 85 à 140 %. Les réglages sont conservés.
@@ -39,6 +40,8 @@ L'app n'est pas sur le Play Store. Chaque envoi sur GitHub compile un APK :
 3. Ouvrir `app-release.apk` sur le téléphone et autoriser les sources inconnues.
 
 **Mise à jour** : il faut retélécharger l'APK, rien ne se met à jour tout seul. Si Android refuse d'installer par-dessus (« conflit avec un paquet existant »), désinstalle l'ancienne version d'abord : la CI signe avec une clé de débogage différente à chaque compilation.
+
+**Méta à jour sans réinstaller** : une tâche planifiée du dépôt (`.github/workflows/meta.yml`, chaque jour à 4 h 17 UTC, ou à la main depuis l'onglet Actions) régénère `assets/meta.json` depuis PvPoke et ne le publie que s'il a changé. L'app télécharge ce fichier à l'ouverture de l'onglet Méta, le garde en cache, et retombe sur la copie incluse sans réseau.
 
 **iPhone** : pas de version pour l'instant. Une installation personnelle passera soit par un Mac, soit par TestFlight avec un compte développeur Apple.
 
@@ -76,15 +79,17 @@ Les dossiers `android/` et `ios/` ne sont pas committés. La CI les génère ave
 | `lib/state/` | `LookupController` (rang) et `TeamController` (team builder) |
 | `lib/settings/` | Réglages (mode, police, équipe) et leur stockage |
 | `lib/ui/` | Écrans (rang, team builder, table des types), thème, logo et pastilles de type dessinés en code |
-| `assets/species.json` | 1 117 espèces et formes régionales (nom français, stats de base, types, attaques) |
-| `assets/moves.json` | 319 attaques (nom français, type, immédiate ou chargée) |
-| `tool/` | `build_species.py` (données), `build_icon.py` (icônes), `ci_wait.sh` (attente de la CI) |
+| `assets/species.json` | 1 180 espèces et formes (nom français, stats de base, types, attaques) |
+| `assets/moves.json` | 325 attaques (nom français, type, immédiate ou chargée) |
+| `assets/meta.json` | Top 100 PvPoke en Super, Hyper et Master, mis à jour chaque jour |
+| `tool/` | `build_species.py` (espèces, attaques), `build_meta.py` (méta), `build_icon.py` (icônes), `ci_wait.sh` (attente de la CI) |
 | `docs/` | Sources des données, design et plan d'implémentation |
 
 ### Régénérer les données et les icônes
 
 ```bash
 python3 tool/build_species.py GAMEMASTER NOMS MOVES NOMS_ATTAQUES assets/species.json assets/moves.json   # voir docs/data-sources.md
+python3 tool/build_meta.py DOSSIER_SOURCES assets/meta.json        # méta (voir docs/data-sources.md)
 python3 tool/build_icon.py                                          # icônes Android + assets/logo.png
 ```
 
@@ -95,7 +100,7 @@ Chaque couche a ses tests : `test/core` (formules, table, espèces), `test/state
 ## Feuille de route
 
 - [x] **Phase 1** : saisie manuelle, rang Mini, Super, Hyper et Master, tableau dépliable, thème, réglages
-- [x] **Phase 1 bis** : team builder et table des types
+- [x] **Phase 1 bis** : team builder, table des types, ligues Mini et Master, méta à jour
 - [ ] **Phase 2** : lecture des IV depuis une capture d'écran (nom, PC, PV, barres d'évaluation)
 - [ ] **Phase 3** : pastille flottante Android qui ouvre le tableau par-dessus Pokémon GO
 - [ ] **Phase 4** : parcours iPhone (analyse de la dernière capture d'écran)
@@ -104,6 +109,6 @@ Le détail est dans [le plan](docs/superpowers/plans/2026-11-24-ivhelper.md) et 
 
 ## Données et crédits
 
-Stats de base, multiplicateurs de PC et formes : [PvPoke](https://github.com/pvpoke/pvpoke) (licence MIT). Noms français : [PokéAPI](https://pokeapi.co). Détails dans [`docs/data-sources.md`](docs/data-sources.md).
+Stats de base, multiplicateurs de PC, formes et classements de la méta : [PvPoke](https://github.com/pvpoke/pvpoke) (licence MIT). Noms français : [PokéAPI](https://pokeapi.co). Détails dans [`docs/data-sources.md`](docs/data-sources.md).
 
 ivHelper est un projet personnel, sans lien avec Niantic, Nintendo ou The Pokémon Company. Pokémon et Pokémon GO sont des marques de leurs propriétaires.

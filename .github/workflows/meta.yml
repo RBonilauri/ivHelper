@@ -1,0 +1,42 @@
+name: Méta PvPoke
+
+# Chaque jour, récupère le classement PvPoke et republie assets/meta.json s'il a
+# changé. L'app télécharge ce fichier à l'ouverture de l'onglet Méta.
+on:
+  schedule:
+    - cron: '17 4 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Télécharger les sources
+        run: |
+          mkdir -p /tmp/src && cd /tmp/src
+          P=https://raw.githubusercontent.com/pvpoke/pvpoke/master/src/data
+          A=https://raw.githubusercontent.com/PokeAPI/pokeapi/master/data/v2/csv
+          curl -sSfLO "$P/gamemaster.json"
+          for c in 1500 2500 10000; do
+            curl -sSfL -o "rankings-$c.json" "$P/rankings/all/overall/rankings-$c.json"
+          done
+          for f in pokemon_species_names moves move_names; do
+            curl -sSfLO "$A/$f.csv"
+          done
+      - name: Générer la méta
+        run: python3 tool/build_meta.py /tmp/src assets/meta.json
+      - name: Publier si la méta a changé
+        run: |
+          if git diff --quiet assets/meta.json; then
+            echo "Méta inchangée"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add assets/meta.json
+          git commit -m "data: méta PvPoke du $(date +%F)"
+          git push

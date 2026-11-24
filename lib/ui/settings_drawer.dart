@@ -11,7 +11,11 @@ class SettingsDrawer extends StatelessWidget {
     required this.settings,
     required this.onOpenTeam,
     required this.onOpenTypes,
+    required this.onOpenMeta,
   });
+
+  /// Ouvre l'onglet Méta.
+  final VoidCallback onOpenMeta;
 
   /// Réglages modifiés par la barre latérale.
   final SettingsController settings;
@@ -40,6 +44,16 @@ class SettingsDrawer extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: 16),
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: const Icon(Icons.emoji_events),
+                title: const Text('Méta'),
+                subtitle: const Text('Top PvPoke en Super, Hyper et Master'),
+                onTap: () {
+                  Navigator.of(context).pop();
+                  onOpenMeta();
+                },
+              ),
               ListTile(
                 contentPadding: EdgeInsets.zero,
                 leading: const Icon(Icons.groups),

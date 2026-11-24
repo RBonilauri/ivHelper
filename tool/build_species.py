@@ -79,18 +79,33 @@ def move_name(move_id, english, fr):
     return english
 
 
-def main(gamemaster, species_csv, moves_csv, move_names_csv, out_species, out_moves):
-    fr = french_species(species_csv)
-    fr_moves = french_moves(moves_csv, move_names_csv)
-    data = json.load(open(gamemaster, encoding="utf-8"))
+REGIONAL_FORMS = {
+    "Alolan": "d'Alola", "Galarian": "de Galar",
+    "Hisuian": "de Hisui", "Paldean": "de Paldea",
+}
+
+
+def form_label(name, p):
+    """Libellé d'une forme : « Nom (Forme) », ou « Nom de Hisui » pour une forme
+    régionale non marquée comme telle."""
+    raw = p["speciesName"]
+    if "(" in raw:
+        form = raw.split("(")[-1].rstrip(")").strip()
+    else:
+        form = p["speciesId"].split("_", 1)[-1].replace("_", " ").title()
+    if form in REGIONAL_FORMS:
+        return f"{name} {REGIONAL_FORMS[form]}"
+    return f"{name} ({form})"
+
+
+def choose_species(pokemon, fr):
+    """(libellé français, entrée PvPoke) des espèces retenues, par numéro."""
     by_dex = {}
-    for p in data["pokemon"]:
+    for p in pokemon:
         if set(p.get("tags", [])) & SKIPPED:
             continue
         by_dex.setdefault(p["dex"], []).append(p)
-    result = []
-    used = set()
-    used_fast = set()
+    chosen = []
     for dex in sorted(by_dex):
         name = fr.get(dex)
         if name is None:
@@ -100,30 +115,46 @@ def main(gamemaster, species_csv, moves_csv, move_names_csv, out_species, out_mo
         plain = [p for p in entries if p not in regional]
         base = [p for p in plain if "_" not in p["speciesId"]]
         if base:
-            chosen = [(name, base[0])]
-        elif len(plain) == 1:
-            chosen = [(name, plain[0])]
-        else:
-            chosen = [
-                (f"{name} ({p['speciesName'].split('(')[-1].rstrip(')').strip()})", p)
+            b = base[0]
+            chosen.append((name, b))
+            # Formes aux stats ou types différents (Kyurem Noir, Motisma Lavage…) ;
+            # les costumes, identiques à la forme de base, restent écartés.
+            chosen.extend(
+                (form_label(name, p), p)
                 for p in plain
-            ]
+                if p is not b
+                and (p["baseStats"] != b["baseStats"] or p["types"] != b["types"])
+            )
+        elif len(plain) == 1:
+            chosen.append((name, plain[0]))
+        else:
+            chosen.extend((form_label(name, p), p) for p in plain)
         for p in regional:
             tag = next(t for t in p["tags"] if t in REGIONAL)
             chosen.append((f"{name} {REGIONAL[tag]}", p))
-        for label, p in chosen:
-            b = p["baseStats"]
-            types = [t for t in p["types"] if t in TYPES_FR]
-            fast = sorted(set(p.get("fastMoves", [])))
-            charged = sorted(set(p.get("chargedMoves", [])))
-            used.update(fast)
-            used_fast.update(fast)
-            used.update(charged)
-            result.append({
-                "dex": dex, "name": label,
-                "atk": b["atk"], "def": b["def"], "sta": b["hp"],
-                "types": types, "fast": fast, "charged": charged,
-            })
+    return chosen
+
+
+def main(gamemaster, species_csv, moves_csv, move_names_csv, out_species, out_moves):
+    fr = french_species(species_csv)
+    fr_moves = french_moves(moves_csv, move_names_csv)
+    data = json.load(open(gamemaster, encoding="utf-8"))
+    result = []
+    used = set()
+    used_fast = set()
+    for label, p in choose_species(data["pokemon"], fr):
+        b = p["baseStats"]
+        types = [t for t in p["types"] if t in TYPES_FR]
+        fast = sorted(set(p.get("fastMoves", [])))
+        charged = sorted(set(p.get("chargedMoves", [])))
+        used.update(fast)
+        used_fast.update(fast)
+        used.update(charged)
+        result.append({
+            "dex": p["dex"], "name": label,
+            "atk": b["atk"], "def": b["def"], "sta": b["hp"],
+            "types": types, "fast": fast, "charged": charged,
+        })
     moves = {}
     for m in data["moves"]:
         if m["moveId"] not in used or m["type"] not in TYPES_FR:
