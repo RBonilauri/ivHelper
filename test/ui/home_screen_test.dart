@@ -305,6 +305,13 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.text('Méta'));
     await tester.pumpAndSettle();
+    expect(
+      find.descendant(
+        of: find.byKey(const ValueKey<String>('meta-1')),
+        matching: find.textContaining('Dans ta collection · rang'),
+      ),
+      findsOneWidget,
+    );
     await tester.tap(find.byKey(const ValueKey<String>('meta-1')));
     await tester.pumpAndSettle();
     expect(
@@ -366,6 +373,27 @@ void main() {
     expect(find.text('Déjà dans l\'équipe'), findsOneWidget);
     await tester.tapAt(const Offset(10, 10));
     await tester.pumpAndSettle();
+    await tester.pump(const Duration(seconds: 10));
+    await tester.pumpAndSettle();
+  });
+
+  testWidgets('la méta ne marque pas un Pokémon tagué dans une autre ligue',
+      (tester) async {
+    await _pumpApp(tester);
+    await tester.enterText(find.byType(TextField), 'Flambusard');
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Hyper'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Enregistrer'));
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('Enregistrer dans la collection'));
+    await tester.tap(find.text('Enregistrer dans la collection'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('Paramètres'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Méta'));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('Dans ta collection'), findsNothing);
     await tester.pump(const Duration(seconds: 10));
     await tester.pumpAndSettle();
   });
