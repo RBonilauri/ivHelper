@@ -59,16 +59,20 @@ class RankTable {
 /// demi-pas) dont le PC ne dépasse pas [cpCap]. Le tri se fait par produit de
 /// stats décroissant, puis PC décroissant, puis IV décroissants, de façon
 /// déterministe.
+///
+/// Si [minIv] est supérieur à 0, seules les combinaisons dont chaque IV vaut
+/// au moins [minIv] sont classées (par exemple 10 pour un plancher 10/10/10).
 RankTable buildRankTable(
   BaseStats base, {
   required int cpCap,
   double maxLevel = 51,
+  int minIv = 0,
 }) {
   final topIndex = ((maxLevel - 1) * 2).round();
   final raw = <_Raw>[];
-  for (var atk = 0; atk <= 15; atk++) {
-    for (var def = 0; def <= 15; def++) {
-      for (var sta = 0; sta <= 15; sta++) {
+  for (var atk = minIv; atk <= 15; atk++) {
+    for (var def = minIv; def <= 15; def++) {
+      for (var sta = minIv; sta <= 15; sta++) {
         final iv = Iv(atk, def, sta);
         var level = 1.0;
         for (var i = topIndex; i >= 0; i--) {

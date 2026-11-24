@@ -69,4 +69,16 @@ void main() {
     final c = LookupController(_repository())..setQuery('Pass');
     expect(c.suggestions.map((s) => s.nameFr), contains('Passerouge'));
   });
+
+  test('setMinIv(10) relève les IV sous le plancher et réduit le classement',
+      () {
+    final c = LookupController(_repository())
+      ..setQuery('Flambusard')
+      ..setIv(const Iv(3, 12, 0))
+      ..setMinIv(10);
+    expect(c.iv, const Iv(10, 12, 10));
+    expect(c.result!.great.table.entries.length, 1331);
+    c.setMinIv(0);
+    expect(c.result!.great.table.entries.length, 4096);
+  });
 }

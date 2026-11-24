@@ -44,9 +44,21 @@ class RankResult {
 /// Classe la combinaison [iv] de l'espèce [base] en ligue super et hyper.
 ///
 /// [maxLevel] vaut 51 par défaut (niveau 50 plus bonus meilleur ami).
-RankResult rankIv(BaseStats base, Iv iv, {double maxLevel = 51}) {
+/// [minIv] restreint le classement aux combinaisons dont chaque IV vaut au
+/// moins cette valeur ; [iv] doit alors respecter ce plancher.
+RankResult rankIv(
+  BaseStats base,
+  Iv iv, {
+  double maxLevel = 51,
+  int minIv = 0,
+}) {
   LeagueResult league(int cpCap) {
-    final table = buildRankTable(base, cpCap: cpCap, maxLevel: maxLevel);
+    final table = buildRankTable(
+      base,
+      cpCap: cpCap,
+      maxLevel: maxLevel,
+      minIv: minIv,
+    );
     return LeagueResult(
       cpCap: cpCap,
       table: table,

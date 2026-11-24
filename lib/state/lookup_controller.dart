@@ -16,6 +16,7 @@ class LookupController extends ChangeNotifier {
   Species? _species;
   Iv _iv = const Iv(15, 15, 15);
   double _maxLevel = 51;
+  int _minIv = 0;
   RankResult? _result;
 
   /// Texte saisi (nom ou numéro).
@@ -29,6 +30,9 @@ class LookupController extends ChangeNotifier {
 
   /// Niveau maximal pris en compte (50, ou 51 avec le bonus meilleur ami).
   double get maxLevel => _maxLevel;
+
+  /// Plancher d'IV appliqué au classement (0 ou 10).
+  int get minIv => _minIv;
 
   /// Résultats en ligue super et hyper, ou `null` sans espèce reconnue.
   RankResult? get result => _result;
@@ -74,8 +78,23 @@ class LookupController extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Change le plancher d'IV (0 : aucun, 10 : 10/10/10).
+  ///
+  /// Les IV saisis sous le plancher sont relevés jusqu'à lui.
+  void setMinIv(int value) {
+    if (value == _minIv) return;
+    _minIv = value;
+    _iv = Iv(
+      _iv.atk < value ? value : _iv.atk,
+      _iv.def < value ? value : _iv.def,
+      _iv.sta < value ? value : _iv.sta,
+    );
+    _recompute();
+    notifyListeners();
+  }
+
   void _recompute() {
     final s = _species;
-    _result = s == null ? null : rankIv(s.base, _iv, maxLevel: _maxLevel);
+    _result = s == null ? null : rankIv(s.base, _iv, maxLevel: _maxLevel, minIv: _minIv);
   }
 }

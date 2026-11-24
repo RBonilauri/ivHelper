@@ -2,16 +2,26 @@ import 'package:material_ui/material_ui.dart';
 
 import '../core/species_repository.dart';
 import '../core/stats.dart';
+import '../settings/settings_controller.dart';
 import '../state/lookup_controller.dart';
+import 'iv_logo.dart';
 import 'result_panel.dart';
+import 'settings_drawer.dart';
 
 /// Écran unique : saisie de l'espèce et des IV, résultats Super et Hyper.
 class HomeScreen extends StatefulWidget {
   /// Crée l'écran à partir du [repository] d'espèces.
-  const HomeScreen({super.key, required this.repository});
+  const HomeScreen({
+    super.key,
+    required this.repository,
+    required this.settings,
+  });
 
   /// Espèces connues.
   final SpeciesRepository repository;
+
+  /// Réglages d'affichage, modifiables depuis la barre latérale.
+  final SettingsController settings;
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -32,7 +42,25 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('ivHelper')),
+      appBar: AppBar(
+        title: const Row(
+          children: <Widget>[
+            IvLogo(size: 34),
+            SizedBox(width: 10),
+            Text('ivHelper', style: TextStyle(fontWeight: FontWeight.w800)),
+          ],
+        ),
+        actions: <Widget>[
+          Builder(
+            builder: (context) => IconButton(
+              tooltip: 'Paramètres',
+              icon: const Icon(Icons.menu),
+              onPressed: () => Scaffold.of(context).openEndDrawer(),
+            ),
+          ),
+        ],
+      ),
+      endDrawer: SettingsDrawer(settings: widget.settings),
       body: SafeArea(
         child: ListenableBuilder(
           listenable: _controller,
@@ -64,6 +92,19 @@ class _HomeScreenState extends State<HomeScreen> {
                 selected: <double>{_controller.maxLevel},
                 onSelectionChanged: (selection) =>
                     _controller.setMaxLevel(selection.first),
+              ),
+              const SizedBox(height: 8),
+              SegmentedButton<int>(
+                segments: const <ButtonSegment<int>>[
+                  ButtonSegment<int>(value: 0, label: Text('Tous les IV')),
+                  ButtonSegment<int>(
+                    value: 10,
+                    label: Text('Min 10/10/10'),
+                  ),
+                ],
+                selected: <int>{_controller.minIv},
+                onSelectionChanged: (selection) =>
+                    _controller.setMinIv(selection.first),
               ),
               const SizedBox(height: 16),
               ..._results(context),
@@ -115,6 +156,7 @@ class _HomeScreenState extends State<HomeScreen> {
           child: _IvStepper(
             label: 'Atk',
             value: iv.atk,
+            min: _controller.minIv,
             onChanged: (v) => _controller.setIv(Iv(v, iv.def, iv.sta)),
           ),
         ),
@@ -123,6 +165,7 @@ class _HomeScreenState extends State<HomeScreen> {
           child: _IvStepper(
             label: 'Déf',
             value: iv.def,
+            min: _controller.minIv,
             onChanged: (v) => _controller.setIv(Iv(iv.atk, v, iv.sta)),
           ),
         ),
@@ -131,6 +174,7 @@ class _HomeScreenState extends State<HomeScreen> {
           child: _IvStepper(
             label: 'PV',
             value: iv.sta,
+            min: _controller.minIv,
             onChanged: (v) => _controller.setIv(Iv(iv.atk, iv.def, v)),
           ),
         ),
@@ -157,11 +201,13 @@ class _IvStepper extends StatelessWidget {
   const _IvStepper({
     required this.label,
     required this.value,
+    required this.min,
     required this.onChanged,
   });
 
   final String label;
   final int value;
+  final int min;
   final ValueChanged<int> onChanged;
 
   @override
@@ -182,7 +228,7 @@ class _IvStepper extends StatelessWidget {
               IconButton(
                 tooltip: 'Diminuer $label',
                 visualDensity: VisualDensity.compact,
-                onPressed: value > 0 ? () => onChanged(value - 1) : null,
+                onPressed: value > min ? () => onChanged(value - 1) : null,
                 icon: const Icon(Icons.remove),
               ),
               Text('$value', style: theme.textTheme.titleMedium),

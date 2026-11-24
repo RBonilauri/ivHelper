@@ -27,6 +27,11 @@ jobs:
           channel: stable
           cache: true
       - run: flutter create --platforms=android --project-name ivhelper --org fr.ivhelper .
+      - name: Nom et icône de l'application
+        run: |
+          sed -i 's/android:label="[^"]*"/android:label="ivHelper"/' android/app/src/main/AndroidManifest.xml
+          grep -q 'android:label="ivHelper"' android/app/src/main/AndroidManifest.xml
+          cp -r tool/android_icons/* android/app/src/main/res/
       - run: flutter pub get
       - run: flutter build apk --release
       - uses: actions/upload-artifact@v4
