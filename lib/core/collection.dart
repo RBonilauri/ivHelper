@@ -86,6 +86,7 @@ class CollectionEntry {
     this.size = PokeSize.none,
     this.lucky = false,
     this.shiny = false,
+    this.costume = false,
   });
 
   /// Lit une entrée enregistrée, ou `null` si elle est illisible.
@@ -129,6 +130,7 @@ class CollectionEntry {
       size: _sizeOf(raw['size']),
       lucky: raw['lucky'] == true,
       shiny: raw['shiny'] == true,
+      costume: raw['costume'] == true,
     );
   }
 
@@ -180,6 +182,9 @@ class CollectionEntry {
   /// Pokémon chromatique.
   final bool shiny;
 
+  /// Pokémon costumé.
+  final bool costume;
+
   /// Vrai si c'est le meilleur rang possible dans sa ligue.
   bool get isRankOne => rank == 1;
 
@@ -207,6 +212,7 @@ class CollectionEntry {
         'size': size.key,
         'lucky': lucky,
         'shiny': shiny,
+        'costume': costume,
       };
 }
 

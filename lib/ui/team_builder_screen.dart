@@ -1,8 +1,13 @@
 import 'package:material_ui/material_ui.dart';
 
+import '../core/collection.dart';
 import '../core/moves.dart';
+import '../core/poke_type.dart';
 import '../core/species_repository.dart';
+import '../state/collection_controller.dart';
 import '../state/team_controller.dart';
+import 'collection_widgets.dart';
+import 'format.dart';
 import 'type_badge.dart';
 
 const Color _good = Color(0xFF2EAD74);
@@ -11,10 +16,17 @@ const Color _bad = Color(0xFFE5484D);
 /// Team builder : trois Pokémon, leurs attaques, et l'analyse des types.
 class TeamBuilderScreen extends StatelessWidget {
   /// Crée la page pour l'équipe tenue par [team].
-  const TeamBuilderScreen({super.key, required this.team});
+  const TeamBuilderScreen({
+    super.key,
+    required this.team,
+    required this.collection,
+  });
 
   /// État de l'équipe.
   final TeamController team;
+
+  /// Collection, source des imports.
+  final CollectionController collection;
 
   @override
   Widget build(BuildContext context) {
@@ -27,7 +39,7 @@ class TeamBuilderScreen extends StatelessWidget {
             padding: const EdgeInsets.all(16),
             children: <Widget>[
               for (var i = 0; i < TeamController.size; i++) ...<Widget>[
-                _SlotCard(team: team, index: i),
+                _SlotCard(team: team, collection: collection, index: i),
                 const SizedBox(height: 12),
               ],
               _SummaryCard(team: team),
@@ -40,9 +52,14 @@ class TeamBuilderScreen extends StatelessWidget {
 }
 
 class _SlotCard extends StatelessWidget {
-  const _SlotCard({required this.team, required this.index});
+  const _SlotCard({
+    required this.team,
+    required this.collection,
+    required this.index,
+  });
 
   final TeamController team;
+  final CollectionController collection;
   final int index;
 
   @override
@@ -86,6 +103,37 @@ class _SlotCard extends StatelessWidget {
               label: 'Pokémon ${index + 1} (nom ou numéro)',
               onSelected: (s) => team.setSpecies(index, s),
             ),
+            const SizedBox(height: 6),
+            Row(
+              children: <Widget>[
+                if (slot.collectionId != null)
+                  Expanded(
+                    child: Row(
+                      children: <Widget>[
+                        Icon(
+                          Icons.collections_bookmark,
+                          size: 16,
+                          color: theme.colorScheme.primary,
+                        ),
+                        const SizedBox(width: 4),
+                        Flexible(
+                          child: Text(
+                            'Importé de ta collection',
+                            style: theme.textTheme.bodySmall,
+                          ),
+                        ),
+                      ],
+                    ),
+                  )
+                else
+                  const Spacer(),
+                TextButton.icon(
+                  onPressed: () => _import(context),
+                  icon: const Icon(Icons.collections_bookmark_outlined),
+                  label: const Text('Importer de ma collection'),
+                ),
+              ],
+            ),
             if (species != null) ...<Widget>[
               const SizedBox(height: 10),
               _MovePicker(
@@ -98,14 +146,14 @@ class _SlotCard extends StatelessWidget {
               _MovePicker(
                 label: 'Attaque chargée 1',
                 value: slot.charged1,
-                options: team.chargedOptions(index),
+                options: team.chargedOptionsFor(index, 1),
                 onChanged: (m) => team.setCharged(index, 1, m),
               ),
               const SizedBox(height: 8),
               _MovePicker(
                 label: 'Attaque chargée 2',
                 value: slot.charged2,
-                options: team.chargedOptions(index),
+                options: team.chargedOptionsFor(index, 2),
                 onChanged: (m) => team.setCharged(index, 2, m),
               ),
             ],
@@ -157,6 +205,38 @@ class _SlotCard extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+
+  Future<void> _import(BuildContext context) async {
+    final taken = team.importedIds(except: index);
+    final entry = await showModalBottomSheet<CollectionEntry>(
+      context: context,
+      showDragHandle: true,
+      isScrollControlled: true,
+      useSafeArea: true,
+      builder: (context) => _ImportSheet(
+        rows: filterAndSort(
+          collection.visibleRowsUnfiltered,
+          const CollectionFilter(),
+          CollectionSort.name,
+        ),
+        taken: taken,
+        current: team.slots[index].collectionId,
+      ),
+    );
+    if (entry == null) return;
+    final species = team.repository.findByName(entry.speciesName);
+    if (species == null) return;
+    team.importFromCollection(
+      index,
+      entry.id,
+      species,
+      fastId: entry.fastMove,
+      chargedIds: <String>[
+        if (entry.chargedMove1 != null) entry.chargedMove1!,
+        if (entry.chargedMove2 != null) entry.chargedMove2!,
+      ],
     );
   }
 }
@@ -379,6 +459,90 @@ class _ChipLine extends StatelessWidget {
             Wrap(spacing: 6, runSpacing: 6, children: children),
         ],
       ),
+    );
+  }
+}
+
+class _ImportSheet extends StatelessWidget {
+  const _ImportSheet({
+    required this.rows,
+    required this.taken,
+    required this.current,
+  });
+
+  final List<CollectionRow> rows;
+  final Set<String> taken;
+  final String? current;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+          child: Text(
+            'Importer de ma collection',
+            style: theme.textTheme.titleMedium,
+          ),
+        ),
+        if (rows.isEmpty)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+            child: Text(
+              'Ta collection est vide : enregistre d\'abord des Pokémon '
+              'depuis l\'écran de rang.',
+              style: theme.textTheme.bodyMedium,
+            ),
+          )
+        else
+          Flexible(
+            child: ListView.builder(
+              shrinkWrap: true,
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+              itemCount: rows.length,
+              itemBuilder: (context, i) {
+                final row = rows[i];
+                final e = row.entry;
+                final inTeam = taken.contains(e.id);
+                final here = e.id == current;
+                return Opacity(
+                  opacity: inTeam ? 0.45 : 1,
+                  child: Card(
+                    key: ValueKey<String>('import-${e.id}'),
+                    margin: const EdgeInsets.only(bottom: 8),
+                    color: tileColor(context, row),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                      side: tileBorder(context, row),
+                    ),
+                    child: ListTile(
+                      enabled: !inTeam,
+                      onTap: inTeam ? null : () => Navigator.of(context).pop(e),
+                      leading: TypeBadge(
+                        row.species.types.isEmpty
+                            ? PokeType.normal
+                            : row.species.types.first,
+                        size: 32,
+                      ),
+                      title: Text(row.species.nameFr),
+                      subtitle: Text(
+                        inTeam
+                            ? 'Déjà dans l\'équipe'
+                            : '${e.league.label} · rang ${formatGrouped(e.rank)}'
+                                ' · ${e.iv.atk}/${e.iv.def}/${e.iv.sta}'
+                                '${here ? ' · ici' : ''}',
+                      ),
+                      trailing: EntryAttributes(e),
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+      ],
     );
   }
 }

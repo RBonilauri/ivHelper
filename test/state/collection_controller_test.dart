@@ -144,4 +144,23 @@ void main() {
     expect(e.rank, 2246);
     expect(await store.readCollection(), contains('"league":"great"'));
   });
+
+  test('costume enregistré ; seconde chargée identique à la première retirée',
+      () {
+    final c = _controller(MemorySettingsStore());
+    final e = c.add(
+      _flambusard,
+      _max,
+      51,
+      const SaveOptions(
+        league: League.great,
+        chargedMove1: 'BRAVE_BIRD',
+        chargedMove2: 'BRAVE_BIRD',
+        costume: true,
+      ),
+    );
+    expect(e.costume, isTrue);
+    expect(e.chargedMove1, 'BRAVE_BIRD');
+    expect(e.chargedMove2, isNull);
+  });
 }

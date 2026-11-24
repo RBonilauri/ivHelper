@@ -335,4 +335,38 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.byKey(const ValueKey<String>('update-banner')), findsNothing);
   });
+
+  testWidgets('importer un Pokémon de la collection dans l\'équipe, une fois',
+      (tester) async {
+    await _pumpApp(tester);
+    await tester.enterText(find.byType(TextField), 'Flambusard');
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Enregistrer'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Costume'));
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('Enregistrer dans la collection'));
+    await tester.tap(find.text('Enregistrer dans la collection'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('Paramètres'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Team builder'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Importer de ma collection').first);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Flambusard').last);
+    await tester.pumpAndSettle();
+    expect(find.text('Importé de ta collection'), findsOneWidget);
+    expect(find.text('Roche ×2,56'), findsOneWidget);
+
+    await tester.ensureVisible(find.text('Importer de ma collection').at(1));
+    await tester.tap(find.text('Importer de ma collection').at(1));
+    await tester.pumpAndSettle();
+    expect(find.text('Déjà dans l\'équipe'), findsOneWidget);
+    await tester.tapAt(const Offset(10, 10));
+    await tester.pumpAndSettle();
+    await tester.pump(const Duration(seconds: 10));
+    await tester.pumpAndSettle();
+  });
 }

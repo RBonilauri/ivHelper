@@ -12,7 +12,13 @@ import '../settings/settings_controller.dart';
 @immutable
 class TeamSlot {
   /// Crée un emplacement.
-  const TeamSlot({this.species, this.fast, this.charged1, this.charged2});
+  const TeamSlot({
+    this.species,
+    this.fast,
+    this.charged1,
+    this.charged2,
+    this.collectionId,
+  });
 
   /// Emplacement vide.
   static const TeamSlot empty = TeamSlot();
@@ -28,6 +34,9 @@ class TeamSlot {
 
   /// Seconde attaque chargée (facultative).
   final Move? charged2;
+
+  /// Identifiant de l'entrée de collection importée ici, ou `null`.
+  final String? collectionId;
 
   /// Attaques choisies, sans doublon.
   List<Move> get moves {
@@ -81,6 +90,46 @@ class TeamController extends ChangeNotifier {
   List<Move> chargedOptions(int index) =>
       moves.resolve(_slots[index].species?.chargedMoves ?? const <String>[]);
 
+  /// Attaques proposées pour la chargée numéro [which] (1 ou 2) : l'autre
+  /// chargée déjà choisie en est retirée.
+  List<Move> chargedOptionsFor(int index, int which) {
+    final other =
+        which == 1 ? _slots[index].charged2?.id : _slots[index].charged1?.id;
+    return <Move>[
+      for (final m in chargedOptions(index))
+        if (m.id != other) m,
+    ];
+  }
+
+  /// Identifiants des entrées de collection importées, sauf dans
+  /// l'emplacement [except].
+  Set<String> importedIds({int? except}) => <String>{
+        for (var i = 0; i < size; i++)
+          if (i != except && _slots[i].collectionId != null)
+            _slots[i].collectionId!,
+      };
+
+  /// Importe l'entrée de collection [entryId] ([species] et ses attaques
+  /// enregistrées) dans l'emplacement [index]. Refusé (faux) si elle est déjà
+  /// dans un autre emplacement.
+  bool importFromCollection(
+    int index,
+    String entryId,
+    Species species, {
+    String? fastId,
+    List<String> chargedIds = const <String>[],
+  }) {
+    if (importedIds(except: index).contains(entryId)) return false;
+    place(
+      index,
+      species,
+      fastId: fastId,
+      chargedIds: chargedIds,
+      collectionId: entryId,
+    );
+    return true;
+  }
+
   /// Profil défensif de l'emplacement [index], ou `null` s'il est vide.
   DefenseProfile? defenseOf(int index) {
     final s = _slots[index].species;
@@ -121,19 +170,21 @@ class TeamController extends ChangeNotifier {
     Species species, {
     String? fastId,
     List<String> chargedIds = const <String>[],
+    String? collectionId,
   }) {
     Move? pick(String? id, List<String> allowed) =>
         id != null && allowed.contains(id) ? moves[id] : null;
-    final charged = <Move>[
-      for (final id in chargedIds)
-        if (pick(id, species.chargedMoves) != null)
-          pick(id, species.chargedMoves)!,
-    ];
+    final charged = <Move>[];
+    for (final id in chargedIds) {
+      final m = pick(id, species.chargedMoves);
+      if (m != null && !charged.any((c) => c.id == m.id)) charged.add(m);
+    }
     _slots[index] = TeamSlot(
       species: species,
       fast: pick(fastId, species.fastMoves),
       charged1: charged.isNotEmpty ? charged[0] : null,
       charged2: charged.length > 1 ? charged[1] : null,
+      collectionId: collectionId,
     );
     _changed();
   }
@@ -146,6 +197,7 @@ class TeamController extends ChangeNotifier {
       fast: move,
       charged1: s.charged1,
       charged2: s.charged2,
+      collectionId: s.collectionId,
     );
     _changed();
   }
@@ -154,11 +206,14 @@ class TeamController extends ChangeNotifier {
   /// [index].
   void setCharged(int index, int which, Move? move) {
     final s = _slots[index];
+    final other = which == 1 ? s.charged2 : s.charged1;
+    final picked = move != null && move.id == other?.id ? null : move;
     _slots[index] = TeamSlot(
       species: s.species,
       fast: s.fast,
-      charged1: which == 1 ? move : s.charged1,
-      charged2: which == 2 ? move : s.charged2,
+      charged1: which == 1 ? picked : s.charged1,
+      charged2: which == 2 ? picked : s.charged2,
+      collectionId: s.collectionId,
     );
     _changed();
   }
@@ -191,6 +246,9 @@ class TeamController extends ChangeNotifier {
         fast: pick('fast', species.fastMoves),
         charged1: pick('charged1', species.chargedMoves),
         charged2: pick('charged2', species.chargedMoves),
+        collectionId: m['collectionId'] is String
+            ? m['collectionId'] as String
+            : null,
       );
     }
     notifyListeners();
@@ -205,6 +263,7 @@ class TeamController extends ChangeNotifier {
           'fast': s.fast?.id,
           'charged1': s.charged1?.id,
           'charged2': s.charged2?.id,
+          'collectionId': s.collectionId,
         },
     ];
     unawaited(store.writeTeam(jsonEncode(data)));

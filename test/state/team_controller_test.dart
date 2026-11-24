@@ -66,4 +66,38 @@ void main() {
     await c.load();
     expect(c.slots.every((s) => s.species == null), isTrue);
   });
+
+  test('une attaque chargée ne peut pas être prise deux fois', () {
+    final c = _controller(MemorySettingsStore())
+      ..setSpecies(0, _flambusard)
+      ..setCharged(0, 1, _moves['BRAVE_BIRD']);
+    expect(c.chargedOptionsFor(0, 2), isEmpty);
+    expect(c.chargedOptionsFor(0, 1).map((m) => m.id), <String>['BRAVE_BIRD']);
+    c.setCharged(0, 2, _moves['BRAVE_BIRD']);
+    expect(c.slots[0].charged2, isNull);
+  });
+
+  test('un Pokémon de la collection n\'est importé qu\'une fois', () async {
+    final store = MemorySettingsStore();
+    final c = _controller(store);
+    expect(
+      c.importFromCollection(0, 'e1', _flambusard, fastId: 'INCINERATE',
+          chargedIds: <String>['BRAVE_BIRD', 'BRAVE_BIRD']),
+      isTrue,
+    );
+    expect(c.slots[0].charged1?.id, 'BRAVE_BIRD');
+    expect(c.slots[0].charged2, isNull);
+    expect(c.importFromCollection(1, 'e1', _flambusard), isFalse);
+    expect(c.slots[1].species, isNull);
+    expect(c.importFromCollection(0, 'e1', _flambusard), isTrue);
+    expect(c.importedIds(), <String>{'e1'});
+    expect(c.importedIds(except: 0), isEmpty);
+    c.setFast(0, null);
+    expect(c.slots[0].collectionId, 'e1');
+    final again = _controller(store);
+    await again.load();
+    expect(again.slots[0].collectionId, 'e1');
+    again.setSpecies(0, _flambusard);
+    expect(again.slots[0].collectionId, isNull);
+  });
 }

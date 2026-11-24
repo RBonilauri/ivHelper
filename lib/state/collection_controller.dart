@@ -31,6 +31,7 @@ class SaveOptions {
     this.size = PokeSize.none,
     this.lucky = false,
     this.shiny = false,
+    this.costume = false,
   });
 
   /// Options d'une entrée existante.
@@ -43,6 +44,7 @@ class SaveOptions {
         size: e.size,
         lucky: e.lucky,
         shiny: e.shiny,
+        costume: e.costume,
       );
 
   /// Ligue du tag.
@@ -68,6 +70,9 @@ class SaveOptions {
 
   /// Chromatique.
   final bool shiny;
+
+  /// Costumé.
+  final bool costume;
 }
 
 /// État de la collection : Pokémon enregistrés, filtres, tri et affichage.
@@ -115,6 +120,9 @@ class CollectionController extends ChangeNotifier {
 
   /// Lignes filtrées et triées.
   List<CollectionRow> get visibleRows => filterAndSort(_rows(), _filter, _sort);
+
+  /// Toutes les lignes, sans filtre ni tri.
+  List<CollectionRow> get visibleRowsUnfiltered => _rows();
 
   /// Nombre de Pokémon enregistrés dont l'espèce est connue.
   int get total => _rows().length;
@@ -203,6 +211,7 @@ class CollectionController extends ChangeNotifier {
             size: fresh.size,
             lucky: fresh.lucky,
             shiny: fresh.shiny,
+            costume: fresh.costume,
           )
         : fresh;
     _changed();
@@ -285,11 +294,14 @@ class CollectionController extends ChangeNotifier {
       level: r.level,
       fastMove: valid(o.fastMove, species.fastMoves),
       chargedMove1: valid(o.chargedMove1, species.chargedMoves),
-      chargedMove2: valid(o.chargedMove2, species.chargedMoves),
+      chargedMove2: o.chargedMove2 == o.chargedMove1
+          ? null
+          : valid(o.chargedMove2, species.chargedMoves),
       shadow: o.shadow,
       size: o.size,
       lucky: o.lucky,
       shiny: o.shiny,
+      costume: o.costume,
     );
   }
 
