@@ -136,7 +136,7 @@ class _OverlayHomeState extends State<OverlayHome> {
     try {
       result = await widget.scanner.scan();
     } on Object catch (e) {
-      error = 'Lecture impossible : $e';
+      error = describeScanError(e);
     }
     if (!mounted) return;
     await widget.window.showPanel();
