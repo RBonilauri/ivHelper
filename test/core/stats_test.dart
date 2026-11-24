@@ -26,8 +26,9 @@ void main() {
 
   test('cpm couvre les niveaux 1 à 51 par demi-pas', () {
     expect(cpm(1), closeTo(0.094, 1e-6));
-    expect(cpm(50.5), closeTo(0.8528, 1e-4));
-    expect(cpm(51), closeTo(0.8653, 1e-4));
+    expect(cpm(50), closeTo(0.8403, 1e-4));
+    expect(cpm(50.5), closeTo(0.8428, 1e-4));
+    expect(cpm(51), closeTo(0.8453, 1e-4));
   });
 
   test('cpm refuse un niveau hors de la table', () {
