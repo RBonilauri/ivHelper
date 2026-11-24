@@ -67,7 +67,7 @@ void main() {
   testWidgets('saisir un nom affiche les résultats Super et Hyper',
       (tester) async {
     await _pumpApp(tester);
-    await tester.enterText(find.byType(TextField), 'Flambusard');
+    await tester.enterText(find.byType(TextField).first, 'Flambusard');
     await tester.pumpAndSettle();
     expect(find.text('Flambusard · n° 663'), findsOneWidget);
     expect(find.text('Rang 2 246'), findsOneWidget);
@@ -75,7 +75,7 @@ void main() {
 
   testWidgets('saisir un numéro de Pokédex fonctionne aussi', (tester) async {
     await _pumpApp(tester);
-    await tester.enterText(find.byType(TextField), '663');
+    await tester.enterText(find.byType(TextField).first, '663');
     await tester.pumpAndSettle();
     expect(find.text('Flambusard · n° 663'), findsOneWidget);
   });
@@ -83,7 +83,7 @@ void main() {
   testWidgets('un nom inconnu affiche un message sans résultat',
       (tester) async {
     await _pumpApp(tester);
-    await tester.enterText(find.byType(TextField), 'Zorglub');
+    await tester.enterText(find.byType(TextField).first, 'Zorglub');
     await tester.pumpAndSettle();
     expect(find.text('Espèce inconnue'), findsOneWidget);
     expect(find.textContaining('Rang'), findsNothing);
@@ -91,7 +91,7 @@ void main() {
 
   testWidgets('baisser l\'IV d\'attaque change le rang', (tester) async {
     await _pumpApp(tester);
-    await tester.enterText(find.byType(TextField), 'Flambusard');
+    await tester.enterText(find.byType(TextField).first, 'Flambusard');
     await tester.pumpAndSettle();
     await tester.tap(find.byTooltip('Diminuer Atk'));
     await tester.pumpAndSettle();
@@ -101,7 +101,7 @@ void main() {
   testWidgets('le niveau max 50 place le 15/15/15 au rang 1 en hyper',
       (tester) async {
     await _pumpApp(tester);
-    await tester.enterText(find.byType(TextField), 'Flambusard');
+    await tester.enterText(find.byType(TextField).first, 'Flambusard');
     await tester.pumpAndSettle();
     await tester.tap(find.text('Max 50'));
     await tester.pumpAndSettle();
@@ -113,7 +113,7 @@ void main() {
   testWidgets('Min 10/10/10 relève les IV et restreint le classement',
       (tester) async {
     await _pumpApp(tester);
-    await tester.enterText(find.byType(TextField), 'Flambusard');
+    await tester.enterText(find.byType(TextField).first, 'Flambusard');
     await tester.pumpAndSettle();
     await tester.tap(find.text('Min 10/10/10'));
     await tester.pumpAndSettle();
@@ -204,7 +204,7 @@ void main() {
   testWidgets('enregistrer avec ligue et options, filtrer, voir, supprimer',
       (tester) async {
     await _pumpApp(tester);
-    await tester.enterText(find.byType(TextField), 'Flambusard');
+    await tester.enterText(find.byType(TextField).first, 'Flambusard');
     await tester.pumpAndSettle();
     await tester.tap(find.text('Hyper'));
     await tester.pumpAndSettle();
@@ -271,7 +271,7 @@ void main() {
 
   testWidgets('un rang 1 porte le badge doré', (tester) async {
     await _pumpApp(tester);
-    await tester.enterText(find.byType(TextField), 'Flambusard');
+    await tester.enterText(find.byType(TextField).first, 'Flambusard');
     await tester.pumpAndSettle();
     await tester.tap(find.text('Master'));
     await tester.pumpAndSettle();
@@ -294,7 +294,7 @@ void main() {
       tester,
       meta: fakeMetaJson(best: <String>['Florges', 'Flambusard (Obscur)']),
     );
-    await tester.enterText(find.byType(TextField), 'Flambusard');
+    await tester.enterText(find.byType(TextField).first, 'Flambusard');
     await tester.pumpAndSettle();
     await tester.tap(find.text('Enregistrer'));
     await tester.pumpAndSettle();
@@ -346,7 +346,7 @@ void main() {
   testWidgets('importer un Pokémon de la collection dans l\'équipe, une fois',
       (tester) async {
     await _pumpApp(tester);
-    await tester.enterText(find.byType(TextField), 'Flambusard');
+    await tester.enterText(find.byType(TextField).first, 'Flambusard');
     await tester.pumpAndSettle();
     await tester.tap(find.text('Enregistrer'));
     await tester.pumpAndSettle();
@@ -380,7 +380,7 @@ void main() {
   testWidgets('la méta ne marque pas un Pokémon tagué dans une autre ligue',
       (tester) async {
     await _pumpApp(tester);
-    await tester.enterText(find.byType(TextField), 'Flambusard');
+    await tester.enterText(find.byType(TextField).first, 'Flambusard');
     await tester.pumpAndSettle();
     await tester.tap(find.text('Hyper'));
     await tester.pumpAndSettle();
@@ -400,7 +400,7 @@ void main() {
 
   testWidgets('le bandeau « Voir » disparaît après 5 secondes', (tester) async {
     await _pumpApp(tester);
-    await tester.enterText(find.byType(TextField), 'Flambusard');
+    await tester.enterText(find.byType(TextField).first, 'Flambusard');
     await tester.pumpAndSettle();
     await tester.tap(find.text('Enregistrer'));
     await tester.pumpAndSettle();
@@ -456,7 +456,7 @@ void main() {
   testWidgets('le menu d\'enregistrement met en évidence les attaques méta',
       (tester) async {
     await _pumpApp(tester);
-    await tester.enterText(find.byType(TextField), 'Flambusard');
+    await tester.enterText(find.byType(TextField).first, 'Flambusard');
     await tester.pumpAndSettle();
     await tester.tap(find.text('Enregistrer'));
     await tester.pumpAndSettle();
@@ -469,5 +469,72 @@ void main() {
     await tester.tap(find.text('Hyper').last);
     await tester.pumpAndSettle();
     expect(find.byKey(const ValueKey<String>('meta-moves')), findsNothing);
+  });
+
+  testWidgets('saisie des IV : barre à toucher et saisie rapide',
+      (tester) async {
+    await _pumpApp(tester);
+    await tester.enterText(find.byType(TextField).first, 'Flambusard');
+    await tester.pumpAndSettle();
+    final bar = find.byKey(const ValueKey<String>('iv-bar-Atk'));
+    await tester.tapAt(tester.getCenter(bar));
+    await tester.pumpAndSettle();
+    expect(
+      tester.widget<Text>(find.byKey(const ValueKey<String>('iv-value-Atk'))).data,
+      '8',
+    );
+    await tester.enterText(
+      find.byKey(const ValueKey<String>('quick-iv')),
+      '13/15/15',
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Hyper'));
+    await tester.pumpAndSettle();
+    expect(find.text('Rang 1'), findsOneWidget);
+  });
+
+  testWidgets('sans recherche, les dernières recherches sont proposées',
+      (tester) async {
+    await _pumpApp(tester);
+    await tester.enterText(find.byType(TextField).first, 'Flambusard');
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('Diminuer PV'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField).first, '');
+    await tester.pumpAndSettle();
+    expect(find.text('Dernières recherches'), findsOneWidget);
+    await tester.tap(find.text('Flambusard · 15/15/14'));
+    await tester.pumpAndSettle();
+    expect(find.text('Flambusard · n° 663'), findsOneWidget);
+    expect(
+      tester.widget<Text>(find.byKey(const ValueKey<String>('iv-value-PV'))).data,
+      '14',
+    );
+  });
+
+  testWidgets('collection : filtre de type en un appui', (tester) async {
+    await _pumpApp(tester);
+    await tester.enterText(find.byType(TextField).first, 'Flambusard');
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Enregistrer'));
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('Enregistrer dans la collection'));
+    await tester.tap(find.text('Enregistrer dans la collection'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('Paramètres'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Ma collection'));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey<String>('type-filter-fire')), findsOneWidget);
+    expect(find.byKey(const ValueKey<String>('type-filter-water')), findsNothing);
+    await tester.tap(find.byKey(const ValueKey<String>('type-filter-flying')));
+    await tester.pumpAndSettle();
+    expect(find.text('Types · 1 choisi'), findsOneWidget);
+    expect(find.text('1 Pokémon sur 1'), findsOneWidget);
+    await tester.tap(find.text('Tous les types'));
+    await tester.pumpAndSettle();
+    expect(find.text('Types (touche pour filtrer)'), findsOneWidget);
+    await tester.pump(const Duration(seconds: 10));
+    await tester.pumpAndSettle();
   });
 }

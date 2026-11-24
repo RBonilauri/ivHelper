@@ -407,6 +407,7 @@ class _SummaryCard extends StatelessWidget {
             ),
             const SizedBox(height: 10),
             _ChipLine(
+              collapsible: true,
               label: 'Super efficace contre (${summary.coverage.length}/18)',
               color: _good,
               empty: 'Choisis des attaques pour voir la couverture',
@@ -415,6 +416,7 @@ class _SummaryCard extends StatelessWidget {
               ],
             ),
             _ChipLine(
+              collapsible: true,
               label: 'Types d\'attaque de l\'équipe',
               color: _good,
               empty: 'Aucune attaque choisie',
@@ -423,6 +425,7 @@ class _SummaryCard extends StatelessWidget {
               ],
             ),
             _ChipLine(
+              collapsible: true,
               label: 'Au moins un résiste à (${summary.resisted.length}/18)',
               color: _good,
               children: <Widget>[
@@ -430,6 +433,7 @@ class _SummaryCard extends StatelessWidget {
               ],
             ),
             _ChipLine(
+              collapsible: true,
               label: 'Faiblesses partagées',
               color: _bad,
               empty: 'Aucune : bonne complémentarité',
@@ -438,6 +442,7 @@ class _SummaryCard extends StatelessWidget {
               ],
             ),
             _ChipLine(
+              collapsible: true,
               label: 'Personne ne résiste à',
               color: _bad,
               empty: 'Chaque type est résisté par au moins un',
@@ -446,6 +451,7 @@ class _SummaryCard extends StatelessWidget {
               ],
             ),
             _ChipLine(
+              collapsible: true,
               label: 'Aucune attaque efficace contre',
               color: _bad,
               empty: 'Les 18 types sont couverts',
@@ -517,12 +523,13 @@ class _SectionTitle extends StatelessWidget {
   }
 }
 
-class _ChipLine extends StatelessWidget {
+class _ChipLine extends StatefulWidget {
   const _ChipLine({
     required this.label,
     required this.color,
     required this.children,
     this.empty = 'Aucun',
+    this.collapsible = false,
   });
 
   final String label;
@@ -530,30 +537,76 @@ class _ChipLine extends StatelessWidget {
   final List<Widget> children;
   final String empty;
 
+  /// Vrai pour une rubrique repliée par défaut, ouverte d'un appui.
+  final bool collapsible;
+
+  @override
+  State<_ChipLine> createState() => _ChipLineState();
+}
+
+class _ChipLineState extends State<_ChipLine> {
+  late bool _open = !widget.collapsible;
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final header = Row(
+      children: <Widget>[
+        Container(
+          width: 8,
+          height: 8,
+          decoration: BoxDecoration(color: widget.color, shape: BoxShape.circle),
+        ),
+        const SizedBox(width: 6),
+        Expanded(child: Text(widget.label, style: theme.textTheme.labelMedium)),
+        if (widget.collapsible) ...<Widget>[
+          if (!_open)
+            Text(
+              '${widget.children.length}',
+              style: theme.textTheme.labelMedium?.copyWith(
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+          Icon(_open ? Icons.expand_less : Icons.expand_more, size: 20),
+        ],
+      ],
+    );
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
+      padding: EdgeInsets.symmetric(vertical: widget.collapsible ? 2 : 4),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
-          Row(
-            children: <Widget>[
-              Container(
-                width: 8,
-                height: 8,
-                decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+          if (widget.collapsible)
+            Semantics(
+              button: true,
+              expanded: _open,
+              child: InkWell(
+                borderRadius: BorderRadius.circular(8),
+                onTap: () => setState(() => _open = !_open),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  child: header,
+                ),
               ),
-              const SizedBox(width: 6),
-              Text(label, style: theme.textTheme.labelMedium),
-            ],
-          ),
-          const SizedBox(height: 4),
-          if (children.isEmpty)
-            Text(empty, style: theme.textTheme.bodySmall)
+            )
           else
-            Wrap(spacing: 6, runSpacing: 6, children: children),
+            header,
+          AnimatedSize(
+            duration: const Duration(milliseconds: 180),
+            alignment: Alignment.topCenter,
+            child: !_open
+                ? const SizedBox(width: double.infinity)
+                : Padding(
+                    padding: const EdgeInsets.only(top: 4, bottom: 4),
+                    child: widget.children.isEmpty
+                        ? Text(widget.empty, style: theme.textTheme.bodySmall)
+                        : Wrap(
+                            spacing: 6,
+                            runSpacing: 6,
+                            children: widget.children,
+                          ),
+                  ),
+          ),
         ],
       ),
     );

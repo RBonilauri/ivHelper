@@ -31,6 +31,12 @@ abstract interface class SettingsStore {
 
   /// Enregistre la collection (JSON).
   Future<void> writeCollection(String value);
+
+  /// Lit les dernières recherches (JSON), ou `null`.
+  Future<String?> readHistory();
+
+  /// Enregistre les dernières recherches (JSON).
+  Future<void> writeHistory(String value);
 }
 
 /// Stockage en mémoire, sans persistance.
@@ -40,6 +46,7 @@ class MemorySettingsStore implements SettingsStore {
   String? _team;
   String? _meta;
   String? _collection;
+  String? _history;
 
   @override
   Future<String?> readThemeMode() async => _mode;
@@ -70,6 +77,12 @@ class MemorySettingsStore implements SettingsStore {
 
   @override
   Future<void> writeCollection(String value) async => _collection = value;
+
+  @override
+  Future<String?> readHistory() async => _history;
+
+  @override
+  Future<void> writeHistory(String value) async => _history = value;
 }
 
 /// Réglages de l'application : mode d'affichage et taille de police.
