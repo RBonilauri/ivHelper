@@ -17,6 +17,7 @@ import 'collection_screen.dart';
 import 'iv_logo.dart';
 import 'meta_screen.dart';
 import 'result_panel.dart';
+import 'save_pokemon_sheet.dart';
 import 'settings_drawer.dart';
 import 'update_banner.dart';
 import 'team_builder_screen.dart';
@@ -72,6 +73,7 @@ class _HomeScreenState extends State<HomeScreen> {
     moves: widget.moves,
     store: widget.settings.store,
   );
+  League _league = League.great;
   late final UpdateController _update = UpdateController(
     source: widget.updateSource,
     currentBuild: widget.currentBuild,
@@ -121,25 +123,41 @@ class _HomeScreenState extends State<HomeScreen> {
   void _save(BuildContext context) {
     final species = _controller.species;
     if (species == null) return;
-    final added = _collection.add(species, _controller.iv, _controller.maxLevel);
     final iv = _controller.iv;
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(
-        SnackBar(
-          content: Text(
-            added
-                ? '${species.nameFr} ${iv.atk}/${iv.def}/${iv.sta} enregistré'
-                : 'Déjà dans ta collection',
-          ),
-          action: SnackBarAction(
-            label: 'Voir',
-            onPressed: () {
-              if (context.mounted) _openCollection(context);
-            },
-          ),
+    final maxLevel = _controller.maxLevel;
+    final messenger = ScaffoldMessenger.of(context);
+    unawaited(
+      showSaveSheet(
+        context,
+        SavePokemonSheet(
+          species: species,
+          iv: iv,
+          moves: widget.moves,
+          initialLeague: _league,
+          rankFor: (league) =>
+              _collection.rankFor(species, iv, maxLevel, league),
+          onSave: (options) {
+            final entry = _collection.add(species, iv, maxLevel, options);
+            messenger
+              ..hideCurrentSnackBar()
+              ..showSnackBar(
+                SnackBar(
+                  content: Text(
+                    '${species.nameFr} ${iv.atk}/${iv.def}/${iv.sta} '
+                    'enregistré (${entry.league.label}, rang ${entry.rank})',
+                  ),
+                  action: SnackBarAction(
+                    label: 'Voir',
+                    onPressed: () {
+                      if (context.mounted) _openCollection(context);
+                    },
+                  ),
+                ),
+              );
+          },
         ),
-      );
+      ),
+    );
   }
 
   void _openTeam(BuildContext context) {
@@ -402,7 +420,11 @@ class _HomeScreenState extends State<HomeScreen> {
         ],
       ),
       const SizedBox(height: 8),
-      ResultPanel(species: species, result: result),
+      ResultPanel(
+        species: species,
+        result: result,
+        onLeagueChanged: (league) => _league = league,
+      ),
     ];
   }
 }

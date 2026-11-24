@@ -10,7 +10,67 @@ import '../core/species_repository.dart';
 import '../core/stats.dart';
 import '../settings/settings_controller.dart';
 
-/// État de la collection : Pokémon enregistrés, filtres et tri.
+/// Affichage de la collection.
+enum CollectionView {
+  /// Une ligne par Pokémon.
+  list,
+
+  /// Une mosaïque de cases.
+  grid,
+}
+
+/// Options choisies dans le menu d'enregistrement.
+class SaveOptions {
+  /// Crée des options.
+  const SaveOptions({
+    required this.league,
+    this.fastMove,
+    this.chargedMove1,
+    this.chargedMove2,
+    this.shadow = ShadowState.none,
+    this.size = PokeSize.none,
+    this.lucky = false,
+    this.shiny = false,
+  });
+
+  /// Options d'une entrée existante.
+  factory SaveOptions.of(CollectionEntry e) => SaveOptions(
+        league: e.league,
+        fastMove: e.fastMove,
+        chargedMove1: e.chargedMove1,
+        chargedMove2: e.chargedMove2,
+        shadow: e.shadow,
+        size: e.size,
+        lucky: e.lucky,
+        shiny: e.shiny,
+      );
+
+  /// Ligue du tag.
+  final League league;
+
+  /// Attaque immédiate.
+  final String? fastMove;
+
+  /// Première attaque chargée.
+  final String? chargedMove1;
+
+  /// Seconde attaque chargée.
+  final String? chargedMove2;
+
+  /// Obscur ou purifié.
+  final ShadowState shadow;
+
+  /// Taille notable.
+  final PokeSize size;
+
+  /// Chanceux.
+  final bool lucky;
+
+  /// Chromatique.
+  final bool shiny;
+}
+
+/// État de la collection : Pokémon enregistrés, filtres, tri et affichage.
 class CollectionController extends ChangeNotifier {
   /// Crée le contrôleur.
   CollectionController({
@@ -30,9 +90,9 @@ class CollectionController extends ChangeNotifier {
 
   final List<CollectionEntry> _entries = <CollectionEntry>[];
   final Map<String, RankTable> _tables = <String, RankTable>{};
-  League _league = League.great;
   CollectionFilter _filter = const CollectionFilter();
   CollectionSort _sort = CollectionSort.rank;
+  CollectionView _view = CollectionView.list;
   bool _disposed = false;
   int _counter = 0;
 
@@ -40,29 +100,31 @@ class CollectionController extends ChangeNotifier {
   List<CollectionEntry> get entries =>
       List<CollectionEntry>.unmodifiable(_entries);
 
-  /// Ligue affichée.
-  League get league => _league;
-
   /// Filtres actifs.
   CollectionFilter get filter => _filter;
 
   /// Tri actif.
   CollectionSort get sort => _sort;
 
+  /// Affichage actif.
+  CollectionView get view => _view;
+
   /// Noms des espèces possédées (pour la méta).
   Set<String> get ownedSpecies =>
       <String>{for (final e in _entries) e.speciesName};
 
-  /// Lignes de la ligue affichée, filtrées et triées.
+  /// Lignes filtrées et triées.
   List<CollectionRow> get visibleRows => filterAndSort(_rows(), _filter, _sort);
 
   /// Nombre de Pokémon enregistrés dont l'espèce est connue.
   int get total => _rows().length;
 
-  /// Change la ligue affichée.
-  void setLeague(League value) {
-    _league = value;
-    notifyListeners();
+  /// Ligne de l'entrée [id], ou `null`.
+  CollectionRow? rowOf(String id) {
+    for (final r in _rows()) {
+      if (r.entry.id == id) return r;
+    }
+    return null;
   }
 
   /// Change les filtres.
@@ -77,30 +139,78 @@ class CollectionController extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Enregistre [species] avec ses [iv] ; renvoie faux s'il y est déjà.
-  bool add(Species species, Iv iv, double maxLevel) {
-    final entry = CollectionEntry(
-      id: '${DateTime.now().microsecondsSinceEpoch}-${_counter++}',
-      speciesName: species.nameFr,
-      iv: iv,
+  /// Change l'affichage.
+  void setView(CollectionView value) {
+    _view = value;
+    notifyListeners();
+  }
+
+  /// Classement des [iv] de [species] dans [league] au niveau max [maxLevel].
+  RankEntry rankFor(Species species, Iv iv, double maxLevel, League league) {
+    final key = '${species.nameFr}|$maxLevel|${league.cpCap}';
+    final table = _tables[key] ??= buildRankTable(
+      species.base,
+      cpCap: league.cpCap,
       maxLevel: maxLevel,
     );
-    if (_entries.any(entry.sameAs)) return false;
+    return table.entryFor(iv);
+  }
+
+  /// Enregistre [species] avec ses [iv] et les [options] ; le rang dans la
+  /// ligue choisie est figé maintenant.
+  CollectionEntry add(
+    Species species,
+    Iv iv,
+    double maxLevel,
+    SaveOptions options,
+  ) {
+    final entry = _build(
+      '${DateTime.now().microsecondsSinceEpoch}-${_counter++}',
+      species,
+      iv,
+      maxLevel,
+      options,
+    );
     _entries.add(entry);
     _changed();
-    return true;
+    return entry;
+  }
+
+  /// Remplace les options de l'entrée [id] ; le rang est recalculé si la
+  /// ligue change.
+  void update(String id, SaveOptions options) {
+    final i = _entries.indexWhere((e) => e.id == id);
+    if (i < 0) return;
+    final old = _entries[i];
+    final species = repository.findByName(old.speciesName);
+    if (species == null) return;
+    final fresh = _build(id, species, old.iv, old.maxLevel, options);
+    _entries[i] = old.league == options.league
+        ? CollectionEntry(
+            id: id,
+            speciesName: old.speciesName,
+            iv: old.iv,
+            maxLevel: old.maxLevel,
+            league: old.league,
+            rank: old.rank,
+            percent: old.percent,
+            cp: old.cp,
+            level: old.level,
+            fastMove: fresh.fastMove,
+            chargedMove1: fresh.chargedMove1,
+            chargedMove2: fresh.chargedMove2,
+            shadow: fresh.shadow,
+            size: fresh.size,
+            lucky: fresh.lucky,
+            shiny: fresh.shiny,
+          )
+        : fresh;
+    _changed();
   }
 
   /// Retire l'entrée [id].
   void remove(String id) {
     _entries.removeWhere((e) => e.id == id);
-    _changed();
-  }
-
-  /// Remet [entry] (après une annulation).
-  void restore(CollectionEntry entry) {
-    if (_entries.any((e) => e.id == entry.id)) return;
-    _entries.add(entry);
     _changed();
   }
 
@@ -115,14 +225,72 @@ class CollectionController extends ChangeNotifier {
       return;
     }
     if (decoded is! List<dynamic>) return;
-    _entries
-      ..clear()
-      ..addAll(<CollectionEntry>[
-        for (final item in decoded)
-          if (CollectionEntry.fromJson(item) != null)
-            CollectionEntry.fromJson(item)!,
-      ]);
-    notifyListeners();
+    var migrated = false;
+    _entries.clear();
+    for (final item in decoded) {
+      final entry = CollectionEntry.fromJson(item) ?? _legacy(item);
+      if (entry == null) continue;
+      if (CollectionEntry.fromJson(item) == null) migrated = true;
+      _entries.add(entry);
+    }
+    if (migrated) {
+      _changed();
+    } else {
+      notifyListeners();
+    }
+  }
+
+  /// Entrée de l'ancien format (sans ligue ni rang) : rangée en ligue super,
+  /// rang calculé maintenant.
+  CollectionEntry? _legacy(Object? item) {
+    if (item is! Map<String, dynamic>) return null;
+    final id = item['id'];
+    final name = item['species'];
+    final iv = item['iv'];
+    if (id is! String || name is! String || iv is! List<dynamic>) return null;
+    if (iv.length != 3 || iv.any((v) => v is! int || v < 0 || v > 15)) {
+      return null;
+    }
+    final species = repository.findByName(name);
+    if (species == null || species.nameFr != name) return null;
+    final maxLevel = item['maxLevel'];
+    return _build(
+      id,
+      species,
+      Iv(iv[0] as int, iv[1] as int, iv[2] as int),
+      maxLevel is num ? maxLevel.toDouble() : 51,
+      const SaveOptions(league: League.great),
+    );
+  }
+
+  CollectionEntry _build(
+    String id,
+    Species species,
+    Iv iv,
+    double maxLevel,
+    SaveOptions o,
+  ) {
+    final r = rankFor(species, iv, maxLevel, o.league);
+    String? valid(String? moveId, List<String> allowed) =>
+        moveId != null && allowed.contains(moveId) ? moveId : null;
+    return CollectionEntry(
+      id: id,
+      speciesName: species.nameFr,
+      iv: iv,
+      maxLevel: maxLevel,
+      league: o.league,
+      rank: r.rank,
+      percent: r.percent,
+      cp: r.cp,
+      level: r.level,
+      fastMove: valid(o.fastMove, species.fastMoves),
+      chargedMove1: valid(o.chargedMove1, species.chargedMoves),
+      chargedMove2: valid(o.chargedMove2, species.chargedMoves),
+      shadow: o.shadow,
+      size: o.size,
+      lucky: o.lucky,
+      shiny: o.shiny,
+    );
   }
 
   List<CollectionRow> _rows() {
@@ -130,18 +298,15 @@ class CollectionController extends ChangeNotifier {
     for (final e in _entries) {
       final species = repository.findByName(e.speciesName);
       if (species == null || species.nameFr != e.speciesName) continue;
-      final key = '${species.nameFr}|${e.maxLevel}|${_league.cpCap}';
-      final table = _tables[key] ??= buildRankTable(
-        species.base,
-        cpCap: _league.cpCap,
-        maxLevel: e.maxLevel,
-      );
       rows.add(
         CollectionRow(
           entry: e,
           species: species,
-          rank: table.entryFor(e.iv),
-          moves: moves.resolve(<String>[
+          recordedMoves: <Move>[
+            for (final id in e.moveIds)
+              if (moves[id] != null) moves[id]!,
+          ],
+          learnableMoves: moves.resolve(<String>[
             ...species.fastMoves,
             ...species.chargedMoves,
           ]),
@@ -156,7 +321,7 @@ class CollectionController extends ChangeNotifier {
     notifyListeners();
     unawaited(
       store.writeCollection(
-        jsonEncode(<Map<String, Object>>[
+        jsonEncode(<Map<String, Object?>>[
           for (final e in _entries) e.toJson(),
         ]),
       ),

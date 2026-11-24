@@ -3,13 +3,13 @@ import 'package:material_ui/material_ui.dart';
 import '../core/collection.dart';
 import '../core/poke_type.dart';
 import '../state/collection_controller.dart';
+import 'collection_detail_screen.dart';
+import 'collection_widgets.dart';
 import 'format.dart';
 import 'type_badge.dart';
 
-/// Rangs proposés par le filtre de rang (`null` : tous).
-const List<int?> rankThresholds = <int?>[null, 10, 50, 100, 500];
-
-/// Collection : Pokémon enregistrés avec leurs IV, filtrables et triables.
+/// Collection : Pokémon enregistrés, filtrables, triables, en liste ou en
+/// mosaïque.
 class CollectionScreen extends StatelessWidget {
   /// Crée l'écran.
   const CollectionScreen({
@@ -27,24 +27,66 @@ class CollectionScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Ma collection')),
+      appBar: AppBar(
+        title: const Text('Ma collection'),
+        actions: <Widget>[
+          ListenableBuilder(
+            listenable: collection,
+            builder: (context, _) => collection.view == CollectionView.list
+                ? IconButton(
+                    tooltip: 'Afficher en mosaïque',
+                    icon: const Icon(Icons.grid_view),
+                    onPressed: () => collection.setView(CollectionView.grid),
+                  )
+                : IconButton(
+                    tooltip: 'Afficher en liste',
+                    icon: const Icon(Icons.view_list),
+                    onPressed: () => collection.setView(CollectionView.list),
+                  ),
+          ),
+        ],
+      ),
       body: SafeArea(
         child: ListenableBuilder(
           listenable: collection,
           builder: (context, _) {
             final rows = collection.visibleRows;
-            return ListView.builder(
-              padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
-              itemCount: rows.length + 1,
-              itemBuilder: (context, i) {
-                if (i == 0) return _Controls(collection: collection, shown: rows.length);
-                final row = rows[i - 1];
-                return _RowCard(
-                  row: row,
-                  onTap: () => onOpen(context, row.entry),
-                  onDelete: () => _delete(context, row.entry),
-                );
-              },
+            final scale = MediaQuery.textScalerOf(context).scale(1);
+            return CustomScrollView(
+              slivers: <Widget>[
+                SliverPadding(
+                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+                  sliver: SliverToBoxAdapter(
+                    child: _Controls(collection: collection, shown: rows.length),
+                  ),
+                ),
+                SliverPadding(
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+                  sliver: collection.view == CollectionView.list
+                      ? SliverList.builder(
+                          itemCount: rows.length,
+                          itemBuilder: (context, i) => _ListTile(
+                            row: rows[i],
+                            onTap: () => _openDetail(context, rows[i]),
+                            onDelete: () => _delete(context, rows[i].entry),
+                          ),
+                        )
+                      : SliverGrid.builder(
+                          gridDelegate:
+                              SliverGridDelegateWithMaxCrossAxisExtent(
+                            maxCrossAxisExtent: 200,
+                            mainAxisExtent: 168 * scale,
+                            mainAxisSpacing: 8,
+                            crossAxisSpacing: 8,
+                          ),
+                          itemCount: rows.length,
+                          itemBuilder: (context, i) => _GridTile(
+                            row: rows[i],
+                            onTap: () => _openDetail(context, rows[i]),
+                          ),
+                        ),
+                ),
+              ],
             );
           },
         ),
@@ -52,19 +94,20 @@ class CollectionScreen extends StatelessWidget {
     );
   }
 
-  void _delete(BuildContext context, CollectionEntry entry) {
-    collection.remove(entry.id);
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(
-        SnackBar(
-          content: Text('${entry.speciesName} retiré de la collection'),
-          action: SnackBarAction(
-            label: 'Annuler',
-            onPressed: () => collection.restore(entry),
-          ),
+  void _openDetail(BuildContext context, CollectionRow row) {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => CollectionDetailScreen(
+          collection: collection,
+          entryId: row.entry.id,
+          onOpen: onOpen,
         ),
-      );
+      ),
+    );
+  }
+
+  Future<void> _delete(BuildContext context, CollectionEntry entry) async {
+    if (await confirmDelete(context, entry)) collection.remove(entry.id);
   }
 }
 
@@ -79,33 +122,33 @@ class _Controls extends StatelessWidget {
     final theme = Theme.of(context);
     final filter = collection.filter;
     final total = collection.total;
+    final moveCount =
+        filter.moveTypes.length + (filter.moveQuery.trim().isEmpty ? 0 : 1);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
-        SegmentedButton<League>(
-          showSelectedIcon: false,
-          style: const ButtonStyle(
-            padding: WidgetStatePropertyAll<EdgeInsetsGeometry>(
-              EdgeInsets.symmetric(horizontal: 4, vertical: 6),
+        Text('Ligue', style: theme.textTheme.labelLarge),
+        const SizedBox(height: 4),
+        Wrap(
+          spacing: 6,
+          runSpacing: 6,
+          children: <Widget>[
+            ChoiceChip(
+              label: const Text('Toutes'),
+              selected: filter.league == null,
+              onSelected: (_) =>
+                  collection.setFilter(collection.filter.copyWith(clearLeague: true)),
             ),
-          ),
-          segments: <ButtonSegment<League>>[
             for (final l in League.values)
-              ButtonSegment<League>(
-                value: l,
-                label: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: <Widget>[
-                    Text(l.label),
-                    Text(l.capLabel, style: theme.textTheme.labelSmall),
-                  ],
-                ),
+              ChoiceChip(
+                label: Text(l.label),
+                selected: filter.league == l,
+                onSelected: (_) =>
+                    collection.setFilter(collection.filter.copyWith(league: l)),
               ),
           ],
-          selected: <League>{collection.league},
-          onSelectionChanged: (s) => collection.setLeague(s.first),
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 10),
         Text('Rang d\'IV', style: theme.textTheme.labelLarge),
         const SizedBox(height: 4),
         Wrap(
@@ -118,38 +161,29 @@ class _Controls extends StatelessWidget {
                 selected: filter.maxRank == t,
                 onSelected: (_) => collection.setFilter(
                   t == null
-                      ? filter.copyWith(clearMaxRank: true)
-                      : filter.copyWith(maxRank: t),
+                      ? collection.filter.copyWith(clearMaxRank: true)
+                      : collection.filter.copyWith(maxRank: t),
                 ),
               ),
           ],
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 10),
         Wrap(
           spacing: 6,
           runSpacing: 6,
-          crossAxisAlignment: WrapCrossAlignment.center,
           children: <Widget>[
             ActionChip(
               avatar: const Icon(Icons.category, size: 18),
               label: Text(
-                filter.types.isEmpty ? 'Types' : 'Types (${filter.types.length})',
+                filter.types.isEmpty
+                    ? 'Types'
+                    : 'Types (${filter.types.length})',
               ),
-              onPressed: () => _typeSheet(
-                context,
-                title: 'Filtrer par type du Pokémon',
-                read: () => collection.filter.types,
-                write: (v) =>
-                    collection.setFilter(collection.filter.copyWith(types: v)),
-              ),
+              onPressed: () => _typeSheet(context),
             ),
             ActionChip(
               avatar: const Icon(Icons.flash_on, size: 18),
-              label: Text(
-                filter.moveTypes.isEmpty && filter.moveQuery.trim().isEmpty
-                    ? 'Attaques'
-                    : 'Attaques (${filter.moveTypes.length + (filter.moveQuery.trim().isEmpty ? 0 : 1)})',
-              ),
+              label: Text(moveCount == 0 ? 'Attaques' : 'Attaques ($moveCount)'),
               onPressed: () => _moveSheet(context),
             ),
             if (filter.activeCount > 0)
@@ -161,7 +195,7 @@ class _Controls extends StatelessWidget {
               ),
           ],
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 6),
         Row(
           children: <Widget>[
             Expanded(
@@ -192,7 +226,7 @@ class _Controls extends StatelessWidget {
         ),
         if (total == 0)
           Padding(
-            padding: const EdgeInsets.only(top: 16),
+            padding: const EdgeInsets.only(top: 8),
             child: Text(
               'Sur l\'écran de rang, choisis un Pokémon et ses IV puis touche '
               '« Enregistrer » pour l\'ajouter ici.',
@@ -201,23 +235,17 @@ class _Controls extends StatelessWidget {
           )
         else if (shown == 0)
           Padding(
-            padding: const EdgeInsets.only(top: 16),
+            padding: const EdgeInsets.only(top: 8),
             child: Text(
               'Aucun Pokémon ne correspond à ces filtres.',
               style: theme.textTheme.bodyMedium,
             ),
           ),
-        const SizedBox(height: 8),
       ],
     );
   }
 
-  Future<void> _typeSheet(
-    BuildContext context, {
-    required String title,
-    required Set<PokeType> Function() read,
-    required void Function(Set<PokeType>) write,
-  }) {
+  Future<void> _typeSheet(BuildContext context) {
     return showModalBottomSheet<void>(
       context: context,
       showDragHandle: true,
@@ -226,7 +254,12 @@ class _Controls extends StatelessWidget {
         builder: (context, _) => SafeArea(
           child: Padding(
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-            child: _TypePicker(title: title, selected: read(), onChanged: write),
+            child: _TypePicker(
+              title: 'Filtrer par type du Pokémon',
+              selected: collection.filter.types,
+              onChanged: (v) =>
+                  collection.setFilter(collection.filter.copyWith(types: v)),
+            ),
           ),
         ),
       ),
@@ -252,6 +285,12 @@ class _Controls extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
+                Text(
+                  'Attaques enregistrées ; à défaut, celles que le Pokémon '
+                  'peut apprendre.',
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+                const SizedBox(height: 8),
                 TextFormField(
                   initialValue: collection.filter.moveQuery,
                   decoration: const InputDecoration(
@@ -265,7 +304,7 @@ class _Controls extends StatelessWidget {
                 ),
                 const SizedBox(height: 12),
                 _TypePicker(
-                  title: 'Peut apprendre une attaque de type',
+                  title: 'Attaque de type',
                   selected: collection.filter.moveTypes,
                   onChanged: (v) => collection.setFilter(
                     collection.filter.copyWith(moveTypes: v),
@@ -332,8 +371,8 @@ class _TypePicker extends StatelessWidget {
   }
 }
 
-class _RowCard extends StatelessWidget {
-  const _RowCard({
+class _ListTile extends StatelessWidget {
+  const _ListTile({
     required this.row,
     required this.onTap,
     required this.onDelete,
@@ -346,11 +385,16 @@ class _RowCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final r = row.rank;
-    final iv = row.entry.iv;
+    final e = row.entry;
+    final iv = e.iv;
     return Card(
-      key: ValueKey<String>('collection-${row.entry.id}'),
+      key: ValueKey<String>('collection-${e.id}'),
       margin: const EdgeInsets.only(bottom: 8),
+      color: tileColor(context, row),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: tileBorder(context, row),
+      ),
       child: InkWell(
         borderRadius: BorderRadius.circular(16),
         onTap: onTap,
@@ -358,65 +402,113 @@ class _RowCard extends StatelessWidget {
           padding: const EdgeInsets.fromLTRB(12, 10, 4, 10),
           child: Row(
             children: <Widget>[
-              Container(
-                width: 56,
-                padding: const EdgeInsets.symmetric(vertical: 6),
-                decoration: BoxDecoration(
-                  color: theme.colorScheme.primaryContainer,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Column(
-                  children: <Widget>[
-                    Text('Rang', style: theme.textTheme.labelSmall),
-                    Text(
-                      formatGrouped(r.rank),
-                      style: theme.textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w800,
-                        color: theme.colorScheme.onPrimaryContainer,
-                      ),
+              Column(
+                children: <Widget>[
+                  for (final t in row.species.types)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 4),
+                      child: TypeBadge(t, size: 30),
                     ),
-                  ],
-                ),
+                ],
               ),
               const SizedBox(width: 12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: <Widget>[
-                    Row(
+                    Text(row.species.nameFr, style: theme.textTheme.titleSmall),
+                    const SizedBox(height: 4),
+                    Wrap(
+                      spacing: 6,
+                      runSpacing: 4,
+                      crossAxisAlignment: WrapCrossAlignment.center,
                       children: <Widget>[
-                        Flexible(
-                          child: Text(
-                            row.species.nameFr,
-                            style: theme.textTheme.titleSmall,
-                          ),
-                        ),
-                        for (final t in row.species.types)
-                          Padding(
-                            padding: const EdgeInsetsDirectional.only(start: 4),
-                            child: TypeBadge(t, size: 20),
-                          ),
+                        LeagueTag(e),
+                        if (e.isRankOne) const RankOneBadge(),
+                        EntryAttributes(e),
                       ],
                     ),
-                    const SizedBox(height: 2),
+                    const SizedBox(height: 4),
                     Text(
                       'IV ${iv.atk}/${iv.def}/${iv.sta} · '
-                      '${formatPercent(r.percent)} · n° ${row.species.dex}',
-                      style: theme.textTheme.bodySmall,
-                    ),
-                    Text(
-                      'PC ${formatGrouped(r.cp)} · niveau ${formatLevel(r.level)}'
-                      '${row.entry.maxLevel > 50 ? '' : ' (max 50)'}',
+                      '${formatPercent(e.percent)} · PC ${formatGrouped(e.cp)}',
                       style: theme.textTheme.bodySmall,
                     ),
                   ],
                 ),
               ),
               IconButton(
-                tooltip: 'Retirer ${row.species.nameFr}',
+                tooltip: 'Supprimer ${row.species.nameFr}',
                 icon: const Icon(Icons.delete_outline),
                 onPressed: onDelete,
               ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _GridTile extends StatelessWidget {
+  const _GridTile({required this.row, required this.onTap});
+
+  final CollectionRow row;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final e = row.entry;
+    final iv = e.iv;
+    return Card(
+      key: ValueKey<String>('collection-${e.id}'),
+      margin: EdgeInsets.zero,
+      color: tileColor(context, row),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: tileBorder(context, row),
+      ),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(16),
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.all(10),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              Row(
+                children: <Widget>[
+                  for (final t in row.species.types)
+                    Padding(
+                      padding: const EdgeInsetsDirectional.only(end: 4),
+                      child: TypeBadge(t, size: 24),
+                    ),
+                  Expanded(
+                    child: Align(
+                      alignment: AlignmentDirectional.centerEnd,
+                      child: EntryAttributes(e),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 6),
+              Text(
+                row.species.nameFr,
+                style: theme.textTheme.titleSmall,
+                maxLines: 2,
+              ),
+              const Spacer(),
+              Text(
+                '${iv.atk}/${iv.def}/${iv.sta} · ${formatPercent(e.percent)}',
+                style: theme.textTheme.bodySmall,
+              ),
+              const SizedBox(height: 4),
+              if (e.isRankOne) const RankOneBadge() else LeagueTag(e),
+              if (e.isRankOne) ...<Widget>[
+                const SizedBox(height: 2),
+                Text(e.league.label, style: theme.textTheme.labelSmall),
+              ],
             ],
           ),
         ),
