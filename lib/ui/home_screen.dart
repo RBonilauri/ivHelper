@@ -12,11 +12,13 @@ import '../state/collection_controller.dart';
 import '../state/lookup_controller.dart';
 import '../state/meta_controller.dart';
 import '../state/team_controller.dart';
+import '../state/update_controller.dart';
 import 'collection_screen.dart';
 import 'iv_logo.dart';
 import 'meta_screen.dart';
 import 'result_panel.dart';
 import 'settings_drawer.dart';
+import 'update_banner.dart';
 import 'team_builder_screen.dart';
 import 'type_chart_screen.dart';
 
@@ -29,7 +31,15 @@ class HomeScreen extends StatefulWidget {
     required this.moves,
     required this.settings,
     required this.metaSource,
+    required this.updateSource,
+    required this.currentBuild,
   });
+
+  /// Source des mises à jour de l'app.
+  final UpdateSource updateSource;
+
+  /// Numéro de build de l'app installée.
+  final int currentBuild;
 
   /// Source de la méta PvPoke.
   final MetaSource metaSource;
@@ -62,6 +72,10 @@ class _HomeScreenState extends State<HomeScreen> {
     moves: widget.moves,
     store: widget.settings.store,
   );
+  late final UpdateController _update = UpdateController(
+    source: widget.updateSource,
+    currentBuild: widget.currentBuild,
+  );
   late final MetaController _meta = MetaController(
     source: widget.metaSource,
     store: widget.settings.store,
@@ -72,6 +86,9 @@ class _HomeScreenState extends State<HomeScreen> {
     super.initState();
     unawaited(_team.load());
     unawaited(_collection.load());
+    // Les compilations locales (build 0) ne cherchent pas de mise à jour au
+    // démarrage ; le bouton du menu reste disponible.
+    if (widget.currentBuild > 0) unawaited(_update.check());
   }
 
   void _openCollection(BuildContext context) {
@@ -190,6 +207,7 @@ class _HomeScreenState extends State<HomeScreen> {
     _team.dispose();
     _meta.dispose();
     _collection.dispose();
+    _update.dispose();
     _text.dispose();
     super.dispose();
   }
@@ -219,6 +237,7 @@ class _HomeScreenState extends State<HomeScreen> {
         settings: widget.settings,
         onOpenTeam: () => _openTeam(context),
         onOpenCollection: () => _openCollection(context),
+        update: _update,
         onOpenMeta: () => Navigator.of(context).push(
           MaterialPageRoute<void>(
             builder: (_) => MetaScreen(
@@ -239,10 +258,14 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
       body: SafeArea(
         child: ListenableBuilder(
-          listenable: _controller,
+          listenable: Listenable.merge(<Listenable>[_controller, _update]),
           builder: (context, _) => ListView(
             padding: const EdgeInsets.all(16),
             children: <Widget>[
+              if (_update.showBanner) ...<Widget>[
+                UpdateBanner(update: _update),
+                const SizedBox(height: 12),
+              ],
               TextField(
                 controller: _text,
                 autocorrect: false,

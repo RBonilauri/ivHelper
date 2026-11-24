@@ -1,6 +1,7 @@
 import 'package:material_ui/material_ui.dart';
 
 import '../settings/settings_controller.dart';
+import '../state/update_controller.dart';
 import 'iv_logo.dart';
 
 /// Barre latérale des réglages : mode d'affichage et taille de police.
@@ -13,7 +14,11 @@ class SettingsDrawer extends StatelessWidget {
     required this.onOpenTypes,
     required this.onOpenMeta,
     required this.onOpenCollection,
+    required this.update,
   });
+
+  /// Mise à jour de l'app.
+  final UpdateController update;
 
   /// Ouvre la collection.
   final VoidCallback onOpenCollection;
@@ -129,6 +134,52 @@ class SettingsDrawer extends StatelessWidget {
               TextButton(
                 onPressed: () => settings.setFontScale(1),
                 child: const Text('Taille normale'),
+              ),
+              const Divider(height: 32),
+              ListenableBuilder(
+                listenable: update,
+                builder: (context, _) => Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    Text(
+                      'Version ${update.currentVersion}',
+                      style: theme.textTheme.titleSmall,
+                    ),
+                    if (update.message != null)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 4),
+                        child: Text(
+                          update.message!,
+                          style: theme.textTheme.bodySmall,
+                        ),
+                      ),
+                    const SizedBox(height: 8),
+                    if (update.available != null)
+                      FilledButton.icon(
+                        onPressed: update.downloading
+                            ? null
+                            : () {
+                                Navigator.of(context).pop();
+                                update.install();
+                              },
+                        icon: const Icon(Icons.system_update),
+                        label: Text(
+                          'Installer la version '
+                          '${update.available!.versionName}',
+                        ),
+                      )
+                    else
+                      OutlinedButton.icon(
+                        onPressed: update.checking ? null : update.check,
+                        icon: const Icon(Icons.refresh),
+                        label: Text(
+                          update.checking
+                              ? 'Vérification…'
+                              : 'Vérifier les mises à jour',
+                        ),
+                      ),
+                  ],
+                ),
               ),
             ],
           ),

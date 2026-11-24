@@ -23,6 +23,7 @@ Tout est en français : interface, commentaires `///`, messages de commit, répo
 - `lib/ui/` : écrans et widgets ; thème dans `app_theme.dart` (jour jaune vif, nuit or adouci), logo dans `iv_logo.dart`, pastilles de type (couleurs et icônes Material, pas les icônes officielles) dans `type_badge.dart`. Le menu (`settings_drawer.dart`) ouvre le team builder et la table des types.
 - Importer `package:material_ui/material_ui.dart`, jamais `package:flutter/material.dart` (déprécié, `flutter analyze` échoue).
 - `android/` et `ios/` ne sont **pas** committés : le job `apk` de `.github/workflows/ci.yml` les génère, applique le nom « ivHelper », ajoute la permission INTERNET (méta) et copie `tool/android_icons/`.
+- Mises à jour de l'app : le job `apk` signe avec la clé fixe (secrets `ANDROID_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS`, `ANDROID_KEY_PASSWORD`, patch de `build.gradle.kts` par `tool/configure_signing.py`), numérote le build avec `github.run_number` (`--build-number`, `--dart-define=BUILD_NUMBER`, version `1.0.N`), puis le job `release` publie la Release `v1.0.N` avec `ivhelper.apk` (push sur `main` seulement, et seulement si signé). L'app (`UpdateController`, `GitHubUpdateSource`) compare `releases/latest` à `currentBuildNumber` et ouvre l'installeur via `open_filex` (permission REQUEST_INSTALL_PACKAGES ajoutée par la CI). Build 0 (local) : pas de vérification au démarrage. La clé ne doit jamais être committée.
 - `.github/workflows/meta.yml` : tâche quotidienne qui régénère `assets/meta.json` avec `tool/build_meta.py` et committe sur `main` seulement s'il change. Ses commits (github-actions[bot]) ne relancent pas la CI. Penser à `git pull` avant de travailler.
 
 ## Règles métier à ne pas casser
@@ -40,7 +41,7 @@ Tout est en français : interface, commentaires `///`, messages de commit, répo
 - Les valeurs attendues des tests se vérifient par un calcul indépendant (port Python), pas à l'œil : deux fois c'était le test qui était faux (cpm, puis 6³ = 216 et non 1331), pas le code.
 - Noms d'espèces : formes régionales « Raichu d'Alola » ; autres formes avec libellé anglais entre parenthèses ; costumes, méga et formes obscures exclus.
 - Les tests de `meta_asset_test.dart` lisent le vrai `meta.json`, qui change chaque jour : n'y tester que la structure, jamais un nom ou un rang précis.
-- Les mises à jour de l'APK peuvent échouer (clé de débogage différente à chaque build) : désinstaller d'abord.
+- Un APK signé avec la clé de débogage (artefact d'une branche, ou CI sans secrets) ne s'installe pas par-dessus une version de Release : désinstaller d'abord.
 - Dans le bac à sable, un hook peut refuser une commande Bash très longue avec « Very Good CLI is required » : écrire les fichiers avec l'outil Write.
 
 ## Hors périmètre actuel

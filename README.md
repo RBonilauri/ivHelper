@@ -35,13 +35,13 @@ Tu as un Pokémon avec ses IV (Attaque / Défense / PV). Tu veux savoir **où il
 
 ## Installer sur Android
 
-L'app n'est pas sur le Play Store. Chaque envoi sur GitHub compile un APK :
+L'app n'est pas sur le Play Store.
 
-1. Onglet **Actions** du dépôt, dernière exécution de la CI sur `main` (connexion GitHub nécessaire).
-2. Télécharger l'artefact **`ivhelper-apk`** et le décompresser.
-3. Ouvrir `app-release.apk` sur le téléphone et autoriser les sources inconnues.
+**Première installation** : onglet **Releases** du dépôt, dernière version, télécharger `ivhelper.apk` et l'ouvrir sur le téléphone (autoriser les sources inconnues).
 
-**Mise à jour** : il faut retélécharger l'APK, rien ne se met à jour tout seul. Si Android refuse d'installer par-dessus (« conflit avec un paquet existant »), désinstalle l'ancienne version d'abord : la CI signe avec une clé de débogage différente à chaque compilation.
+**Mises à jour** : chaque fusion dans `main` publie une Release `v1.0.N` signée avec la clé fixe d'ivHelper. Au démarrage, l'app interroge GitHub ; si une version plus récente existe, une bannière propose « Mettre à jour ». L'APK se télécharge dans l'app puis l'installeur d'Android s'ouvre : un appui sur « Installer », et la nouvelle version remplace l'ancienne en gardant ta collection, ton équipe et tes réglages. Le menu affiche la version installée et un bouton « Vérifier les mises à jour ». En cas d'échec du téléchargement, « Via le navigateur » ouvre l'APK directement.
+
+**Clé de signature** : la CI signe avec la clé fournie par les secrets du dépôt `ANDROID_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS` et `ANDROID_KEY_PASSWORD` (`tool/configure_signing.py`). Sans ces secrets, l'APK est signé avec une clé de débogage et aucune Release n'est publiée. Les APK de chaque exécution restent aussi disponibles en artefact `ivhelper-apk` dans l'onglet Actions.
 
 **Méta à jour sans réinstaller** : une tâche planifiée du dépôt (`.github/workflows/meta.yml`, chaque jour à 4 h 17 UTC, ou à la main depuis l'onglet Actions) régénère `assets/meta.json` depuis PvPoke et ne le publie que s'il a changé. L'app télécharge ce fichier à l'ouverture de l'onglet Méta, le garde en cache, et retombe sur la copie incluse sans réseau.
 
