@@ -6,10 +6,20 @@ import '../core/meta.dart';
 import '../state/meta_controller.dart';
 import 'type_badge.dart';
 
+const Color _owned = Color(0xFFFFCB05);
+const Color _ownedText = Color(0xFF1D2A5B);
+
 /// Actions proposées depuis la fiche d'un Pokémon de la méta.
 class MetaActions {
   /// Crée les actions.
-  const MetaActions({required this.checkIvs, required this.addToTeam});
+  const MetaActions({
+    required this.checkIvs,
+    required this.addToTeam,
+    required this.isOwned,
+  });
+
+  /// Vrai si l'espèce nommée [name] est dans la collection.
+  final bool Function(String name) isOwned;
 
   /// Ouvre le calcul du rang des IV pour cette entrée.
   final void Function(BuildContext context, MetaEntry entry) checkIvs;
@@ -314,13 +324,27 @@ class MetaDetailScreen extends StatelessWidget {
               icon: Icons.thumb_up_alt_outlined,
               color: const Color(0xFF2EAD74),
               names: entry.bestMatchups,
+              isOwned: actions.isOwned,
             ),
             _NameList(
               title: 'Pires adversaires',
               icon: Icons.thumb_down_alt_outlined,
               color: const Color(0xFFE5484D),
               names: entry.worstMatchups,
+              isOwned: actions.isOwned,
             ),
+            if (<String>[...entry.bestMatchups, ...entry.worstMatchups]
+                .any(actions.isOwned))
+              Row(
+                children: <Widget>[
+                  const Icon(Icons.check_circle, size: 16, color: _owned),
+                  const SizedBox(width: 6),
+                  Text(
+                    'En jaune : tu l\'as dans ta collection',
+                    style: theme.textTheme.bodySmall,
+                  ),
+                ],
+              ),
             const SizedBox(height: 16),
             FilledButton.icon(
               onPressed: entry.species == null
@@ -378,12 +402,14 @@ class _NameList extends StatelessWidget {
     required this.icon,
     required this.color,
     required this.names,
+    required this.isOwned,
   });
 
   final String title;
   final IconData icon;
   final Color color;
   final List<String> names;
+  final bool Function(String name) isOwned;
 
   @override
   Widget build(BuildContext context) {
@@ -407,11 +433,32 @@ class _NameList extends StatelessWidget {
             runSpacing: 6,
             children: <Widget>[
               for (final n in names)
-                Chip(
-                  label: Text(n),
-                  visualDensity: VisualDensity.compact,
-                  side: BorderSide(color: color.withValues(alpha: 0.5)),
-                ),
+                if (isOwned(n))
+                  Chip(
+                    key: ValueKey<String>('owned-$n'),
+                    avatar: const Icon(
+                      Icons.check_circle,
+                      size: 18,
+                      color: _ownedText,
+                    ),
+                    label: Text(
+                      n,
+                      style: const TextStyle(
+                        color: _ownedText,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    tooltip: 'Dans ta collection',
+                    backgroundColor: _owned,
+                    visualDensity: VisualDensity.compact,
+                    side: BorderSide(color: color),
+                  )
+                else
+                  Chip(
+                    label: Text(n),
+                    visualDensity: VisualDensity.compact,
+                    side: BorderSide(color: color.withValues(alpha: 0.5)),
+                  ),
             ],
           ),
         ],

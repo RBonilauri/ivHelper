@@ -3,7 +3,11 @@ import 'dart:convert';
 import 'package:ivhelper/state/meta_controller.dart';
 
 /// Méta minimale : Flambusard en tête de la ligue super.
-String fakeMetaJson({String updated = '2026-11-20', String name = 'Flambusard'}) =>
+String fakeMetaJson({
+  String updated = '2026-11-20',
+  String name = 'Flambusard',
+  List<String> best = const <String>['Florges'],
+}) =>
     jsonEncode(<String, Object?>{
       'updated': updated,
       'source': 'PvPoke',
@@ -28,7 +32,7 @@ String fakeMetaJson({String updated = '2026-11-20', String name = 'Flambusard'})
                 'type': 'flying',
               },
             ],
-            'bestMatchups': <String>['Florges'],
+            'bestMatchups': best,
             'worstMatchups': <String>['Altaria'],
           },
         ],

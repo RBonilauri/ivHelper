@@ -12,7 +12,11 @@ class SettingsDrawer extends StatelessWidget {
     required this.onOpenTeam,
     required this.onOpenTypes,
     required this.onOpenMeta,
+    required this.onOpenCollection,
   });
+
+  /// Ouvre la collection.
+  final VoidCallback onOpenCollection;
 
   /// Ouvre l'onglet Méta.
   final VoidCallback onOpenMeta;
@@ -44,6 +48,16 @@ class SettingsDrawer extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: 16),
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: const Icon(Icons.collections_bookmark),
+                title: const Text('Ma collection'),
+                subtitle: const Text('Tes Pokémon enregistrés, filtres et tri'),
+                onTap: () {
+                  Navigator.of(context).pop();
+                  onOpenCollection();
+                },
+              ),
               ListTile(
                 contentPadding: EdgeInsets.zero,
                 leading: const Icon(Icons.emoji_events),

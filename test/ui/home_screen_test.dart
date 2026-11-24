@@ -36,7 +36,7 @@ MoveBook _moves() => MoveBook(const <Move>[
       ),
     ]);
 
-Future<void> _pumpApp(WidgetTester tester) async {
+Future<void> _pumpApp(WidgetTester tester, {String? meta}) async {
   tester.view.physicalSize = const Size(800, 2200);
   tester.view.devicePixelRatio = 1;
   addTearDown(tester.view.reset);
@@ -45,7 +45,7 @@ Future<void> _pumpApp(WidgetTester tester) async {
       repository: _repository(),
       moves: _moves(),
       settings: SettingsController(MemorySettingsStore()),
-      metaSource: FakeMetaSource(local: fakeMetaJson()),
+      metaSource: FakeMetaSource(local: meta ?? fakeMetaJson()),
     ),
   );
 }
@@ -190,6 +190,59 @@ void main() {
     await tester.tap(find.text('Voir le rang de mes IV'));
     await tester.pumpAndSettle();
     expect(find.text('Flambusard · n° 663'), findsOneWidget);
+    await tester.pump(const Duration(seconds: 10));
+    await tester.pumpAndSettle();
+  });
+
+  testWidgets('enregistrer puis retrouver le Pokémon dans la collection',
+      (tester) async {
+    await _pumpApp(tester);
+    await tester.enterText(find.byType(TextField), 'Flambusard');
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Enregistrer'));
+    await tester.pumpAndSettle();
+    expect(find.text('Flambusard 15/15/15 enregistré'), findsOneWidget);
+    await tester.tap(find.text('Enregistrer'));
+    await tester.pumpAndSettle();
+    expect(find.text('Déjà dans ta collection'), findsOneWidget);
+
+    await tester.tap(find.byTooltip('Paramètres'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Ma collection'));
+    await tester.pumpAndSettle();
+    expect(find.text('1 Pokémon sur 1'), findsOneWidget);
+    expect(find.text('2 246'), findsOneWidget);
+    await tester.tap(find.text('Hyper'));
+    await tester.pumpAndSettle();
+    expect(find.text('21'), findsOneWidget);
+    await tester.tap(find.text('Top 10'));
+    await tester.pumpAndSettle();
+    expect(find.text('0 Pokémon sur 1'), findsOneWidget);
+    await tester.pump(const Duration(seconds: 10));
+    await tester.pumpAndSettle();
+  });
+
+  testWidgets('la fiche méta surligne les Pokémon possédés', (tester) async {
+    await _pumpApp(
+      tester,
+      meta: fakeMetaJson(best: <String>['Florges', 'Flambusard (Obscur)']),
+    );
+    await tester.enterText(find.byType(TextField), 'Flambusard');
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Enregistrer'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('Paramètres'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Méta'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey<String>('meta-1')));
+    await tester.pumpAndSettle();
+    expect(
+      find.byKey(const ValueKey<String>('owned-Flambusard (Obscur)')),
+      findsOneWidget,
+    );
+    expect(find.byKey(const ValueKey<String>('owned-Florges')), findsNothing);
+    expect(find.text('En jaune : tu l\'as dans ta collection'), findsOneWidget);
     await tester.pump(const Duration(seconds: 10));
     await tester.pumpAndSettle();
   });

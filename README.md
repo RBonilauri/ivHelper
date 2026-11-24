@@ -23,8 +23,10 @@ Tu as un Pokémon avec ses IV (Attaque / Défense / PV). Tu veux savoir **où il
 - **Tableau dépliable** : rang, niveau, PC, IV (Atk/Déf/PV) et Parfait (%). Un appui sur une ligne affiche ses stats réelles (Atk, Déf, PV, stat globale) ; l'interrupteur **Détails** déplie tout.
 - **Niveau maximal** : 50, ou 51 (niveau 50 plus bonus meilleur ami).
 - **Plancher d'IV** : « Min 10/10/10 » restreint le classement aux 216 combinaisons dont chaque IV vaut au moins 10.
+- **Enregistrer** : sur l'écran de rang, garde le Pokémon et ses IV dans ta collection.
 - **Menu** (bouton aux trois traits, en haut à droite) :
-  - **Méta** : le top 100 PvPoke en Super, Hyper et Master (formes obscures comprises), avec la note, les types et le jeu d'attaques recommandé. La fiche d'un Pokémon montre ses meilleurs matchs et ses pires adversaires, et propose « Voir le rang de mes IV » et « Ajouter à mon équipe ». La méta se met à jour toute seule (voir plus bas), avec un filtre par nom et un bouton pour vérifier.
+  - **Ma collection** : tes Pokémon enregistrés avec leur rang dans la ligue choisie (Mini, Super, Hyper, Master). Filtres combinables : rang (Top 10, 50, 100, 500), types du Pokémon, attaques (par type ou par nom). Tri par rang, Pokédex, nom ou type. Un appui rouvre le Pokémon sur l'écran de rang ; la corbeille le retire (avec Annuler).
+  - **Méta** : le top 100 PvPoke en Super, Hyper et Master (formes obscures comprises), avec la note, les types et le jeu d'attaques recommandé. La fiche d'un Pokémon montre ses meilleurs matchs et ses pires adversaires (en jaune, ceux que tu as dans ta collection), et propose « Voir le rang de mes IV » et « Ajouter à mon équipe ». La méta se met à jour toute seule (voir plus bas), avec un filtre par nom et un bouton pour vérifier.
   - **Team builder** : 3 Pokémon, une attaque immédiate et deux chargées chacun. Pour chacun : faiblesses et résistances selon ses types (×2,56, ×1,6, ×0,63, ×0,39…), types touchés en super efficace et types sur lesquels il est en difficulté selon ses attaques. Bilan d'équipe : faiblesses partagées, types que personne ne résiste, types qu'aucune attaque ne couvre. L'équipe est conservée.
   - **Table des types** : forces, faiblesses et résistances des 18 types, avec une pastille colorée par type.
   - **Paramètres** : mode Auto / Jour / Nuit (or adouci la nuit) et taille de police de 85 à 140 %. Les réglages sont conservés.
@@ -76,8 +78,8 @@ Les dossiers `android/` et `ios/` ne sont pas committés. La CI les génère ave
 | Dossier | Contenu |
 |---|---|
 | `lib/core/` | Logique pure, sans Flutter : stats, multiplicateurs de PC, table de rangs, espèces, types, attaques, analyse d'équipe |
-| `lib/state/` | `LookupController` (rang) et `TeamController` (team builder) |
-| `lib/settings/` | Réglages (mode, police, équipe) et leur stockage |
+| `lib/state/` | `LookupController` (rang), `TeamController` (team builder), `MetaController` (méta), `CollectionController` (collection) |
+| `lib/settings/` | Réglages (mode, police) et stockage de l'équipe, de la méta en cache et de la collection |
 | `lib/ui/` | Écrans (rang, team builder, table des types), thème, logo et pastilles de type dessinés en code |
 | `assets/species.json` | 1 180 espèces et formes (nom français, stats de base, types, attaques) |
 | `assets/moves.json` | 325 attaques (nom français, type, immédiate ou chargée) |
