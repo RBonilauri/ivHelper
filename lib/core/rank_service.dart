@@ -1,11 +1,18 @@
 import 'rank_table.dart';
 import 'stats.dart';
 
+/// Plafond de PC de la ligue mini (Little Cup).
+const int littleCpCap = 500;
+
 /// Plafond de PC de la ligue super.
 const int greatCpCap = 1500;
 
 /// Plafond de PC de la ligue hyper.
 const int ultraCpCap = 2500;
+
+/// Plafond de PC de la ligue master : aucun Pokémon ne l'atteint, chaque
+/// combinaison monte au niveau maximal (même convention que PvPoke).
+const int masterCpCap = 10000;
 
 /// Classement d'une espèce dans une ligue et place de la combinaison saisie.
 class LeagueResult {
@@ -29,19 +36,31 @@ class LeagueResult {
   List<RankEntry> top(int n) => table.entries.take(n).toList();
 }
 
-/// Résultats en ligue super et en ligue hyper.
+/// Résultats dans les quatre ligues : mini, super, hyper et master.
 class RankResult {
-  /// Crée un résultat pour les deux ligues.
-  const RankResult({required this.great, required this.ultra});
+  /// Crée un résultat pour les quatre ligues.
+  const RankResult({
+    required this.little,
+    required this.great,
+    required this.ultra,
+    required this.master,
+  });
+
+  /// Ligue mini (500 PC).
+  final LeagueResult little;
 
   /// Ligue super (1500 PC).
   final LeagueResult great;
 
   /// Ligue hyper (2500 PC).
   final LeagueResult ultra;
+
+  /// Ligue master (sans plafond).
+  final LeagueResult master;
 }
 
-/// Classe la combinaison [iv] de l'espèce [base] en ligue super et hyper.
+/// Classe la combinaison [iv] de l'espèce [base] en ligue mini, super, hyper
+/// et master.
 ///
 /// [maxLevel] vaut 51 par défaut (niveau 50 plus bonus meilleur ami).
 /// [minIv] restreint le classement aux combinaisons dont chaque IV vaut au
@@ -66,5 +85,10 @@ RankResult rankIv(
     );
   }
 
-  return RankResult(great: league(greatCpCap), ultra: league(ultraCpCap));
+  return RankResult(
+    little: league(littleCpCap),
+    great: league(greatCpCap),
+    ultra: league(ultraCpCap),
+    master: league(masterCpCap),
+  );
 }

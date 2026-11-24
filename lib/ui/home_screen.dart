@@ -14,7 +14,7 @@ import 'settings_drawer.dart';
 import 'team_builder_screen.dart';
 import 'type_chart_screen.dart';
 
-/// Écran unique : saisie de l'espèce et des IV, résultats Super et Hyper.
+/// Écran unique : saisie de l'espèce et des IV, résultats Mini, Super, Hyper et Master.
 class HomeScreen extends StatefulWidget {
   /// Crée l'écran à partir du [repository] d'espèces.
   const HomeScreen({

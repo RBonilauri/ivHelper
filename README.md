@@ -4,7 +4,7 @@
 
 # ivHelper
 
-**Le rang PvP de tes Pokémon GO, en ligue Super et Hyper, en trois appuis.**
+**Le rang PvP de tes Pokémon GO, en ligue Mini, Super, Hyper et Master, en trois appuis.**
 
 Flutter · Android · données PvPoke
 
@@ -14,12 +14,12 @@ Flutter · Android · données PvPoke
 
 ## À quoi ça sert
 
-Tu as un Pokémon avec ses IV (Attaque / Défense / PV). Tu veux savoir **où il se place** parmi toutes les combinaisons possibles pour la ligue Super (1500 PC) et la ligue Hyper (2500 PC). ivHelper classe les 4096 combinaisons d'IV de l'espèce et te montre la tienne.
+Tu as un Pokémon avec ses IV (Attaque / Défense / PV). Tu veux savoir **où il se place** parmi toutes les combinaisons possibles pour la ligue Mini (500 PC), Super (1500 PC), Hyper (2500 PC) et Master (sans limite). ivHelper classe les 4096 combinaisons d'IV de l'espèce et te montre la tienne.
 
 ## Fonctionnalités
 
 - **Saisie par nom ou numéro** du Pokédex, avec suggestions si le nom est incomplet ou mal orthographié (accents et casse ignorés).
-- **Deux volets : Super · 1500 et Hyper · 2500**, chacun avec ton rang, ton pourcentage du meilleur produit de stats, et le haut du classement.
+- **Quatre volets : Mini · 500, Super · 1500, Hyper · 2500 et Master · sans limite**, chacun avec ton rang, ton pourcentage du meilleur produit de stats, et le haut du classement.
 - **Tableau dépliable** : rang, niveau, PC, IV (Atk/Déf/PV) et Parfait (%). Un appui sur une ligne affiche ses stats réelles (Atk, Déf, PV, stat globale) ; l'interrupteur **Détails** déplie tout.
 - **Niveau maximal** : 50, ou 51 (niveau 50 plus bonus meilleur ami).
 - **Plancher d'IV** : « Min 10/10/10 » restreint le classement aux 216 combinaisons dont chaque IV vaut au moins 10.
@@ -46,13 +46,13 @@ L'app n'est pas sur le Play Store. Chaque envoi sur GitHub compile un APK :
 
 Pour chacune des 4096 combinaisons d'IV (0 à 15 pour l'Attaque, la Défense et les PV) :
 
-1. On prend le **plus haut niveau** (par demi-pas, jusqu'au niveau maximal choisi) dont le PC reste sous le plafond de la ligue.
+1. On prend le **plus haut niveau** (par demi-pas, jusqu'au niveau maximal choisi) dont le PC reste sous le plafond de la ligue. En Master, le plafond est fixé à 10 000 PC (comme PvPoke) : tout le monde monte au niveau maximal, et 15/15/15 est rang 1.
 2. On calcule le **produit de stats** : `atk × cpm · def × cpm · ⌊pv × cpm⌋`.
 3. On trie par produit décroissant, puis PC décroissant, puis IV décroissants, de façon déterministe. Le rang 1 vaut 100 %, les autres sont en pourcentage du meilleur produit.
 
 Formules : `PC = ⌊atk · √def · √pv · cpm² / 10⌋` (minimum 10), `PV = ⌊pv · cpm⌋` (minimum 10), où `atk`, `def`, `pv` sont les stats de base de l'espèce plus l'IV.
 
-Vérifié sur Flambusard : 15/15/15 est rang 2 246 en Super (niveau 23,5, 1 480 PC) et rang 21 en Hyper au niveau 51 ; les rangs 1 et 2 Hyper sont 13/15/15 et 13/15/14.
+Vérifié sur Flambusard : 15/15/15 est rang 2 246 en Super (niveau 23,5, 1 480 PC) et rang 21 en Hyper au niveau 51 ; les rangs 1 et 2 Hyper sont 13/15/15 et 13/15/14. En Mini, 15/15/15 est rang 550 (niveau 8, 497 PC) et le rang 1 est 0/14/2 ; en Master, 15/15/15 est rang 1 (niveau 51, 2 522 PC).
 
 ## Développement
 
@@ -94,7 +94,7 @@ Chaque couche a ses tests : `test/core` (formules, table, espèces), `test/state
 
 ## Feuille de route
 
-- [x] **Phase 1** : saisie manuelle, rang Super et Hyper, tableau dépliable, thème, réglages
+- [x] **Phase 1** : saisie manuelle, rang Mini, Super, Hyper et Master, tableau dépliable, thème, réglages
 - [x] **Phase 1 bis** : team builder et table des types
 - [ ] **Phase 2** : lecture des IV depuis une capture d'écran (nom, PC, PV, barres d'évaluation)
 - [ ] **Phase 3** : pastille flottante Android qui ouvre le tableau par-dessus Pokémon GO

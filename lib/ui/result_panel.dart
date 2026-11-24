@@ -6,7 +6,17 @@ import '../core/species_repository.dart';
 import '../core/stat_line.dart';
 import 'format.dart';
 
-enum _League { great, ultra }
+enum _League {
+  little('Mini', '500'),
+  great('Super', '1500'),
+  ultra('Hyper', '2500'),
+  master('Master', 'sans limite');
+
+  const _League(this.label, this.cap);
+
+  final String label;
+  final String cap;
+}
 
 /// Résultats d'une espèce en ligue super et hyper : rang, tableau du haut du
 /// classement et détails dépliables.
@@ -29,8 +39,12 @@ class _ResultPanelState extends State<ResultPanel> {
   bool _details = false;
   final Set<int> _open = <int>{};
 
-  LeagueResult get _current =>
-      _league == _League.great ? widget.result.great : widget.result.ultra;
+  LeagueResult get _current => switch (_league) {
+        _League.little => widget.result.little,
+        _League.great => widget.result.great,
+        _League.ultra => widget.result.ultra,
+        _League.master => widget.result.master,
+      };
 
   @override
   Widget build(BuildContext context) {
@@ -41,15 +55,24 @@ class _ResultPanelState extends State<ResultPanel> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
         SegmentedButton<_League>(
-          segments: const <ButtonSegment<_League>>[
-            ButtonSegment<_League>(
-              value: _League.great,
-              label: Text('Super · 1500'),
+          showSelectedIcon: false,
+          style: const ButtonStyle(
+            padding: WidgetStatePropertyAll<EdgeInsetsGeometry>(
+              EdgeInsets.symmetric(horizontal: 4, vertical: 6),
             ),
-            ButtonSegment<_League>(
-              value: _League.ultra,
-              label: Text('Hyper · 2500'),
-            ),
+          ),
+          segments: <ButtonSegment<_League>>[
+            for (final l in _League.values)
+              ButtonSegment<_League>(
+                value: l,
+                label: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: <Widget>[
+                    Text(l.label),
+                    Text(l.cap, style: theme.textTheme.labelSmall),
+                  ],
+                ),
+              ),
           ],
           selected: <_League>{_league},
           onSelectionChanged: (selection) {
