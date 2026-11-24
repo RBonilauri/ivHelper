@@ -1,0 +1,42 @@
+# ivHelper
+
+App Flutter personnelle : rang PvP (ligue Super 1500 PC, Hyper 2500 PC) d'un Pokémon GO à partir de son nom ou numéro et de ses IV. Phase 1 faite (saisie manuelle). Voir `README.md` et `docs/superpowers/plans/2026-11-24-ivhelper.md` pour la suite.
+
+## Langue
+
+Tout est en français : interface, commentaires `///`, messages de commit, réponses. Identifiants de code en anglais.
+
+## Commandes
+
+- `flutter pub get`, `flutter analyze`, `flutter test`
+- Le bac à sable de Claude **n'a pas Flutter** : la CI GitHub Actions fait foi. Pousser, puis `./tool/ci_wait.sh` (attend la CI du commit courant via `gh`). Les erreurs réseau Gradle du job `apk` sont passagères : `gh run rerun <id> --failed`.
+- `python3 tool/build_icon.py` regénère les icônes ; `tool/build_species.py` regénère `assets/species.json` (voir `docs/data-sources.md`).
+
+## Architecture
+
+- `lib/core/` : logique pure sans Flutter (stats, `cpm`, `buildRankTable`, `rankIv`, `SpeciesRepository`). Toute règle de calcul va ici, avec ses tests.
+- `lib/state/lookup_controller.dart` : `ChangeNotifier` (espèce, IV, `maxLevel` 50 ou 51, `minIv` 0 ou 10). Pas de Riverpod ni autre gestionnaire d'état : `ListenableBuilder`.
+- `lib/settings/` : `SettingsController` et `SettingsStore` (mémoire en test, `PrefsSettingsStore` en vrai).
+- `lib/ui/` : écrans et widgets ; thème dans `app_theme.dart`, logo dessiné en code dans `iv_logo.dart`.
+- Importer `package:material_ui/material_ui.dart`, jamais `package:flutter/material.dart` (déprécié, `flutter analyze` échoue).
+- `android/` et `ios/` ne sont **pas** committés : le job `apk` de `.github/workflows/ci.yml` les génère, applique le nom « ivHelper » et copie `tool/android_icons/`.
+
+## Règles métier à ne pas casser
+
+- Niveau maximal 51 par défaut (50 plus bonus meilleur ami) ; 50 aussi sélectionnable.
+- Pour chaque combinaison d'IV : plus haut niveau (demi-pas) dont le PC ≤ plafond ; tri par produit de stats décroissant, puis PC décroissant, puis IV décroissants ; pourcentage = produit / meilleur × 100.
+- `PC = ⌊atk·√def·√pv·cpm²/10⌋` (min 10), `PV = ⌊pv·cpm⌋` (min 10).
+- Valeurs de référence testées (Flambusard 176/155/186) : 15/15/15 est rang 2246 en Super, 21 en Hyper ; rangs 1 et 2 Hyper : 13/15/15 et 13/15/14 ; niveau max 50 : rang 1 Hyper.
+- `minIv` 10 : le classement ne porte que sur 6³ = 216 combinaisons, et les IV saisis sont relevés au plancher.
+- Format : décimales avec virgule, espaces insécables (U+00A0) pour les milliers, stats tronquées à 1 décimale, pourcentage à 2 décimales, « 100 % ».
+
+## Pièges connus
+
+- Les valeurs attendues des tests se vérifient par un calcul indépendant (port Python), pas à l'œil : deux fois c'était le test qui était faux (cpm, puis 6³ = 216 et non 1331), pas le code.
+- Noms d'espèces : formes régionales « Raichu d'Alola » ; autres formes avec libellé anglais entre parenthèses ; costumes, méga et formes obscures exclus.
+- Les mises à jour de l'APK peuvent échouer (clé de débogage différente à chaque build) : désinstaller d'abord.
+- Dans le bac à sable, un hook peut refuser une commande Bash très longue avec « Very Good CLI is required » : écrire les fichiers avec l'outil Write.
+
+## Hors périmètre actuel
+
+Lecture d'écran (OCR), pastille flottante Android, import de capture iPhone : prévus aux phases 2 à 4 du plan, à ne pas commencer sans accord de Pickles. Pas de publication sur les stores. Merge dans `main` seulement sur accord.
