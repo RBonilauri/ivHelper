@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 import 'dart:ui' as ui;
 
+import 'package:flutter/services.dart';
 import 'package:flutter_overlay_window/flutter_overlay_window.dart';
 import 'package:google_mlkit_text_recognition/google_mlkit_text_recognition.dart';
 import 'package:ivhelper_capture/ivhelper_capture.dart';
@@ -54,8 +55,8 @@ class DeviceScreenScanner implements ScreenScanner {
     } finally {
       await window.setVisible(visible: true);
     }
-    final recognized =
-        await _recognizer.processImage(InputImage.fromFilePath(shot.path));
+    final image = await _decode(shot.path);
+    final recognized = await _recognizer.processImage(ocrInputFor(image));
     final lines = <OcrLine>[
       for (final block in recognized.blocks)
         for (final line in block.lines)
@@ -68,23 +69,47 @@ class DeviceScreenScanner implements ScreenScanner {
           ),
     ];
     final text = parseScreenText(lines);
-    final image = await _decode(shot.path);
-    final iv = image == null ? null : readAppraisal(image, text);
-    return identify(repository, text, iv);
+    return identify(repository, text, readAppraisal(image, text));
   }
 
-  static Future<RgbaImage?> _decode(String path) async {
+  /// Décode la capture PNG en pixels RGBA (une seule fois, pour l'OCR et
+  /// les barres).
+  static Future<RgbaImage> _decode(String path) async {
     final bytes = await File(path).readAsBytes();
+    if (bytes.isEmpty) {
+      throw StateError("La capture de l'écran est vide.");
+    }
     final codec = await ui.instantiateImageCodec(bytes);
     final frame = await codec.getNextFrame();
-    final data = await frame.image.toByteData(format: ui.ImageByteFormat.rawRgba);
-    if (data == null) return null;
+    final data =
+        await frame.image.toByteData(format: ui.ImageByteFormat.rawRgba);
+    if (data == null) {
+      throw StateError("La capture de l'écran est illisible.");
+    }
     return RgbaImage(
       frame.image.width,
       frame.image.height,
       data.buffer.asUint8List(),
     );
   }
+}
+
+/// Image à lire par ML Kit : les pixels déjà décodés, et non le fichier PNG
+/// (ML Kit décode mal le fichier sur certains téléphones : `NullPointerException`).
+InputImage ocrInputFor(RgbaImage image) => InputImage.fromBitmap(
+      bitmap: image.bytes,
+      width: image.width,
+      height: image.height,
+    );
+
+/// Message court d'un échec de lecture, sans la pile Java des erreurs natives.
+String describeScanError(Object error) {
+  final detail = switch (error) {
+    PlatformException(:final message?) => message,
+    StateError(:final message) => message,
+    _ => '$error',
+  };
+  return 'Lecture impossible : ${detail.split('\n').first.trim()}';
 }
 
 /// Fenêtre réelle du plugin flutter_overlay_window.

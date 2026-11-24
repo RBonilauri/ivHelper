@@ -179,8 +179,15 @@ public class CaptureService extends Service {
             padded.copyPixelsFromBuffer(buffer);
             bitmap = paddedWidth == width ? padded : Bitmap.createBitmap(padded, 0, 0, width, height);
         }
+        // L'écran est opaque : certains téléphones livrent un alpha nul, qui
+        // effacerait l'image une fois décodée.
+        bitmap.setHasAlpha(false);
+        boolean written;
         try (FileOutputStream out = new FileOutputStream(file)) {
-            bitmap.compress(Bitmap.CompressFormat.PNG, 100, out);
+            written = bitmap.compress(Bitmap.CompressFormat.PNG, 100, out);
+        }
+        if (!written || file.length() == 0) {
+            throw new IOException("Enregistrement de la capture impossible");
         }
         return new int[] {width, height};
     }
