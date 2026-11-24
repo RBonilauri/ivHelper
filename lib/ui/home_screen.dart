@@ -173,6 +173,19 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  /// Meilleur rang en collection pour [entry] dans [league] : même espèce,
+  /// même état obscur, tag de la ligue.
+  int? _ownedRank(MetaEntry entry, MetaLeague league) {
+    final target = League.fromKey(league.key);
+    int? best;
+    for (final e in _collection.entries) {
+      if (e.speciesName != entry.species || e.league != target) continue;
+      if ((e.shadow == ShadowState.shadow) != entry.shadow) continue;
+      if (best == null || e.rank < best) best = e.rank;
+    }
+    return best;
+  }
+
   void _checkIvs(BuildContext context, MetaEntry entry) {
     final species = widget.repository.findByName(entry.species ?? '');
     if (species == null) return;
@@ -263,7 +276,9 @@ class _HomeScreenState extends State<HomeScreen> {
           MaterialPageRoute<void>(
             builder: (_) => MetaScreen(
               meta: _meta,
+              collectionChanges: _collection,
               actions: MetaActions(
+                ownedRank: _ownedRank,
                 isOwned: (name) => _collection.ownedSpecies
                     .contains(name.replaceFirst(' (Obscur)', '')),
                 checkIvs: _checkIvs,

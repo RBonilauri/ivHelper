@@ -4,6 +4,7 @@ import 'package:material_ui/material_ui.dart';
 
 import '../core/meta.dart';
 import '../state/meta_controller.dart';
+import 'format.dart';
 import 'type_badge.dart';
 
 const Color _owned = Color(0xFFFFCB05);
@@ -16,7 +17,12 @@ class MetaActions {
     required this.checkIvs,
     required this.addToTeam,
     required this.isOwned,
+    required this.ownedRank,
   });
+
+  /// Meilleur rang d'un Pokémon de la collection correspondant à [entry]
+  /// (même espèce, obscur ou non, tag de [league]), ou `null`.
+  final int? Function(MetaEntry entry, MetaLeague league) ownedRank;
 
   /// Vrai si l'espèce nommée [name] est dans la collection.
   final bool Function(String name) isOwned;
@@ -31,7 +37,15 @@ class MetaActions {
 /// Onglet Méta : classement PvPoke en Super, Hyper et Master.
 class MetaScreen extends StatefulWidget {
   /// Crée l'onglet.
-  const MetaScreen({super.key, required this.meta, required this.actions});
+  const MetaScreen({
+    super.key,
+    required this.meta,
+    required this.actions,
+    this.collectionChanges,
+  });
+
+  /// Notifié quand la collection change (mise à jour des Pokémon possédés).
+  final Listenable? collectionChanges;
 
   /// État de la méta.
   final MetaController meta;
@@ -80,7 +94,10 @@ class _MetaScreenState extends State<MetaScreen> {
       ),
       body: SafeArea(
         child: ListenableBuilder(
-          listenable: widget.meta,
+          listenable: Listenable.merge(<Listenable?>[
+            widget.meta,
+            widget.collectionChanges,
+          ]),
           builder: (context, _) {
             final data = widget.meta.data;
             if (data == null) {
@@ -106,6 +123,7 @@ class _MetaScreenState extends State<MetaScreen> {
                 final e = entries[i - 1];
                 return _MetaTile(
                   entry: e,
+                  ownedRank: widget.actions.ownedRank(e, _league),
                   onTap: () => Navigator.of(context).push(
                     MaterialPageRoute<void>(
                       builder: (_) => MetaDetailScreen(
@@ -186,18 +204,34 @@ String _normalize(String s) {
 }
 
 class _MetaTile extends StatelessWidget {
-  const _MetaTile({required this.entry, required this.onTap});
+  const _MetaTile({
+    required this.entry,
+    required this.ownedRank,
+    required this.onTap,
+  });
 
   final MetaEntry entry;
+  final int? ownedRank;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final score = entry.score;
+    final owned = ownedRank;
+    final tint = entry.types.isEmpty
+        ? theme.colorScheme.outlineVariant
+        : typeColors[entry.types.first]!.withValues(alpha: 0.6);
     return Card(
       key: ValueKey<String>('meta-${entry.rank}'),
       margin: const EdgeInsets.only(bottom: 8),
+      color: typeTint(context, entry.types),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: owned != null
+            ? const BorderSide(color: _owned, width: 3)
+            : BorderSide(color: tint),
+      ),
       child: InkWell(
         borderRadius: BorderRadius.circular(16),
         onTap: onTap,
@@ -210,7 +244,6 @@ class _MetaTile extends StatelessWidget {
                 child: Text(
                   '${entry.rank}',
                   style: theme.textTheme.titleMedium?.copyWith(
-                    color: theme.colorScheme.primary,
                     fontWeight: FontWeight.w800,
                   ),
                 ),
@@ -242,6 +275,38 @@ class _MetaTile extends StatelessWidget {
                       ].join(' · '),
                       style: theme.textTheme.bodySmall,
                     ),
+                    if (owned != null) ...<Widget>[
+                      const SizedBox(height: 6),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 2,
+                        ),
+                        decoration: BoxDecoration(
+                          color: _owned,
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: <Widget>[
+                            const Icon(
+                              Icons.check_circle,
+                              size: 14,
+                              color: _ownedText,
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              'Dans ta collection · rang ${formatGrouped(owned)}',
+                              style: const TextStyle(
+                                color: _ownedText,
+                                fontWeight: FontWeight.w800,
+                                fontSize: 12,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ],
                 ),
               ),

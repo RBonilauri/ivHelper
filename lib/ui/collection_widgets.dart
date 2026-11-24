@@ -7,13 +7,8 @@ import 'type_badge.dart';
 const Color rankOneGold = Color(0xFFE0A800);
 
 /// Couleur de fond d'une case : le premier type, adouci.
-Color tileColor(BuildContext context, CollectionRow row) {
-  final scheme = Theme.of(context).colorScheme;
-  final types = row.species.types;
-  if (types.isEmpty) return scheme.surfaceContainerHighest;
-  final dark = Theme.of(context).brightness == Brightness.dark;
-  return Color.lerp(scheme.surface, typeColors[types.first], dark ? 0.32 : 0.26)!;
-}
+Color tileColor(BuildContext context, CollectionRow row) =>
+    typeTint(context, row.species.types);
 
 /// Bordure d'une case : dorée et épaisse pour un rang 1.
 BorderSide tileBorder(BuildContext context, CollectionRow row) {

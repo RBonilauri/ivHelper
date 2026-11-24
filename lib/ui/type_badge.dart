@@ -147,3 +147,11 @@ String formatFactor(double value) {
   text = text.replaceFirst(RegExp(r'0+$'), '').replaceFirst(RegExp(r'\.$'), '');
   return '×${text.replaceAll('.', ',')}';
 }
+
+/// Fond teinté par le premier de [types], adouci pour garder le texte lisible.
+Color typeTint(BuildContext context, List<PokeType> types) {
+  final scheme = Theme.of(context).colorScheme;
+  if (types.isEmpty) return scheme.surfaceContainerHighest;
+  final dark = Theme.of(context).brightness == Brightness.dark;
+  return Color.lerp(scheme.surface, typeColors[types.first], dark ? 0.32 : 0.26)!;
+}
