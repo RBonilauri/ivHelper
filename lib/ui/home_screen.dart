@@ -21,11 +21,12 @@ import 'iv_logo.dart';
 import 'meta_screen.dart';
 import 'result_panel.dart';
 import 'save_pokemon_sheet.dart';
+import 'search_field.dart';
 import 'settings_drawer.dart';
-import 'type_badge.dart';
-import 'update_banner.dart';
 import 'team_builder_screen.dart';
+import 'type_badge.dart';
 import 'type_chart_screen.dart';
+import 'update_banner.dart';
 
 /// Écran unique : saisie de l'espèce et des IV, résultats Mini, Super, Hyper et Master.
 class HomeScreen extends StatefulWidget {
@@ -383,14 +384,10 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                 UpdateBanner(update: _update),
                 const SizedBox(height: 12),
               ],
-              TextField(
+              SearchField(
                 controller: _text,
-                autocorrect: false,
-                decoration: const InputDecoration(
-                  labelText: 'Pokémon (nom ou numéro)',
-                  hintText: 'Flambusard ou 663',
-                  border: OutlineInputBorder(),
-                ),
+                label: 'Pokémon (nom ou numéro)',
+                hint: 'Flambusard ou 663',
                 onChanged: _controller.setQuery,
               ),
               ..._suggestions(),

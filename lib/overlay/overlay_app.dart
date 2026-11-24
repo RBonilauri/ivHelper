@@ -14,6 +14,7 @@ import '../ui/format.dart';
 import '../ui/iv_bar.dart';
 import '../ui/iv_logo.dart';
 import '../ui/save_pokemon_sheet.dart';
+import '../ui/search_field.dart';
 import 'overlay_services.dart';
 
 /// Application affichée dans la fenêtre flottante, par-dessus le jeu.
@@ -414,15 +415,11 @@ class _SpeciesPicker extends StatelessWidget {
         ];
       },
       onSelected: onSelected,
-      fieldViewBuilder: (context, controller, focus, onSubmit) => TextField(
+      fieldViewBuilder: (context, controller, focus, onSubmit) => SearchField(
         controller: controller,
         focusNode: focus,
-        autocorrect: false,
-        decoration: const InputDecoration(
-          labelText: 'Pokémon (corriger si besoin)',
-          prefixIcon: Icon(Icons.search),
-          isDense: true,
-        ),
+        label: 'Pokémon (corriger si besoin)',
+        dense: true,
         onSubmitted: (_) => onSubmit(),
       ),
     );

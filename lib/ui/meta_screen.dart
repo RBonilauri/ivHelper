@@ -5,6 +5,7 @@ import 'package:material_ui/material_ui.dart';
 import '../core/meta.dart';
 import '../state/meta_controller.dart';
 import 'format.dart';
+import 'search_field.dart';
 import 'type_badge.dart';
 
 const Color _owned = Color(0xFFFFCB05);
@@ -177,12 +178,9 @@ class _MetaScreenState extends State<MetaScreen> {
             ),
           ),
         const SizedBox(height: 8),
-        TextField(
-          decoration: const InputDecoration(
-            labelText: 'Filtrer par nom',
-            prefixIcon: Icon(Icons.search),
-            isDense: true,
-          ),
+        SearchField(
+          label: 'Filtrer par nom',
+          dense: true,
           onChanged: (v) => setState(() => _filter = v),
         ),
         const SizedBox(height: 8),

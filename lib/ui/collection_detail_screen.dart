@@ -1,6 +1,7 @@
 import 'package:material_ui/material_ui.dart';
 
 import '../core/collection.dart';
+import '../core/moves.dart';
 import '../state/collection_controller.dart';
 import 'collection_widgets.dart';
 import 'format.dart';
@@ -46,6 +47,10 @@ class CollectionDetailScreen extends StatelessWidget {
         }
         return _Detail(
           row: row,
+          metaIds: metaMoves
+                  ?.call(row.species, row.entry.league, row.entry.shadow)
+                  .toSet() ??
+              const <String>{},
           onEdit: () => _edit(context, row),
           onOpen: () => onOpen(context, row.entry),
           onDelete: () => _delete(context, row.entry),
@@ -83,12 +88,16 @@ class CollectionDetailScreen extends StatelessWidget {
 class _Detail extends StatelessWidget {
   const _Detail({
     required this.row,
+    required this.metaIds,
     required this.onEdit,
     required this.onOpen,
     required this.onDelete,
   });
 
   final CollectionRow row;
+
+  /// Attaques de la méta pour cette espèce, cette ligue et cet état obscur.
+  final Set<String> metaIds;
   final VoidCallback onEdit;
   final VoidCallback onOpen;
   final VoidCallback onDelete;
@@ -173,28 +182,35 @@ class _Detail extends StatelessWidget {
             const SizedBox(height: 6),
             if (row.recordedMoves.isEmpty)
               Text('Aucune attaque enregistrée.', style: theme.textTheme.bodySmall)
-            else
-              for (final m in row.recordedMoves)
-                Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 4),
-                  child: Row(
-                    children: <Widget>[
-                      TypeBadge(m.type, size: 26),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: Text(
-                          moveLabel(m, row.species),
-                          style: theme.textTheme.bodyLarge,
-                        ),
+            else ...<Widget>[
+              for (final group in <(String, List<Move>)>[
+                ('Immédiate', <Move>[
+                  for (final m in row.recordedMoves)
+                    if (m.isFast) m,
+                ]),
+                ('Chargée(s)', <Move>[
+                  for (final m in row.recordedMoves)
+                    if (!m.isFast) m,
+                ]),
+              ])
+                if (group.$2.isNotEmpty) ...<Widget>[
+                  Padding(
+                    padding: const EdgeInsets.only(top: 6),
+                    child: Text(
+                      group.$1,
+                      style: theme.textTheme.labelSmall?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
                       ),
-                      Text(
-                        '${m.isFast ? 'Immédiate' : 'Chargée'} · '
-                        'puissance ${m.power}',
-                        style: theme.textTheme.bodySmall,
-                      ),
-                    ],
+                    ),
                   ),
-                ),
+                  for (final m in group.$2)
+                    _MoveLine(
+                      move: m,
+                      label: moveLabel(m, row.species),
+                      isMeta: metaIds.contains(m.id),
+                    ),
+                ],
+            ],
             if (row.recordedMoves.any((m) => row.species.isElite(m.id)))
               Text(eliteLegend, style: theme.textTheme.bodySmall),
             const SizedBox(height: 20),
@@ -211,6 +227,47 @@ class _Detail extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// Une attaque de la fiche : type, nom (en gras si méta) et puissance.
+class _MoveLine extends StatelessWidget {
+  const _MoveLine({
+    required this.move,
+    required this.label,
+    required this.isMeta,
+  });
+
+  final Move move;
+  final String label;
+  final bool isMeta;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        children: <Widget>[
+          TypeBadge(move.type, size: 26),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              label,
+              style: theme.textTheme.bodyLarge?.copyWith(
+                fontWeight: isMeta ? FontWeight.w800 : null,
+              ),
+            ),
+          ),
+          Text(
+            '${move.power}',
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ],
       ),
     );
   }
