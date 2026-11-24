@@ -29,12 +29,14 @@ MoveBook _moves() => MoveBook(const <Move>[
         nameFr: 'Calcination',
         type: PokeType.fire,
         isFast: true,
+        power: 20,
       ),
       Move(
         id: 'BRAVE_BIRD',
         nameFr: 'Rapace',
         type: PokeType.flying,
         isFast: false,
+        power: 130,
       ),
     ]);
 
@@ -100,13 +102,19 @@ void main() {
     expect(find.text('Rang 2 246'), findsNothing);
   });
 
-  testWidgets('le niveau max 50 place le 15/15/15 au rang 1 en hyper',
+  testWidgets('par défaut, niveau max 50 et tous les IV : 15/15/15 rang 1 en hyper',
       (tester) async {
     await _pumpApp(tester);
     await tester.enterText(find.byType(TextField).first, 'Flambusard');
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Max 50'));
-    await tester.pumpAndSettle();
+    final level = tester.widget<SegmentedButton<double>>(
+      find.byType(SegmentedButton<double>),
+    );
+    expect(level.selected, <double>{50});
+    final floor = tester.widget<SegmentedButton<int>>(
+      find.byType(SegmentedButton<int>),
+    );
+    expect(floor.selected, <int>{0});
     await tester.tap(find.text('Hyper'));
     await tester.pumpAndSettle();
     expect(find.text('Rang 1'), findsOneWidget);
@@ -172,6 +180,9 @@ void main() {
     expect(find.text('Roche ×2,56'), findsOneWidget);
     expect(find.text('Plante ×0,39'), findsOneWidget);
     expect(find.text('Bilan de l\'équipe'), findsOneWidget);
+    // Rubriques du bilan ouvertes par défaut.
+    await tester.scrollUntilVisible(find.text('Aucune attaque choisie'), 200);
+    expect(find.text('Aucune attaque choisie'), findsOneWidget);
   });
 
   testWidgets('la méta propose d\'ajouter à l\'équipe et de voir les IV',
@@ -207,6 +218,8 @@ void main() {
       (tester) async {
     await _pumpApp(tester);
     await tester.enterText(find.byType(TextField).first, 'Flambusard');
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Max 51 (ami)'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Hyper'));
     await tester.pumpAndSettle();
@@ -455,7 +468,7 @@ void main() {
     );
   });
 
-  testWidgets('le menu d\'enregistrement met les attaques méta en gras ★',
+  testWidgets('le menu d\'enregistrement met les attaques méta en gras, sans ★',
       (tester) async {
     await _pumpApp(tester);
     await tester.enterText(find.byType(TextField).first, 'Flambusard');
@@ -475,7 +488,7 @@ void main() {
       tester.widget<Text>(calcination).style?.fontWeight,
       FontWeight.w800,
     );
-    expect(find.byIcon(Icons.star), findsWidgets);
+    expect(find.byIcon(Icons.star), findsNothing);
   });
 
   testWidgets('saisie des IV : barre à toucher et saisie rapide',
@@ -490,6 +503,8 @@ void main() {
       tester.widget<Text>(find.byKey(const ValueKey<String>('iv-value-Atk'))).data,
       '8',
     );
+    await tester.tap(find.text('Max 51 (ami)'));
+    await tester.pumpAndSettle();
     await tester.enterText(
       find.byKey(const ValueKey<String>('quick-iv')),
       '13/15/15',
@@ -552,6 +567,83 @@ void main() {
     await tester.tap(find.text('Superposition'));
     await tester.pumpAndSettle();
     expect(find.textContaining('Pastille lancée'), findsOneWidget);
+    await tester.pump(const Duration(seconds: 10));
+    await tester.pumpAndSettle();
+  });
+
+  testWidgets('la croix efface la recherche du Pokémon', (tester) async {
+    await _pumpApp(tester);
+    expect(find.byTooltip('Effacer'), findsNothing);
+    await tester.enterText(find.byType(TextField).first, 'Flambusard');
+    await tester.pumpAndSettle();
+    expect(find.text('Flambusard · n° 663'), findsOneWidget);
+    await tester.tap(find.byTooltip('Effacer').first);
+    await tester.pumpAndSettle();
+    expect(find.text('Flambusard · n° 663'), findsNothing);
+    expect(
+      tester.widget<TextField>(find.byType(TextField).first).controller!.text,
+      '',
+    );
+    expect(find.byTooltip('Effacer'), findsNothing);
+  });
+
+  testWidgets('la superposition est en bas des entrées du menu', (tester) async {
+    await _pumpApp(tester);
+    await tester.tap(find.byTooltip('Paramètres'));
+    await tester.pumpAndSettle();
+    final overlay = tester.getTopLeft(find.text('Superposition')).dy;
+    for (final other in <String>[
+      'Ma collection',
+      'Méta',
+      'Team builder',
+      'Table des types',
+    ]) {
+      expect(overlay, greaterThan(tester.getTopLeft(find.text(other)).dy));
+    }
+  });
+
+  testWidgets('la fiche de la collection range les attaques par catégorie',
+      (tester) async {
+    await _pumpApp(tester);
+    await tester.enterText(find.byType(TextField).first, 'Flambusard');
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Enregistrer'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Aucune').first);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Calcination').last);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Aucune').first);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Rapace').last);
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('Enregistrer dans la collection'));
+    await tester.tap(find.text('Enregistrer dans la collection'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('Paramètres'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Ma collection'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Flambusard').first);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Immédiate'), findsOneWidget);
+    expect(find.text('Chargée(s)'), findsOneWidget);
+    expect(
+      tester.getTopLeft(find.text('Immédiate')).dy,
+      lessThan(tester.getTopLeft(find.text('Calcination')).dy),
+    );
+    expect(
+      tester.getTopLeft(find.text('Chargée(s)')).dy,
+      lessThan(tester.getTopLeft(find.text('Rapace')).dy),
+    );
+    expect(
+      tester.widget<Text>(find.text('Calcination')).style?.fontWeight,
+      FontWeight.w800,
+    );
+    expect(find.text('20'), findsOneWidget);
+    expect(find.text('130'), findsOneWidget);
+    expect(find.textContaining('puissance'), findsNothing);
     await tester.pump(const Duration(seconds: 10));
     await tester.pumpAndSettle();
   });
