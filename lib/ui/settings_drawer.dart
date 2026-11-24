@@ -15,7 +15,11 @@ class SettingsDrawer extends StatelessWidget {
     required this.onOpenMeta,
     required this.onOpenCollection,
     required this.update,
+    required this.onStartOverlay,
   });
+
+  /// Lance la pastille flottante.
+  final VoidCallback onStartOverlay;
 
   /// Mise à jour de l'app.
   final UpdateController update;
@@ -53,6 +57,18 @@ class SettingsDrawer extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: 16),
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: const Icon(Icons.picture_in_picture_alt),
+                title: const Text('Superposition'),
+                subtitle: const Text(
+                  'Pastille par-dessus Pokémon GO : lit l\'écran et donne le rang',
+                ),
+                onTap: () {
+                  Navigator.of(context).pop();
+                  onStartOverlay();
+                },
+              ),
               ListTile(
                 contentPadding: EdgeInsets.zero,
                 leading: const Icon(Icons.collections_bookmark),

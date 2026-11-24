@@ -142,6 +142,17 @@ def main(gamemaster, species_csv, moves_csv, move_names_csv, out_species, out_mo
     result = []
     used = set()
     used_fast = set()
+    by_id = {p["speciesId"]: p for p in data["pokemon"]}
+
+    def stage(p):
+        depth, seen = 0, set()
+        parent = (p.get("family") or {}).get("parent")
+        while parent and parent in by_id and parent not in seen:
+            seen.add(parent)
+            depth += 1
+            parent = (by_id[parent].get("family") or {}).get("parent")
+        return depth
+
     for label, p in choose_species(data["pokemon"], fr):
         b = p["baseStats"]
         types = [t for t in p["types"] if t in TYPES_FR]
@@ -156,6 +167,8 @@ def main(gamemaster, species_csv, moves_csv, move_names_csv, out_species, out_mo
             "atk": b["atk"], "def": b["def"], "sta": b["hp"],
             "types": types, "fast": fast, "charged": charged,
             "elite": elite,
+            "family": (p.get("family") or {}).get("id") or p["speciesId"].upper(),
+            "stage": stage(p),
         })
     moves = {}
     for m in data["moves"]:

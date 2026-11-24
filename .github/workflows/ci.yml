@@ -67,9 +67,10 @@ jobs:
           ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         run: >
           flutter build apk --release
-          --build-name=1.0.$BUILD_NUMBER
+          --build-name=1.1.$BUILD_NUMBER
           --build-number=$BUILD_NUMBER
           --dart-define=BUILD_NUMBER=$BUILD_NUMBER
+          --dart-define=VERSION_NAME=1.1.$BUILD_NUMBER
       - uses: actions/upload-artifact@v4
         with:
           name: ivhelper-apk
@@ -92,9 +93,9 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           mv app-release.apk ivhelper.apk
-          gh release create "v1.0.${{ github.run_number }}" ivhelper.apk \
+          gh release create "v1.1.${{ github.run_number }}" ivhelper.apk \
             --repo "${{ github.repository }}" \
             --target "${{ github.sha }}" \
-            --title "ivHelper 1.0.${{ github.run_number }}" \
+            --title "ivHelper 1.1.${{ github.run_number }}" \
             --generate-notes \
             --latest

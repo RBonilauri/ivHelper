@@ -32,6 +32,9 @@ abstract interface class SettingsStore {
   /// Enregistre la collection (JSON).
   Future<void> writeCollection(String value);
 
+  /// Relit le stockage (une autre fenêtre, la pastille, a pu l'écrire).
+  Future<void> refresh();
+
   /// Lit les dernières recherches (JSON), ou `null`.
   Future<String?> readHistory();
 
@@ -77,6 +80,9 @@ class MemorySettingsStore implements SettingsStore {
 
   @override
   Future<void> writeCollection(String value) async => _collection = value;
+
+  @override
+  Future<void> refresh() async {}
 
   @override
   Future<String?> readHistory() async => _history;

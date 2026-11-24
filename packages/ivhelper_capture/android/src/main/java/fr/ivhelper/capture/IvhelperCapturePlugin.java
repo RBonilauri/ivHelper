@@ -1,0 +1,94 @@
+package fr.ivhelper.capture;
+
+import android.content.Context;
+import android.content.Intent;
+import android.os.Handler;
+import android.os.Looper;
+
+
+import java.io.File;
+import java.util.HashMap;
+import java.util.Map;
+
+import io.flutter.embedding.engine.plugins.FlutterPlugin;
+import io.flutter.plugin.common.MethodCall;
+import io.flutter.plugin.common.MethodChannel;
+
+/** Canal « ivhelper/capture » : autorisation, capture et arrêt. */
+public class IvhelperCapturePlugin implements FlutterPlugin, MethodChannel.MethodCallHandler {
+    private static final Handler MAIN = new Handler(Looper.getMainLooper());
+    private static MethodChannel.Result pendingConsent;
+
+    private MethodChannel channel;
+    private Context context;
+
+    @Override
+    public void onAttachedToEngine(FlutterPluginBinding binding) {
+        context = binding.getApplicationContext();
+        channel = new MethodChannel(binding.getBinaryMessenger(), "ivhelper/capture");
+        channel.setMethodCallHandler(this);
+    }
+
+    @Override
+    public void onDetachedFromEngine(FlutterPluginBinding binding) {
+        channel.setMethodCallHandler(null);
+    }
+
+    /** Transmet la réponse à la demande d'autorisation en attente. */
+    static void completeConsent(final boolean granted) {
+        MAIN.post(() -> {
+            if (pendingConsent != null) {
+                pendingConsent.success(granted);
+                pendingConsent = null;
+            }
+        });
+    }
+
+    @Override
+    public void onMethodCall(MethodCall call, final MethodChannel.Result result) {
+        switch (call.method) {
+            case "isActive":
+                result.success(CaptureService.isReady());
+                break;
+            case "requestCapture":
+                if (CaptureService.isReady()) {
+                    result.success(true);
+                    return;
+                }
+                if (pendingConsent != null) {
+                    pendingConsent.success(false);
+                }
+                pendingConsent = result;
+                Intent intent = new Intent(context, CaptureConsentActivity.class);
+                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                context.startActivity(intent);
+                break;
+            case "capture":
+                final CaptureService service = CaptureService.current();
+                if (service == null) {
+                    result.error("NOT_READY", "Capture d'écran non autorisée", null);
+                    return;
+                }
+                new Thread(() -> {
+                    try {
+                        File file = new File(context.getCacheDir(), "ivhelper_capture.png");
+                        int[] size = service.grabToFile(file);
+                        final Map<String, Object> map = new HashMap<>();
+                        map.put("path", file.getAbsolutePath());
+                        map.put("width", size[0]);
+                        map.put("height", size[1]);
+                        MAIN.post(() -> result.success(map));
+                    } catch (final Exception e) {
+                        MAIN.post(() -> result.error("CAPTURE_FAILED", e.getMessage(), null));
+                    }
+                }).start();
+                break;
+            case "stop":
+                CaptureService.stopAll(context);
+                result.success(null);
+                break;
+            default:
+                result.notImplemented();
+        }
+    }
+}
