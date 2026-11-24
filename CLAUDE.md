@@ -35,6 +35,7 @@ Tout est en français : interface, commentaires `///`, messages de commit, répo
 - `minIv` 10 : le classement ne porte que sur 6³ = 216 combinaisons, et les IV saisis sont relevés au plancher.
 - Table des types Pokémon GO : ×1,6 super efficace, ×0,625 peu efficace, ×0,390625 immunité ; multiplicateurs cumulés sur double type. Offensive : meilleur multiplicateur parmi les attaques, sur types simples.
 - Attaques d'événement : `Species.eliteMoves` (champ `elite` de `species.json`, `eliteMoves` PvPoke) et `MetaMove.elite`, affichées avec un astérisque (`moveLabel`). Puissance PvP : `Move.power` / `MetaMove.power`.
+- Menu d'enregistrement et de modification : attaques de la méta (`MetaSnapshot.movesetFor`, ligue choisie, forme obscure si cochée) en gras avec ★ et encadré « Utiliser » ; rien en Mini (pas de méta). La méta est chargée au démarrage pour ça.
 - Les bandeaux avec action (« Voir ») disparaissent après 5 s (`duration` + `persist: false`).
 - Format : décimales avec virgule, espaces insécables (U+00A0) pour les milliers, stats tronquées à 1 décimale, pourcentage à 2 décimales, « 100 % ».
 

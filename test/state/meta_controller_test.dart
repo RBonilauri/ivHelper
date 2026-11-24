@@ -81,4 +81,19 @@ void main() {
     await c.ensureLoaded();
     expect(source.fetches, 1);
   });
+
+  test('movesetFor donne les attaques méta de l\'espèce dans la ligue', () {
+    final data = MetaSnapshot.fromJson(fakeMetaJson());
+    expect(
+      data.movesetFor('Flambusard', 'great'),
+      <String>['INCINERATE', 'BRAVE_BIRD'],
+    );
+    expect(
+      data.movesetFor('Flambusard', 'great', shadow: true),
+      <String>['INCINERATE', 'BRAVE_BIRD'],
+    );
+    expect(data.movesetFor('Flambusard', 'ultra'), isEmpty);
+    expect(data.movesetFor('Flambusard', 'little'), isEmpty);
+    expect(data.movesetFor('Altaria', 'great'), isEmpty);
+  });
 }

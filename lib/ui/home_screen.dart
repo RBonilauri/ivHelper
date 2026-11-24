@@ -88,6 +88,8 @@ class _HomeScreenState extends State<HomeScreen> {
     super.initState();
     unawaited(_team.load());
     unawaited(_collection.load());
+    // La méta sert aussi à mettre en évidence les attaques recommandées.
+    unawaited(_meta.ensureLoaded());
     // Les compilations locales (build 0) ne cherchent pas de mise à jour au
     // démarrage ; le bouton du menu reste disponible.
     if (widget.currentBuild > 0) unawaited(_update.check());
@@ -100,6 +102,7 @@ class _HomeScreenState extends State<HomeScreen> {
           builder: (_) => CollectionScreen(
             collection: _collection,
             onOpen: _openEntry,
+            metaMoves: _metaMoves,
           ),
         ),
       ),
@@ -134,6 +137,7 @@ class _HomeScreenState extends State<HomeScreen> {
           iv: iv,
           moves: widget.moves,
           initialLeague: _league,
+          metaMoves: _metaMoves,
           rankFor: (league) =>
               _collection.rankFor(species, iv, maxLevel, league),
           onSave: (options) {
@@ -174,6 +178,15 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
     );
   }
+
+  /// Attaques recommandées par la méta pour [species] dans [league].
+  List<String> _metaMoves(Species species, League league, ShadowState shadow) =>
+      _meta.data?.movesetFor(
+        species.nameFr,
+        league.key,
+        shadow: shadow == ShadowState.shadow,
+      ) ??
+      const <String>[];
 
   /// Meilleur rang en collection pour [entry] dans [league] : même espèce,
   /// même état obscur, tag de la ligue.

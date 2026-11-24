@@ -452,4 +452,22 @@ void main() {
       findsOneWidget,
     );
   });
+
+  testWidgets('le menu d\'enregistrement met en évidence les attaques méta',
+      (tester) async {
+    await _pumpApp(tester);
+    await tester.enterText(find.byType(TextField), 'Flambusard');
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Enregistrer'));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey<String>('meta-moves')), findsOneWidget);
+    expect(find.text('Méta Super : Calcination · Rapace'), findsOneWidget);
+    await tester.tap(find.text('Utiliser'));
+    await tester.pumpAndSettle();
+    expect(find.text('Calcination'), findsOneWidget);
+    expect(find.text('Rapace'), findsOneWidget);
+    await tester.tap(find.text('Hyper').last);
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey<String>('meta-moves')), findsNothing);
+  });
 }
