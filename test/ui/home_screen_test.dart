@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:material_ui/material_ui.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ivhelper/app.dart';
 import 'package:ivhelper/core/moves.dart';
@@ -917,5 +918,60 @@ void main() {
       findsOneWidget,
     );
     expect(find.text('Remplacer ton compte ?'), findsNothing);
+  });
+
+  testWidgets('chaînes de recherche : rubrique du menu, espèce et copie',
+      (tester) async {
+    final copied = <String>[];
+    tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+      SystemChannels.platform,
+      (call) async {
+        if (call.method == 'Clipboard.setData') {
+          copied.add((call.arguments as Map<Object?, Object?>)['text']! as String);
+        }
+        return null;
+      },
+    );
+    addTearDown(
+      () => tester.binding.defaultBinaryMessenger
+          .setMockMethodCallHandler(SystemChannels.platform, null),
+    );
+    await _pumpApp(tester);
+    await tester.tap(find.byTooltip('Paramètres'));
+    await tester.pumpAndSettle();
+    final entry = find.text('Chaînes de recherche');
+    expect(
+      tester.getTopLeft(entry).dy,
+      lessThan(tester.getTopLeft(find.text('Superposition')).dy),
+    );
+    await tester.tap(entry);
+    await tester.pumpAndSettle();
+
+    // Recherches prêtes à l'emploi, copiables.
+    expect(find.text('0-1attaque&3-4défense&3-4PV&PC-1500'), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey<String>('copy-preset-great')));
+    await tester.pumpAndSettle();
+    expect(copied.last, '0-1attaque&3-4défense&3-4PV&PC-1500');
+    expect(find.text('Chaîne copiée : colle-la dans la recherche du jeu.'), findsOneWidget);
+
+    // Pour une espèce, ligue Super et top 10 par défaut.
+    await tester.enterText(
+      find.byKey(const ValueKey<String>('search-species')).first,
+      'Flambusard',
+    );
+    await tester.pumpAndSettle();
+    expect(
+      find.text('+flambusard&0-1attaque&3-4défense&2-4PV&PC-1500'),
+      findsOneWidget,
+    );
+    await tester.tap(find.byKey(const ValueKey<String>('search-league-ultra')));
+    await tester.pumpAndSettle();
+    expect(
+      find.text('+flambusard&3-4attaque&3-4défense&3-4PV&PC-2500'),
+      findsOneWidget,
+    );
+    await tester.tap(find.byKey(const ValueKey<String>('copy-species')));
+    await tester.pumpAndSettle();
+    expect(copied.last, '+flambusard&3-4attaque&3-4défense&3-4PV&PC-2500');
   });
 }
