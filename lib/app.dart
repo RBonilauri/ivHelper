@@ -2,6 +2,7 @@ import 'package:material_ui/material_ui.dart';
 
 import 'core/moves.dart';
 import 'core/species_repository.dart';
+import 'settings/account_files.dart';
 import 'settings/settings_controller.dart';
 import 'overlay/overlay_services.dart';
 import 'state/meta_controller.dart';
@@ -20,8 +21,12 @@ class IvHelperApp extends StatelessWidget {
     required this.metaSource,
     required this.updateSource,
     required this.overlayLauncher,
+    this.accountFiles = const FilePickerAccountFiles(),
     this.currentBuild = 0,
   });
+
+  /// Fichiers de sauvegarde du compte.
+  final AccountFiles accountFiles;
 
   /// Lancement de la pastille flottante.
   final OverlayLauncher overlayLauncher;
@@ -66,6 +71,7 @@ class IvHelperApp extends StatelessWidget {
           metaSource: metaSource,
           updateSource: updateSource,
           overlayLauncher: overlayLauncher,
+          accountFiles: accountFiles,
           currentBuild: currentBuild,
         ),
       ),

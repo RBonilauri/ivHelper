@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ivhelper/app.dart';
@@ -7,6 +9,7 @@ import 'package:ivhelper/core/species_repository.dart';
 import 'package:ivhelper/core/stats.dart';
 import 'package:ivhelper/settings/settings_controller.dart';
 
+import '../support/fake_account_files.dart';
 import '../support/fake_meta.dart';
 import '../support/fake_overlay.dart';
 import '../support/fake_update.dart';
@@ -48,6 +51,7 @@ Future<void> _pumpApp(
   WidgetTester tester, {
   String? meta,
   int currentBuild = 0,
+  FakeAccountFiles? files,
 }) async {
   tester.view.physicalSize = const Size(800, 2200);
   tester.view.devicePixelRatio = 1;
@@ -60,6 +64,7 @@ Future<void> _pumpApp(
       metaSource: FakeMetaSource(local: meta ?? fakeMetaJson()),
       updateSource: FakeUpdateSource(latest: releaseJson(5)),
       overlayLauncher: FakeOverlayLauncher(),
+      accountFiles: files ?? FakeAccountFiles(),
       currentBuild: currentBuild,
     ),
   );
@@ -836,5 +841,81 @@ void main() {
     for (final r in firstRow) {
       expect(r.width, lessThan(360 / 3));
     }
+  });
+
+  testWidgets('exporter puis importer un compte depuis le menu', (tester) async {
+    final files = FakeAccountFiles();
+    await _pumpApp(tester, files: files);
+    await tester.enterText(find.byType(TextField).first, 'Flambusard');
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Enregistrer'));
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('Enregistrer dans la collection'));
+    await tester.tap(find.text('Enregistrer dans la collection'));
+    await tester.pumpAndSettle();
+    await tester.pump(const Duration(seconds: 6));
+
+    await tester.tap(find.byTooltip('Paramètres'));
+    await tester.pumpAndSettle();
+    final export = find.text('Exporter mon compte');
+    final import = find.text('Importer un compte');
+    await tester.ensureVisible(import);
+    final version = find.textContaining('Version ');
+    // Tout en bas, juste au-dessus de la rubrique des mises à jour.
+    expect(tester.getTopLeft(export).dy, lessThan(tester.getTopLeft(version).dy));
+    expect(tester.getTopLeft(import).dy, lessThan(tester.getTopLeft(version).dy));
+    expect(
+      tester.getTopLeft(export).dy,
+      greaterThan(tester.getTopLeft(find.text('Superposition')).dy),
+    );
+
+    await tester.tap(export);
+    await tester.pumpAndSettle();
+    expect(files.savedName, startsWith('ivhelper-compte-'));
+    expect(files.savedContent, contains('Flambusard'));
+    expect(find.text('Compte exporté (1 Pokémon).'), findsOneWidget);
+    await tester.pump(const Duration(seconds: 6));
+    await tester.pumpAndSettle();
+
+    // Import d'une sauvegarde avec deux Pokémon : remplace après confirmation.
+    final saved = jsonDecode(files.savedContent!) as Map<String, Object?>;
+    final entries = saved['collection']! as List<Object?>;
+    final copy = Map<String, Object?>.of(entries.first! as Map<String, Object?>)
+      ..['id'] = 'copie';
+    saved['collection'] = <Object?>[...entries, copy];
+    files.toPick = jsonEncode(saved);
+    await tester.tap(find.byTooltip('Paramètres'));
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('Importer un compte'));
+    await tester.tap(find.text('Importer un compte'));
+    await tester.pumpAndSettle();
+    expect(find.text('Remplacer ton compte ?'), findsOneWidget);
+    await tester.tap(find.text('Importer'));
+    await tester.pumpAndSettle();
+    expect(find.text('Compte importé (2 Pokémon).'), findsOneWidget);
+    await tester.pump(const Duration(seconds: 6));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byTooltip('Paramètres'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Ma collection'));
+    await tester.pumpAndSettle();
+    expect(find.text('2 Pokémon sur 2'), findsOneWidget);
+  });
+
+  testWidgets('un fichier qui n\'est pas une sauvegarde est refusé',
+      (tester) async {
+    final files = FakeAccountFiles(toPick: 'bonjour');
+    await _pumpApp(tester, files: files);
+    await tester.tap(find.byTooltip('Paramètres'));
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('Importer un compte'));
+    await tester.tap(find.text('Importer un compte'));
+    await tester.pumpAndSettle();
+    expect(
+      find.text("Ce fichier n'est pas une sauvegarde ivHelper."),
+      findsOneWidget,
+    );
+    expect(find.text('Remplacer ton compte ?'), findsNothing);
   });
 }

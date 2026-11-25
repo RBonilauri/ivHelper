@@ -16,10 +16,18 @@ class SettingsDrawer extends StatelessWidget {
     required this.onOpenCollection,
     required this.update,
     required this.onStartOverlay,
+    required this.onExportAccount,
+    required this.onImportAccount,
   });
 
   /// Lance la pastille flottante.
   final VoidCallback onStartOverlay;
+
+  /// Exporte le compte dans un fichier.
+  final VoidCallback onExportAccount;
+
+  /// Importe un compte depuis un fichier.
+  final VoidCallback onImportAccount;
 
   /// Mise à jour de l'app.
   final UpdateController update;
@@ -150,6 +158,32 @@ class SettingsDrawer extends StatelessWidget {
               TextButton(
                 onPressed: () => settings.setFontScale(1),
                 child: const Text('Taille normale'),
+              ),
+              const Divider(height: 32),
+              Text('Compte', style: theme.textTheme.titleMedium),
+              const SizedBox(height: 4),
+              Text(
+                'Sauvegarde ta collection, ton équipe et tes réglages dans un '
+                'fichier, pour les retrouver sur un autre téléphone.',
+                style: theme.textTheme.bodySmall,
+              ),
+              const SizedBox(height: 8),
+              OutlinedButton.icon(
+                onPressed: () {
+                  Navigator.of(context).pop();
+                  onExportAccount();
+                },
+                icon: const Icon(Icons.upload_file),
+                label: const Text('Exporter mon compte'),
+              ),
+              const SizedBox(height: 8),
+              OutlinedButton.icon(
+                onPressed: () {
+                  Navigator.of(context).pop();
+                  onImportAccount();
+                },
+                icon: const Icon(Icons.download),
+                label: const Text('Importer un compte'),
               ),
               const Divider(height: 32),
               ListenableBuilder(
