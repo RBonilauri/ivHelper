@@ -71,6 +71,12 @@ jobs:
           --build-number=$BUILD_NUMBER
           --dart-define=BUILD_NUMBER=$BUILD_NUMBER
           --dart-define=VERSION_NAME=1.1.$BUILD_NUMBER
+      - name: Vérifier les composants ML Kit dans l'APK
+        run: |
+          DEXDUMP=$(ls "$ANDROID_HOME"/build-tools/*/dexdump | sort -V | tail -1)
+          rm -rf "$RUNNER_TEMP/dex" && mkdir "$RUNNER_TEMP/dex"
+          unzip -q -o build/app/outputs/flutter-apk/app-release.apk 'classes*.dex' -d "$RUNNER_TEMP/dex"
+          "$DEXDUMP" -l plain "$RUNNER_TEMP"/dex/classes*.dex | python3 tool/check_mlkit_registrars.py
       - uses: actions/upload-artifact@v4
         with:
           name: ivhelper-apk
