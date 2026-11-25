@@ -4,6 +4,45 @@ import 'package:flutter/services.dart' show rootBundle;
 
 import 'poke_type.dart';
 
+/// Pokémon dont une attaque change les stats.
+enum StatTarget {
+  /// Le Pokémon qui lance l'attaque.
+  self,
+
+  /// L'adversaire.
+  opponent,
+}
+
+/// Changement de stats provoqué par une attaque, en crans (−4 à +4).
+class StatChange {
+  /// Crée un changement.
+  const StatChange({
+    required this.target,
+    this.attack = 0,
+    this.defense = 0,
+    this.chance = 1,
+  });
+
+  /// Pokémon touché.
+  final StatTarget target;
+
+  /// Crans d'attaque (négatif : baisse).
+  final int attack;
+
+  /// Crans de défense (négatif : baisse).
+  final int defense;
+
+  /// Probabilité que l'effet se produise (1 : toujours).
+  final double chance;
+
+  /// Vrai si l'effet aide le lanceur : hausse sur soi ou baisse chez
+  /// l'adversaire.
+  bool get isBeneficial {
+    final sum = attack + defense;
+    return target == StatTarget.self ? sum > 0 : sum < 0;
+  }
+}
+
 /// Une attaque de Pokémon GO.
 class Move {
   /// Crée une attaque.
@@ -13,6 +52,8 @@ class Move {
     required this.type,
     required this.isFast,
     this.power = 0,
+    this.energy = 0,
+    this.effects = const <StatChange>[],
   });
 
   /// Identifiant des données (par exemple `INCINERATE`).
@@ -29,6 +70,17 @@ class Move {
 
   /// Puissance en combat de dresseurs (PvP).
   final int power;
+
+  /// Énergie coûtée par une attaque chargée (0 si inconnue ou immédiate).
+  final int energy;
+
+  /// Changements de stats provoqués (sur soi ou l'adversaire).
+  final List<StatChange> effects;
+
+  /// Nombre de barres d'énergie affichées par le jeu : 3 pour une attaque
+  /// très courte (≤ 33), 2 jusqu'à 50, 1 au-delà ; 0 pour une immédiate.
+  int get chargeBars =>
+      isFast || energy <= 0 ? 0 : (100 ~/ energy).clamp(1, 3);
 }
 
 /// Toutes les attaques connues, par identifiant.
@@ -51,6 +103,11 @@ class MoveBook {
           type: type,
           isFast: raw['fast'] as bool,
           power: (raw['power'] as num?)?.toInt() ?? 0,
+          energy: (raw['energy'] as num?)?.toInt() ?? 0,
+          effects: <StatChange>[
+            for (final e in (raw['effects'] as List<dynamic>?) ?? <dynamic>[])
+              _statChange(e as Map<String, dynamic>),
+          ],
         ),
       );
     }
@@ -76,3 +133,10 @@ class MoveBook {
     return list;
   }
 }
+
+StatChange _statChange(Map<String, dynamic> raw) => StatChange(
+      target: raw['target'] == 'opponent' ? StatTarget.opponent : StatTarget.self,
+      attack: (raw['atk'] as num?)?.toInt() ?? 0,
+      defense: (raw['def'] as num?)?.toInt() ?? 0,
+      chance: (raw['chance'] as num?)?.toDouble() ?? 1,
+    );

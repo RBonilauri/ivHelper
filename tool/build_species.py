@@ -35,6 +35,24 @@ SUFFIX_TYPES = {
 }
 
 
+def move_effects(m):
+    """Changements de stats d'une attaque : [{target, atk, def, chance}]."""
+    if "buffs" not in m:
+        return []
+    chance = float(m.get("buffApplyChance", "1"))
+    target = m.get("buffTarget", "self")
+    if target == "both":
+        parts = [("self", m.get("buffsSelf", [0, 0])),
+                 ("opponent", m.get("buffsOpponent", [0, 0]))]
+    else:
+        parts = [(target, m["buffs"])]
+    return [
+        {"target": t, "atk": b[0], "def": b[1], "chance": chance}
+        for t, b in parts
+        if b[0] or b[1]
+    ]
+
+
 def french_species(path):
     names = {}
     with open(path, newline="", encoding="utf-8") as f:
@@ -174,15 +192,22 @@ def main(gamemaster, species_csv, moves_csv, move_names_csv, out_species, out_mo
     for m in data["moves"]:
         if m["moveId"] not in used or m["type"] not in TYPES_FR:
             continue
+        fast = m.get("energyGain", 0) > 0 or (
+            m.get("energy", 0) == 0 and m["moveId"] in used_fast
+        )
         moves[m["moveId"]] = {
             "name": move_name(m["moveId"], m["name"], fr_moves),
             "type": m["type"],
             "power": m.get("power", 0),
             # Immédiate si elle rapporte de l'énergie ; Morphing (ni gain ni coût)
             # l'est aussi. Lutte coûte de l'énergie : elle est chargée.
-            "fast": m.get("energyGain", 0) > 0
-            or (m.get("energy", 0) == 0 and m["moveId"] in used_fast),
+            "fast": fast,
         }
+        if not fast and m.get("energy", 0) > 0:
+            moves[m["moveId"]]["energy"] = m["energy"]
+        effects = move_effects(m)
+        if effects:
+            moves[m["moveId"]]["effects"] = effects
     for s in result:
         s["fast"] = [m for m in s["fast"] if m in moves and moves[m]["fast"]]
         s["charged"] = [m for m in s["charged"] if m in moves and not moves[m]["fast"]]
