@@ -16,12 +16,16 @@ class SettingsDrawer extends StatelessWidget {
     required this.onOpenCollection,
     required this.update,
     required this.onStartOverlay,
+    required this.onOpenSearch,
     required this.onExportAccount,
     required this.onImportAccount,
   });
 
   /// Lance la pastille flottante.
   final VoidCallback onStartOverlay;
+
+  /// Ouvre les chaînes de recherche Pokémon GO.
+  final VoidCallback onOpenSearch;
 
   /// Exporte le compte dans un fichier.
   final VoidCallback onExportAccount;
@@ -103,6 +107,18 @@ class SettingsDrawer extends StatelessWidget {
                 onTap: () {
                   Navigator.of(context).pop();
                   onOpenTypes();
+                },
+              ),
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: const Icon(Icons.manage_search),
+                title: const Text('Chaînes de recherche'),
+                subtitle: const Text(
+                  'Texte à coller dans Pokémon GO pour trouver tes candidats',
+                ),
+                onTap: () {
+                  Navigator.of(context).pop();
+                  onOpenSearch();
                 },
               ),
               ListTile(
