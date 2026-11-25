@@ -9,6 +9,7 @@ import 'format.dart';
 import 'save_pokemon_sheet.dart';
 import 'search_field.dart';
 import 'type_badge.dart';
+import 'type_filter_row.dart';
 
 /// Collection : Pokémon enregistrés, filtrables, triables, en liste ou en
 /// mosaïque.
@@ -329,92 +330,21 @@ class _TypeFilterRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final counts = <PokeType, int>{};
     for (final row in collection.visibleRowsUnfiltered) {
       for (final t in row.species.types) {
         counts[t] = (counts[t] ?? 0) + 1;
       }
     }
-    final selected = collection.filter.types;
-    final types = <PokeType>[
-      for (final t in PokeType.values)
-        if (counts.containsKey(t) || selected.contains(t)) t,
-    ];
-    if (types.isEmpty) return const SizedBox.shrink();
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: <Widget>[
-        Row(
-          children: <Widget>[
-            Expanded(
-              child: Text(
-                selected.isEmpty
-                    ? 'Types (touche pour filtrer)'
-                    : 'Types · ${selected.length} choisi${selected.length > 1 ? 's' : ''}',
-                style: theme.textTheme.labelLarge,
-              ),
-            ),
-            if (selected.isNotEmpty)
-              TextButton(
-                onPressed: () => collection.setFilter(
-                  collection.filter.copyWith(types: const <PokeType>{}),
-                ),
-                child: const Text('Tous les types'),
-              ),
-          ],
-        ),
-        SizedBox(
-            height: 64,
-            child: ListView.separated(
-              scrollDirection: Axis.horizontal,
-              itemCount: types.length,
-              separatorBuilder: (_, __) => const SizedBox(width: 8),
-              itemBuilder: (context, i) {
-                final t = types[i];
-                final on = selected.contains(t);
-                final dim = selected.isNotEmpty && !on;
-                return Semantics(
-                  button: true,
-                  selected: on,
-                  label: '${t.nameFr}, ${counts[t] ?? 0} Pokémon',
-                  child: InkWell(
-                    key: ValueKey<String>('type-filter-${t.id}'),
-                    customBorder: const CircleBorder(),
-                    onTap: () => collection.setFilter(
-                      collection.filter.copyWith(
-                        types: on
-                            ? (<PokeType>{...selected}..remove(t))
-                            : <PokeType>{...selected, t},
-                      ),
-                    ),
-                    child: Opacity(
-                      opacity: dim ? 0.35 : 1,
-                      child: ExcludeSemantics(
-                        child: Column(
-                          children: <Widget>[
-                            TypeBadge(
-                              t,
-                              size: 40,
-                              ring: on ? rankOneGold : null,
-                            ),
-                            const SizedBox(height: 2),
-                            Text(
-                              '${counts[t] ?? 0}',
-                              style: theme.textTheme.labelSmall?.copyWith(
-                                fontWeight: on ? FontWeight.w800 : null,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                );
-              },
-            ),
-          ),
-      ],
+    return TypeFilterRow(
+      title: 'Types',
+      hint: 'Types (touche pour filtrer)',
+      keyPrefix: 'type-filter',
+      counts: counts,
+      selected: collection.filter.types,
+      onChanged: (types) => collection.setFilter(
+        collection.filter.copyWith(types: types),
+      ),
     );
   }
 }

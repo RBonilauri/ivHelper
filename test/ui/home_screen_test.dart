@@ -709,15 +709,22 @@ void main() {
     await tester.pumpAndSettle();
 
     // Menu déroulant des filtres : type du Pokémon.
-    await tester.tap(find.text('Filtres'));
-    await tester.pumpAndSettle();
+    // Types en ligne, comme dans la collection : pas de volet à ouvrir.
+    expect(find.text('Filtres'), findsNothing);
     await tester.tap(find.byKey(const ValueKey<String>('meta-type-dragon')));
     await tester.pumpAndSettle();
     expect(flambusard, findsNothing);
     expect(altaria, findsOneWidget);
-    expect(find.text('Filtres (1)'), findsOneWidget);
-    await tester.tap(find.byKey(const ValueKey<String>('meta-type-dragon')));
+    expect(find.text('Types du Pokémon · 1 choisi'), findsOneWidget);
+    // Plusieurs types cochés : un seul suffit.
+    await tester.tap(find.byKey(const ValueKey<String>('meta-type-fire')));
     await tester.pumpAndSettle();
+    expect(flambusard, findsOneWidget);
+    expect(altaria, findsOneWidget);
+    expect(find.text('Types du Pokémon · 2 choisis'), findsOneWidget);
+    await tester.tap(find.text('Tous les types').first);
+    await tester.pumpAndSettle();
+    expect(find.text('Types du Pokémon · 2 choisis'), findsNothing);
 
     // Type d'attaque.
     await tester.tap(find.byKey(const ValueKey<String>('meta-move-flying')));
