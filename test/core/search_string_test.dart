@@ -58,4 +58,9 @@ void main() {
       expect(p.description, isNotEmpty);
     }
   });
+
+  test('surnom PvP à coller dans le jeu', () {
+    expect(pvpNickname(36), 'PVP#36');
+    expect(pvpNickname(1193), 'PVP#1193');
+  });
 }

@@ -1,6 +1,8 @@
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ivhelper/core/moves.dart';
 import 'package:ivhelper/core/poke_type.dart';
+import 'package:ivhelper/core/rank_service.dart';
 import 'package:ivhelper/core/screen_reading.dart';
 import 'package:ivhelper/core/species_repository.dart';
 import 'package:ivhelper/core/stats.dart';
@@ -77,6 +79,35 @@ void main() {
     await tester.tap(find.byKey(const ValueKey<String>('cell-Nostenfer-ultra')));
     await tester.pumpAndSettle();
     expect(find.text('Enregistrer Nostenfer (Hyper)'), findsOneWidget);
+
+    // Sous « Enregistrer » : copier le surnom PVP#rang de la case choisie.
+    final copied = <String>[];
+    tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+      SystemChannels.platform,
+      (call) async {
+        if (call.method == 'Clipboard.setData') {
+          copied.add((call.arguments as Map<Object?, Object?>)['text']! as String);
+        }
+        return null;
+      },
+    );
+    addTearDown(
+      () => tester.binding.defaultBinaryMessenger
+          .setMockMethodCallHandler(SystemChannels.platform, null),
+    );
+    final rank = rankIv(_crobat.base, const Iv(0, 13, 10), maxLevel: 51).ultra.mine.rank;
+    final copy = find.byKey(const ValueKey<String>('copy-nickname'));
+    expect(
+      tester.getTopLeft(copy).dy,
+      greaterThan(tester.getTopLeft(find.text('Enregistrer Nostenfer (Hyper)')).dy),
+    );
+    expect(find.text('Copier PVP#$rank'), findsOneWidget);
+    await tester.tap(copy);
+    await tester.pumpAndSettle();
+    expect(copied, <String>['PVP#$rank']);
+    expect(find.text('PVP#$rank copié : colle-le comme surnom dans le jeu.'), findsOneWidget);
+    await tester.pump(const Duration(seconds: 4));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('Enregistrer Nostenfer (Hyper)'));
     await tester.pumpAndSettle();
     await tester.ensureVisible(find.text('Enregistrer dans la collection'));
