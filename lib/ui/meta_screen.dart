@@ -321,11 +321,13 @@ class _TypeChips extends StatelessWidget {
                 selected: selected.contains(t),
                 showCheckmark: false,
                 selectedColor: typeColors[t]!.withValues(alpha: 0.35),
-                onSelected: (on) => onChanged(
-                  on
-                      ? <PokeType>{...selected, t}
-                      : <PokeType>{...selected}..remove(t),
-                ),
+                // Pas de cascade ici : `..remove` s'appliquerait aux deux
+                // branches du test et décocherait toujours le type.
+                onSelected: (on) => onChanged(<PokeType>{
+                  for (final x in selected)
+                    if (x != t) x,
+                  if (on) t,
+                }),
               ),
           ],
         ),
