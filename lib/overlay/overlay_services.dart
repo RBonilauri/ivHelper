@@ -140,8 +140,10 @@ class PluginOverlayWindow implements OverlayWindow {
   }
 }
 
-/// Côté en pixels physiques d'une fenêtre de [dp] dp (à implémenter).
-int overlayPixels(int dp, double ratio) => dp;
+/// Côté en pixels physiques d'une fenêtre de [dp] dp : `showOverlay` du
+/// plugin prend des pixels bruts (64 donnait une pastille de 24 dp), alors
+/// que `resizeOverlay` prend des dp.
+int overlayPixels(int dp, double ratio) => (dp * ratio).round();
 
 /// Lance la pastille depuis l'app.
 abstract interface class OverlayLauncher {
@@ -173,9 +175,13 @@ class PluginOverlayLauncher implements OverlayLauncher {
     if (await FlutterOverlayWindow.isActive()) {
       await FlutterOverlayWindow.closeOverlay();
     }
+    final side = overlayPixels(
+      PluginOverlayWindow.bubbleSize,
+      ui.PlatformDispatcher.instance.views.first.devicePixelRatio,
+    );
     await FlutterOverlayWindow.showOverlay(
-      height: PluginOverlayWindow.bubbleSize,
-      width: PluginOverlayWindow.bubbleSize,
+      height: side,
+      width: side,
       alignment: OverlayAlignment.centerRight,
       enableDrag: true,
       positionGravity: PositionGravity.auto,
