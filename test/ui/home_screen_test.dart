@@ -811,7 +811,16 @@ void main() {
       (w) => w is Card && (w.key is ValueKey<String>) &&
           (w.key! as ValueKey<String>).value.startsWith('collection-'),
     );
-    await tester.scrollUntilVisible(tiles.first, 300);
+    await tester.scrollUntilVisible(
+      tiles.first,
+      300,
+      scrollable: find
+          .descendant(
+            of: find.byType(CustomScrollView),
+            matching: find.byType(Scrollable),
+          )
+          .first,
+    );
     await tester.pumpAndSettle();
     final rects = tiles.evaluate().map((e) => tester.getRect(find.byWidget(e.widget))).toList();
     expect(rects.length, greaterThanOrEqualTo(3));
