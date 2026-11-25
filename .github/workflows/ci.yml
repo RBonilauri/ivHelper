@@ -41,6 +41,9 @@ jobs:
           sed -i '0,/<application/s##<uses-permission android:name="android.permission.INTERNET"/>\n    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES"/>\n    <application#' $M
           grep -q 'android.permission.INTERNET' $M
           grep -q 'android.permission.REQUEST_INSTALL_PACKAGES' $M
+          # Une seule tâche ivHelper, même ouverte depuis l'installeur.
+          sed -i 's/android:launchMode="singleTop"/android:launchMode="singleTask"/' $M
+          grep -q 'android:launchMode="singleTask"' $M
           cp -r tool/android_icons/* android/app/src/main/res/
       - name: Clé de signature fixe
         id: key
