@@ -88,7 +88,15 @@ class ScreenText {
     this.attackLabel,
     this.defenseLabel,
     this.hpLabel,
+    this.lucky = false,
+    this.shadow = false,
   });
+
+  /// Vrai si la fiche dit « chanceux ».
+  final bool lucky;
+
+  /// Vrai si la fiche propose « Purifier » : le Pokémon est obscur.
+  final bool shadow;
 
   /// PC lus en haut de l'écran.
   final int? cp;
@@ -147,6 +155,7 @@ const Set<String> _stopWords = <String>{
   'bonbon', 'bonbons', 'poids', 'taille', 'attaque', 'defense', 'evaluer',
   'puissance', 'evoluer', 'nouveau', 'nouvelle', 'transferer', 'attrape',
   'france', 'favori', 'charge', 'chargee', 'immediate', 'pokemon',
+  'chanceux', 'purifier',
 };
 
 /// Analyse le texte lu sur la fiche d'un Pokémon dans Pokémon GO.
@@ -166,6 +175,8 @@ ScreenText parseScreenText(List<OcrLine> input) {
   OcrLine? attack;
   OcrLine? defense;
   final pvLabels = <OcrLine>[];
+  var lucky = false;
+  var shadow = false;
 
   final cpPattern = RegExp(r'^\s*[PC][CP]?\s*(\d{1,5})\s*$', caseSensitive: false);
   final hpPattern = RegExp(r'(\d{1,4})\s*/\s*(\d{1,4})\s*P\s*V', caseSensitive: false);
@@ -185,6 +196,8 @@ ScreenText parseScreenText(List<OcrLine> input) {
     if (norm == 'attaque') attack = line;
     if (norm == 'defense') defense = line;
     if (norm == 'pv') pvLabels.add(line);
+    if (norm.contains('chanceux')) lucky = true;
+    if (norm == 'purifier') shadow = true;
 
     final words = RegExp(r"[A-Za-zÀ-ÿ'’]+")
         .allMatches(text)
@@ -226,6 +239,8 @@ ScreenText parseScreenText(List<OcrLine> input) {
     attackLabel: attack,
     defenseLabel: defense,
     hpLabel: hpLabel,
+    lucky: lucky,
+    shadow: shadow,
   );
 }
 

@@ -4,6 +4,8 @@ import 'package:material_ui/material_ui.dart';
 import '../core/collection.dart';
 import '../core/meta.dart';
 import '../core/moves.dart';
+import '../core/power_up.dart';
+import '../core/rank_table.dart';
 import '../core/screen_reading.dart';
 import '../core/search_string.dart';
 import '../core/species_repository.dart';
@@ -117,6 +119,8 @@ class _OverlayHomeState extends State<OverlayHome> {
   double _maxLevel = 51;
   Species? _selected;
   League _league = League.great;
+  bool _lucky = false;
+  ShadowState _shadowState = ShadowState.none;
   late final CollectionController _collection = CollectionController(
     repository: widget.repository,
     moves: widget.moves,
@@ -156,6 +160,10 @@ class _OverlayHomeState extends State<OverlayHome> {
                   : null));
       if (species != null) _setSpecies(species, family: result!.family);
       if (result?.iv != null) _iv = result!.iv!;
+      _lucky = result?.text.lucky ?? false;
+      _shadowState = (result?.text.shadow ?? false)
+          ? ShadowState.shadow
+          : ShadowState.none;
     });
   }
 
@@ -206,6 +214,21 @@ class _OverlayHomeState extends State<OverlayHome> {
         },
       ),
     );
+  }
+
+  /// Niveau actuel : recalculé avec les PC et PV lus pour l'espèce et les IV
+  /// affichés (la lecture d'origine sinon). L'évolution garde le niveau.
+  double? get _currentLevel {
+    final scan = _scan;
+    if (scan == null) return null;
+    final cp = scan.text.cp;
+    final hp = scan.text.hpMax;
+    final species = _species;
+    if (species != null && cp != null && hp != null) {
+      final level = matchingLevel(species, _iv, cp, hp);
+      if (level != null) return level;
+    }
+    return scan.level;
   }
 
   /// Copie le surnom `PVP#rang` du stade et de la ligue choisis.
@@ -345,6 +368,29 @@ class _OverlayHomeState extends State<OverlayHome> {
                 'enregistrer. • = stade affiché dans le jeu.',
                 style: theme.textTheme.bodySmall,
               ),
+              if (_selected != null) ...<Widget>[
+                const SizedBox(height: 8),
+                _LeagueDetails(
+                  species: _selected!,
+                  league: _league,
+                  entry: _collection.rankFor(
+                    _selected!,
+                    _iv,
+                    _maxLevel,
+                    _league,
+                  ),
+                  meta: widget.meta,
+                  currentLevel: _currentLevel,
+                  evolves: _selected != _species,
+                  lucky: _lucky,
+                  shadow: _shadowState,
+                  onLucky: (v) => setState(() => _lucky = v),
+                  onShadow: (v) => setState(() {
+                    _shadowState = v;
+                    if (v == ShadowState.shadow) _lucky = false;
+                  }),
+                ),
+              ],
               const SizedBox(height: 8),
               FilledButton.icon(
                 onPressed: _selected == null ? null : _save,
@@ -459,3 +505,189 @@ class _SpeciesPicker extends StatelessWidget {
     );
   }
 }
+
+/// Rang dans la méta et coût pour monter le stade choisi au niveau de la
+/// ligue choisie, selon chanceux, obscur ou purifié.
+class _LeagueDetails extends StatelessWidget {
+  const _LeagueDetails({
+    required this.species,
+    required this.league,
+    required this.entry,
+    required this.meta,
+    required this.currentLevel,
+    required this.evolves,
+    required this.lucky,
+    required this.shadow,
+    required this.onLucky,
+    required this.onShadow,
+  });
+
+  final Species species;
+  final League league;
+  final RankEntry entry;
+  final MetaSnapshot? meta;
+  final double? currentLevel;
+  final bool evolves;
+  final bool lucky;
+  final ShadowState shadow;
+  final ValueChanged<bool> onLucky;
+  final ValueChanged<ShadowState> onShadow;
+
+  String _metaLine() {
+    final metaLeague = MetaLeague.fromKey(league.key);
+    if (metaLeague == null) return 'Pas de méta en ligue ${league.label}';
+    final data = meta;
+    if (data == null) return 'Méta indisponible';
+    final e = data.entryFor(
+      species.nameFr,
+      metaLeague,
+      shadow: shadow == ShadowState.shadow,
+    );
+    return e == null
+        ? 'Absent de la méta ${metaLeague.label}'
+        : 'Méta ${metaLeague.label} : n° ${e.rank}';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final from = currentLevel;
+    final target = entry.level;
+    final cost = from == null
+        ? null
+        : powerUpCost(from, target, lucky: lucky, shadow: shadow);
+    return Card(
+      key: const ValueKey<String>('league-details'),
+      margin: EdgeInsets.zero,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            Text(
+              _metaLine(),
+              key: const ValueKey<String>('meta-rank'),
+              style: theme.textTheme.titleSmall,
+            ),
+            const SizedBox(height: 6),
+            Wrap(
+              spacing: 6,
+              runSpacing: 4,
+              children: <Widget>[
+                FilterChip(
+                  label: const Text('Chanceux'),
+                  selected: lucky,
+                  onSelected: shadow == ShadowState.shadow ? null : onLucky,
+                ),
+                FilterChip(
+                  label: const Text('Obscur'),
+                  selected: shadow == ShadowState.shadow,
+                  onSelected: (on) =>
+                      onShadow(on ? ShadowState.shadow : ShadowState.none),
+                ),
+                FilterChip(
+                  label: const Text('Purifié'),
+                  selected: shadow == ShadowState.purified,
+                  onSelected: (on) =>
+                      onShadow(on ? ShadowState.purified : ShadowState.none),
+                ),
+              ],
+            ),
+            const SizedBox(height: 6),
+            if (from == null)
+              Text(
+                'Niveau actuel inconnu : relis l\'écran pour calculer le coût.',
+                style: theme.textTheme.bodySmall,
+              )
+            else if (cost == null)
+              Text(
+                'Déjà au-dessus du niveau visé (${formatLevel(target)}) : '
+                'trop de PC pour la ligue ${league.label}.',
+                style: theme.textTheme.bodySmall,
+              )
+            else ...<Widget>[
+              Text(
+                'Niveau ${formatLevel(from)} → ${formatLevel(target)} · '
+                '${cost.powerUps} amélioration${cost.powerUps > 1 ? 's' : ''}',
+                style: theme.textTheme.bodyMedium,
+              ),
+              const SizedBox(height: 4),
+              Wrap(
+                spacing: 14,
+                runSpacing: 4,
+                children: <Widget>[
+                  _CostItem(
+                    icon: Icons.auto_awesome,
+                    valueKey: 'cost-stardust',
+                    value: cost.stardust,
+                    label: 'poussières',
+                  ),
+                  _CostItem(
+                    icon: Icons.circle,
+                    valueKey: 'cost-candy',
+                    value: cost.candy,
+                    label: 'bonbons',
+                  ),
+                  if (cost.xlCandy > 0)
+                    _CostItem(
+                      icon: Icons.hexagon,
+                      valueKey: 'cost-xl',
+                      value: cost.xlCandy,
+                      label: 'bonbons L',
+                    ),
+                ],
+              ),
+              if (target > 50 || evolves)
+                Padding(
+                  padding: const EdgeInsets.only(top: 4),
+                  child: Text(
+                    <String>[
+                      if (target > 50)
+                        'Niveau 51 : bonus de meilleur ami, sans coût.',
+                      if (evolves)
+                        'Sans le coût d\'évolution en ${species.nameFr}.',
+                    ].join(' '),
+                    style: theme.textTheme.bodySmall,
+                  ),
+                ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _CostItem extends StatelessWidget {
+  const _CostItem({
+    required this.icon,
+    required this.valueKey,
+    required this.value,
+    required this.label,
+  });
+
+  final IconData icon;
+  final String valueKey;
+  final int value;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: <Widget>[
+        Icon(icon, size: 16, color: theme.colorScheme.primary),
+        const SizedBox(width: 4),
+        Text(
+          formatGrouped(value),
+          key: ValueKey<String>(valueKey),
+          style: theme.textTheme.titleSmall,
+        ),
+        const SizedBox(width: 3),
+        Text(label, style: theme.textTheme.bodySmall),
+      ],
+    );
+  }
+}
+

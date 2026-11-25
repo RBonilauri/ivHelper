@@ -7,6 +7,7 @@ import 'package:ivhelper/state/meta_controller.dart';
 String fakeMetaJson({
   String updated = '2026-11-20',
   String name = 'Flambusard',
+  String species = 'Flambusard',
   List<String> best = const <String>['Florges'],
   bool withAltaria = false,
 }) =>
@@ -18,7 +19,7 @@ String fakeMetaJson({
           <String, Object?>{
             'rank': 1,
             'name': name,
-            'species': 'Flambusard',
+            'species': species,
             'shadow': false,
             'types': <String>['fire', 'flying'],
             'score': 91.5,
