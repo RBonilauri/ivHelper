@@ -71,6 +71,15 @@ jobs:
           --build-number=$BUILD_NUMBER
           --dart-define=BUILD_NUMBER=$BUILD_NUMBER
           --dart-define=VERSION_NAME=1.1.$BUILD_NUMBER
+      - name: Vérifier qu'il n'y a qu'une seule fenêtre ivHelper
+        run: |
+          # Lancée depuis l'installeur (mise à jour), l'app ouvrait une
+          # deuxième tâche « ivHelper » dans les applis récentes : l'activité
+          # principale doit être en singleTask (valeur 2).
+          AAPT2=$(ls "$ANDROID_HOME"/build-tools/*/aapt2 | sort -V | tail -1)
+          "$AAPT2" dump xmltree --file AndroidManifest.xml build/app/outputs/flutter-apk/app-release.apk > "$RUNNER_TEMP/manifest.txt"
+          grep -A12 'MainActivity' "$RUNNER_TEMP/manifest.txt" | grep 'launchMode'
+          grep -A12 'MainActivity' "$RUNNER_TEMP/manifest.txt" | grep -q 'launchMode(0x0101001d)=2'
       - name: Vérifier les composants ML Kit dans l'APK
         run: |
           DEXDUMP=$(ls "$ANDROID_HOME"/build-tools/*/dexdump | sort -V | tail -1)
