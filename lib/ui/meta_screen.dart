@@ -3,8 +3,10 @@ import 'dart:async';
 import 'package:material_ui/material_ui.dart';
 
 import '../core/meta.dart';
+import '../core/moves.dart';
 import '../state/meta_controller.dart';
 import 'format.dart';
+import 'move_line.dart';
 import 'search_field.dart';
 import 'type_badge.dart';
 
@@ -19,7 +21,11 @@ class MetaActions {
     required this.addToTeam,
     required this.isOwned,
     required this.ownedRank,
+    this.moves,
   });
+
+  /// Recueil des attaques (énergie et effets), s'il est connu.
+  final MoveBook? moves;
 
   /// Meilleur rang d'un Pokémon de la collection correspondant à [entry]
   /// (même espèce, obscur ou non, tag de [league]), ou `null`.
@@ -378,9 +384,16 @@ class MetaDetailScreen extends StatelessWidget {
             const SizedBox(height: 20),
             Text('Attaques recommandées', style: theme.textTheme.titleSmall),
             const SizedBox(height: 8),
-            _MoveRow(label: 'Immédiate', move: entry.fast),
-            for (final c in entry.charged)
-              _MoveRow(label: 'Chargée', move: c),
+            _MoveGroup(
+              label: 'Immédiate',
+              moves: <MetaMove>[entry.fast],
+              book: actions.moves,
+            ),
+            _MoveGroup(
+              label: 'Chargée(s)',
+              moves: entry.charged,
+              book: actions.moves,
+            ),
             if (<MetaMove>[entry.fast, ...entry.charged].any((m) => m.elite))
               Text(
                 '* attaque d\'événement (Élite)',
@@ -441,28 +454,46 @@ class MetaDetailScreen extends StatelessWidget {
   }
 }
 
-class _MoveRow extends StatelessWidget {
-  const _MoveRow({required this.label, required this.move});
+class _MoveGroup extends StatelessWidget {
+  const _MoveGroup({
+    required this.label,
+    required this.moves,
+    required this.book,
+  });
 
   final String label;
-  final MetaMove move;
+  final List<MetaMove> moves;
+  final MoveBook? book;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Row(
-        children: <Widget>[
-          TypeBadge(move.type, size: 28),
-          const SizedBox(width: 10),
-          Expanded(child: Text(move.label, style: theme.textTheme.bodyLarge)),
-          Text(
-            '$label · puissance ${move.power}',
-            style: theme.textTheme.bodySmall,
+    if (moves.isEmpty) return const SizedBox.shrink();
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        Padding(
+          padding: const EdgeInsets.only(top: 6),
+          child: Text(
+            label,
+            style: theme.textTheme.labelSmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
           ),
-        ],
-      ),
+        ),
+        for (final m in moves)
+          MoveLine(
+            move: book?[m.id] ??
+                Move(
+                  id: m.id,
+                  nameFr: m.nameFr,
+                  type: m.type,
+                  isFast: label == 'Immédiate',
+                  power: m.power,
+                ),
+            label: m.label,
+          ),
+      ],
     );
   }
 }

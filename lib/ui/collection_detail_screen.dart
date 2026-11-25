@@ -6,6 +6,7 @@ import '../state/collection_controller.dart';
 import 'collection_widgets.dart';
 import 'format.dart';
 import 'move_label.dart';
+import 'move_line.dart';
 import 'save_pokemon_sheet.dart';
 import 'type_badge.dart';
 
@@ -204,10 +205,10 @@ class _Detail extends StatelessWidget {
                     ),
                   ),
                   for (final m in group.$2)
-                    _MoveLine(
+                    MoveLine(
                       move: m,
                       label: moveLabel(m, row.species),
-                      isMeta: metaIds.contains(m.id),
+                      bold: metaIds.contains(m.id),
                     ),
                 ],
             ],
@@ -227,47 +228,6 @@ class _Detail extends StatelessWidget {
             ),
           ],
         ),
-      ),
-    );
-  }
-}
-
-/// Une attaque de la fiche : type, nom (en gras si méta) et puissance.
-class _MoveLine extends StatelessWidget {
-  const _MoveLine({
-    required this.move,
-    required this.label,
-    required this.isMeta,
-  });
-
-  final Move move;
-  final String label;
-  final bool isMeta;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Row(
-        children: <Widget>[
-          TypeBadge(move.type, size: 26),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Text(
-              label,
-              style: theme.textTheme.bodyLarge?.copyWith(
-                fontWeight: isMeta ? FontWeight.w800 : null,
-              ),
-            ),
-          ),
-          Text(
-            '${move.power}',
-            style: theme.textTheme.bodyMedium?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
-          ),
-        ],
       ),
     );
   }

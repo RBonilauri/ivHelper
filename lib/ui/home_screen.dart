@@ -366,6 +366,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                 checkIvs: _checkIvs,
                 addToTeam: (context, entry) =>
                     unawaited(_addToTeam(context, entry)),
+                moves: widget.moves,
               ),
             ),
           ),

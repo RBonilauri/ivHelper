@@ -37,6 +37,10 @@ MoveBook _moves() => MoveBook(const <Move>[
         type: PokeType.flying,
         isFast: false,
         power: 130,
+        energy: 55,
+        effects: <StatChange>[
+          StatChange(target: StatTarget.self, defense: -3),
+        ],
       ),
     ]);
 
@@ -206,6 +210,11 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Pires adversaires'), findsOneWidget);
     expect(find.text('Altaria'), findsOneWidget);
+    expect(find.text('Ta défense \u22123'), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey<String>('charge-bars-BRAVE_BIRD')),
+      findsOneWidget,
+    );
 
     await tester.tap(find.text('Ajouter à mon équipe'));
     await tester.pumpAndSettle();
@@ -653,6 +662,19 @@ void main() {
     expect(find.text('20'), findsOneWidget);
     expect(find.text('130'), findsOneWidget);
     expect(find.textContaining('puissance'), findsNothing);
+    // Barres d'énergie de la couleur du type et effet sur les stats.
+    expect(
+      find.descendant(
+        of: find.byKey(const ValueKey<String>('charge-bars-BRAVE_BIRD')),
+        matching: find.byKey(const ValueKey<String>('charge-bar')),
+      ),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const ValueKey<String>('charge-bars-INCINERATE')),
+      findsNothing,
+    );
+    expect(find.text('Ta défense \u22123'), findsOneWidget);
     await tester.pump(const Duration(seconds: 10));
     await tester.pumpAndSettle();
   });
