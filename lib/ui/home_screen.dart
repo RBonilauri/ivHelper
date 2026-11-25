@@ -8,6 +8,8 @@ import '../core/moves.dart';
 import '../core/species_repository.dart';
 import '../core/stats.dart';
 import '../overlay/overlay_services.dart';
+import '../settings/account_backup.dart';
+import '../settings/account_files.dart';
 import '../settings/settings_controller.dart';
 import '../state/collection_controller.dart';
 import '../state/history_controller.dart';
@@ -41,10 +43,14 @@ class HomeScreen extends StatefulWidget {
     required this.updateSource,
     required this.currentBuild,
     required this.overlayLauncher,
+    required this.accountFiles,
   });
 
   /// Lancement de la pastille flottante.
   final OverlayLauncher overlayLauncher;
+
+  /// Fichiers de sauvegarde du compte (export et import).
+  final AccountFiles accountFiles;
 
   /// Source des mises à jour de l'app.
   final UpdateSource updateSource;
@@ -249,6 +255,77 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     );
   }
 
+  /// Exporte le compte dans un fichier choisi par l'utilisateur.
+  Future<void> _exportAccount(BuildContext context) async {
+    final messenger = ScaffoldMessenger.of(context);
+    try {
+      final now = DateTime.now();
+      final text = await exportAccount(widget.settings.store, now: now);
+      final count = previewAccount(text).pokemonCount;
+      final saved = await widget.accountFiles.save(accountFileName(now), text);
+      if (!saved) return;
+      messenger.showSnackBar(
+        SnackBar(content: Text('Compte exporté ($count Pokémon).')),
+      );
+    } on Exception catch (e) {
+      messenger.showSnackBar(SnackBar(content: Text('Export impossible : $e')));
+    }
+  }
+
+  /// Importe un compte : vérifie le fichier, demande confirmation, remplace
+  /// les données puis recharge l'app.
+  Future<void> _importAccount(BuildContext context) async {
+    final messenger = ScaffoldMessenger.of(context);
+    final String? text;
+    try {
+      text = await widget.accountFiles.pick();
+    } on Exception catch (e) {
+      messenger.showSnackBar(SnackBar(content: Text('Import impossible : $e')));
+      return;
+    }
+    if (text == null) return;
+    final AccountSummary summary;
+    try {
+      summary = previewAccount(text);
+    } on AccountImportException catch (e) {
+      messenger.showSnackBar(SnackBar(content: Text(e.message)));
+      return;
+    }
+    if (!context.mounted) return;
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Remplacer ton compte ?'),
+        content: Text(
+          'Ta collection, ton équipe, tes dernières recherches et tes réglages '
+          "seront remplacés par ceux du fichier (${summary.pokemonCount} "
+          'Pokémon).',
+        ),
+        actions: <Widget>[
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Annuler'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('Importer'),
+          ),
+        ],
+      ),
+    );
+    if (ok != true) return;
+    await importAccount(widget.settings.store, text);
+    await widget.settings.load();
+    await _collection.load();
+    await _team.load();
+    await _history.load();
+    messenger.showSnackBar(
+      SnackBar(
+        content: Text('Compte importé (${summary.pokemonCount} Pokémon).'),
+      ),
+    );
+  }
+
   /// Actions de la fiche méta (onglet Méta et fiche de collection).
   MetaActions get _metaActions => MetaActions(
         ownedRank: _ownedRank,
@@ -372,6 +449,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         onOpenTeam: () => _openTeam(context),
         onOpenCollection: () => _openCollection(context),
         onStartOverlay: () => unawaited(_startOverlay(context)),
+        onExportAccount: () => unawaited(_exportAccount(context)),
+        onImportAccount: () => unawaited(_importAccount(context)),
         update: _update,
         onOpenMeta: () => Navigator.of(context).push(
           MaterialPageRoute<void>(
