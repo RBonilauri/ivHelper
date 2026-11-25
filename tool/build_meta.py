@@ -9,7 +9,7 @@ DOSSIER_SOURCES contient :
   licence MIT) ;
 - pokemon_species_names.csv, moves.csv, move_names.csv (PokéAPI).
 
-TOP vaut 100 par défaut. Le champ « species » ne renvoie qu'à une espèce de
+TOP vaut 300 par défaut. Le champ « species » ne renvoie qu'à une espèce de
 species.json (dans le même dossier que SORTIE), sinon il vaut null. La date « updated » ne change que si le classement
 change, pour que la tâche planifiée ne committe que les vraies mises à jour.
 """
@@ -128,7 +128,7 @@ def build(src, top, known_species):
     return leagues
 
 
-def main(src, out, top="100"):
+def main(src, out, top="300"):
     species_path = os.path.join(os.path.dirname(out), "species.json")
     known_species = {s["name"] for s in json.load(open(species_path, encoding="utf-8"))}
     leagues = build(src, int(top), known_species)

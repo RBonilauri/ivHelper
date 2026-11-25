@@ -14,7 +14,9 @@ void main() {
     for (final league in MetaLeague.values) {
       final entries = data.leagues[league]!;
       expect(entries, isNotEmpty, reason: league.label);
-      expect(entries.length, lessThanOrEqualTo(100));
+      // Les 300 premiers de PvPoke (bien plus de 100 dans chaque ligue).
+      expect(entries.length, greaterThan(100), reason: league.label);
+      expect(entries.length, lessThanOrEqualTo(300));
       expect(
         entries.map((e) => e.rank),
         List<int>.generate(entries.length, (i) => i + 1),
