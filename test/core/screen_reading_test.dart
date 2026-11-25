@@ -155,4 +155,18 @@ void main() {
       expect(r.level, 20);
     });
   });
+
+  test('chanceux et obscur repérés dans le texte de la fiche', () {
+    final lucky = parseScreenText(const <OcrLine>[
+      OcrLine('POKÉMON CHANCEUX', 100, 900, 600, 940),
+    ]);
+    expect(lucky.lucky, isTrue);
+    expect(lucky.shadow, isFalse);
+    final shadow = parseScreenText(const <OcrLine>[
+      OcrLine('PURIFIER', 100, 1500, 400, 1540),
+    ]);
+    expect(shadow.shadow, isTrue);
+    expect(shadow.lucky, isFalse);
+    expect(parseScreenText(const <OcrLine>[]).lucky, isFalse);
+  });
 }

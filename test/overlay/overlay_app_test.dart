@@ -1,15 +1,20 @@
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:ivhelper/core/collection.dart';
+import 'package:ivhelper/core/meta.dart';
 import 'package:ivhelper/core/moves.dart';
 import 'package:ivhelper/core/poke_type.dart';
+import 'package:ivhelper/core/power_up.dart';
 import 'package:ivhelper/core/rank_service.dart';
 import 'package:ivhelper/core/screen_reading.dart';
 import 'package:ivhelper/core/species_repository.dart';
 import 'package:ivhelper/core/stats.dart';
 import 'package:ivhelper/overlay/overlay_app.dart';
 import 'package:ivhelper/settings/settings_controller.dart';
+import 'package:ivhelper/ui/format.dart';
 import 'package:material_ui/material_ui.dart';
 
+import '../support/fake_meta.dart';
 import '../support/fake_overlay.dart';
 
 const _types = <PokeType>[PokeType.poison, PokeType.flying];
@@ -150,4 +155,70 @@ void main() {
     expect(find.byKey(const ValueKey<String>('scan-error')), findsOneWidget);
     expect(find.textContaining('Barres non trouvées'), findsOneWidget);
   });
+
+  testWidgets('rang dans la méta et coût pour monter au niveau de la ligue',
+      (tester) async {
+    tester.view.physicalSize = const Size(900, 2600);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final repo = SpeciesRepository(const <Species>[_zubat, _golbat, _crobat]);
+    await tester.pumpWidget(
+      OverlayApp(
+        repository: repo,
+        moves: MoveBook(const <Move>[]),
+        settings: SettingsController(MemorySettingsStore()),
+        window: FakeOverlayWindow(),
+        meta: MetaSnapshot.fromJson(
+          fakeMetaJson(name: 'Nostenfer', species: 'Nostenfer'),
+        ),
+        scanner: FakeScreenScanner(
+          ScanResult(
+            species: _zubat,
+            family: repo.familyOf(_zubat),
+            iv: const Iv(0, 13, 10),
+            text: const ScreenText(cp: 24, hpMax: 21, lucky: true),
+            level: 2,
+          ),
+        ),
+      ),
+    );
+    await tester.tap(find.byKey(const ValueKey<String>('overlay-bubble')));
+    await tester.pumpAndSettle();
+
+    // Nostenfer en Super : premier de la (fausse) méta.
+    await tester.tap(find.byKey(const ValueKey<String>('cell-Nostenfer-great')));
+    await tester.pumpAndSettle();
+    expect(find.text('Méta Super : n° 1'), findsOneWidget);
+
+    // Chanceux lu à l'écran : coché d'office, poussière divisée par deux.
+    final lucky = find.widgetWithText(FilterChip, 'Chanceux');
+    expect(tester.widget<FilterChip>(lucky).selected, isTrue);
+    final target = rankIv(_crobat.base, const Iv(0, 13, 10), maxLevel: 51)
+        .great
+        .mine
+        .level;
+    String text(String key) =>
+        tester.widget<Text>(find.byKey(ValueKey<String>(key))).data!;
+    final luckyCost = powerUpCost(2, target, lucky: true)!;
+    expect(text('cost-stardust'), formatGrouped(luckyCost.stardust));
+    expect(text('cost-candy'), formatGrouped(luckyCost.candy));
+
+    await tester.tap(lucky);
+    await tester.pumpAndSettle();
+    final normal = powerUpCost(2, target)!;
+    expect(text('cost-stardust'), formatGrouped(normal.stardust));
+    expect(normal.stardust, luckyCost.stardust * 2);
+
+    await tester.tap(find.widgetWithText(FilterChip, 'Obscur'));
+    await tester.pumpAndSettle();
+    final shadow = powerUpCost(2, target, shadow: ShadowState.shadow)!;
+    expect(text('cost-stardust'), formatGrouped(shadow.stardust));
+    expect(text('cost-candy'), formatGrouped(shadow.candy));
+
+    // Ligue Mini : pas de méta.
+    await tester.tap(find.byKey(const ValueKey<String>('cell-Nosferapti-little')));
+    await tester.pumpAndSettle();
+    expect(find.text('Pas de méta en ligue Mini'), findsOneWidget);
+  });
 }
+
