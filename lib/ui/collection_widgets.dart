@@ -77,7 +77,15 @@ class LeagueTag extends StatelessWidget {
 /// purifié, taille.
 class EntryAttributes extends StatelessWidget {
   /// Crée la ligne de particularités de [entry].
-  const EntryAttributes(this.entry, {super.key, this.withLabels = false});
+  const EntryAttributes(
+    this.entry, {
+    super.key,
+    this.withLabels = false,
+    this.compact = false,
+  });
+
+  /// Vrai pour des icônes plus petites (mosaïque).
+  final bool compact;
 
   /// Pokémon enregistré.
   final CollectionEntry entry;
@@ -100,22 +108,23 @@ class EntryAttributes extends StatelessWidget {
     ];
     if (items.isEmpty) return const SizedBox.shrink();
     return Wrap(
-      spacing: 6,
-      runSpacing: 4,
+      spacing: compact ? 2 : 6,
+      runSpacing: compact ? 1 : 4,
       crossAxisAlignment: WrapCrossAlignment.center,
       children: <Widget>[
         for (final (icon, label, color) in items)
           if (icon == null)
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+              padding: EdgeInsets.symmetric(horizontal: compact ? 3 : 5, vertical: compact ? 0 : 1),
               decoration: BoxDecoration(
                 border: Border.all(color: theme.colorScheme.onSurface),
-                borderRadius: BorderRadius.circular(6),
+                borderRadius: BorderRadius.circular(compact ? 4 : 6),
               ),
               child: Text(
                 label,
                 style: theme.textTheme.labelSmall?.copyWith(
                   fontWeight: FontWeight.w800,
+                  fontSize: compact ? 9 : null,
                 ),
               ),
             )
@@ -125,7 +134,7 @@ class EntryAttributes extends StatelessWidget {
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: <Widget>[
-                  Icon(icon, size: 16, color: color),
+                  Icon(icon, size: compact ? 13 : 16, color: color),
                   if (withLabels) ...<Widget>[
                     const SizedBox(width: 3),
                     Text(label, style: theme.textTheme.labelMedium),
