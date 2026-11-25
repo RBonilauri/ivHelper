@@ -128,6 +128,66 @@ void main() {
     await tester.pump(const Duration(seconds: 5));
   });
 
+  Future<FakeOverlayWindow> openPanel(WidgetTester tester) async {
+    tester.view.physicalSize = const Size(900, 2400);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final repo = SpeciesRepository(const <Species>[_zubat, _golbat, _crobat]);
+    final window = FakeOverlayWindow();
+    await tester.pumpWidget(
+      OverlayApp(
+        repository: repo,
+        moves: MoveBook(const <Move>[]),
+        settings: SettingsController(MemorySettingsStore()),
+        window: window,
+        scanner: FakeScreenScanner(
+          ScanResult(
+            species: _zubat,
+            family: repo.familyOf(_zubat),
+            iv: const Iv(0, 13, 10),
+            text: const ScreenText(cp: 24, hpMax: 21),
+            level: 2,
+          ),
+        ),
+      ),
+    );
+    await tester.tap(find.byKey(const ValueKey<String>('overlay-bubble')));
+    await tester.pumpAndSettle();
+    expect(find.byTooltip('Arrêter la superposition'), findsOneWidget);
+    return window;
+  }
+
+  testWidgets('arrêter depuis le panneau remet la pastille pour la relance',
+      (tester) async {
+    final window = await openPanel(tester);
+
+    await tester.tap(find.byTooltip('Arrêter la superposition'));
+    await tester.pumpAndSettle();
+
+    // Le moteur de la pastille survit à la fermeture : à la relance, il doit
+    // montrer la pastille, pas le panneau dans une fenêtre de 64 dp.
+    expect(window.calls.last, 'stop');
+    expect(find.byKey(const ValueKey<String>('overlay-bubble')), findsOneWidget);
+    expect(find.byTooltip('Arrêter la superposition'), findsNothing);
+  });
+
+  testWidgets('un panneau dans une fenêtre de pastille redevient la pastille',
+      (tester) async {
+    final window = await openPanel(tester);
+
+    // Fenêtre recréée à la taille de la pastille (relance depuis l'app).
+    tester.view.physicalSize = const Size(64, 64);
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const ValueKey<String>('overlay-bubble')), findsOneWidget);
+    expect(find.byTooltip('Arrêter la superposition'), findsNothing);
+
+    // Toucher la pastille relit l'écran et rouvre le panneau.
+    await tester.tap(find.byKey(const ValueKey<String>('overlay-bubble')));
+    await tester.pumpAndSettle();
+    expect(window.calls.where((c) => c == 'panel'), hasLength(2));
+  });
+
   testWidgets('sans barres, la pastille le dit et laisse régler les IV',
       (tester) async {
     tester.view.physicalSize = const Size(900, 2400);
