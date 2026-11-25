@@ -140,6 +140,9 @@ class PluginOverlayWindow implements OverlayWindow {
   }
 }
 
+/// Côté en pixels physiques d'une fenêtre de [dp] dp (à implémenter).
+int overlayPixels(int dp, double ratio) => dp;
+
 /// Lance la pastille depuis l'app.
 abstract interface class OverlayLauncher {
   /// Demande les autorisations et affiche la pastille ; renvoie un message
