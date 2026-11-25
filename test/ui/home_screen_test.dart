@@ -678,4 +678,102 @@ void main() {
     await tester.pump(const Duration(seconds: 10));
     await tester.pumpAndSettle();
   });
+
+  testWidgets('méta : filtres de type, de type d\'attaque et possédés',
+      (tester) async {
+    await _pumpApp(tester, meta: fakeMetaJson(withAltaria: true));
+    await tester.enterText(find.byType(TextField).first, 'Flambusard');
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Enregistrer'));
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('Enregistrer dans la collection'));
+    await tester.tap(find.text('Enregistrer dans la collection'));
+    await tester.pumpAndSettle();
+    await tester.pump(const Duration(seconds: 6));
+    await tester.tap(find.byTooltip('Paramètres'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Méta'));
+    await tester.pumpAndSettle();
+
+    final flambusard = find.byKey(const ValueKey<String>('meta-1'));
+    final altaria = find.byKey(const ValueKey<String>('meta-2'));
+    expect(flambusard, findsOneWidget);
+    expect(altaria, findsOneWidget);
+
+    // Possédés dans la ligue affichée.
+    await tester.tap(find.byKey(const ValueKey<String>('meta-owned')));
+    await tester.pumpAndSettle();
+    expect(flambusard, findsOneWidget);
+    expect(altaria, findsNothing);
+    await tester.tap(find.byKey(const ValueKey<String>('meta-owned')));
+    await tester.pumpAndSettle();
+
+    // Menu déroulant des filtres : type du Pokémon.
+    await tester.tap(find.text('Filtres'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey<String>('meta-type-dragon')));
+    await tester.pumpAndSettle();
+    expect(flambusard, findsNothing);
+    expect(altaria, findsOneWidget);
+    expect(find.text('Filtres (1)'), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey<String>('meta-type-dragon')));
+    await tester.pumpAndSettle();
+
+    // Type d'attaque.
+    await tester.tap(find.byKey(const ValueKey<String>('meta-move-flying')));
+    await tester.pumpAndSettle();
+    expect(flambusard, findsOneWidget);
+    expect(altaria, findsNothing);
+  });
+
+  testWidgets('la fiche de collection ouvre la fiche méta de sa ligue',
+      (tester) async {
+    await _pumpApp(tester);
+    await tester.enterText(find.byType(TextField).first, 'Flambusard');
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Enregistrer'));
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('Enregistrer dans la collection'));
+    await tester.tap(find.text('Enregistrer dans la collection'));
+    await tester.pumpAndSettle();
+    await tester.pump(const Duration(seconds: 6));
+    await tester.tap(find.byTooltip('Paramètres'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Ma collection'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Flambusard').first);
+    await tester.pumpAndSettle();
+
+    final button = find.text('Voir la fiche méta (Super)');
+    await tester.ensureVisible(button);
+    await tester.tap(button);
+    await tester.pumpAndSettle();
+    expect(find.text('Pires adversaires'), findsOneWidget);
+    expect(find.text('Altaria'), findsOneWidget);
+  });
+
+  testWidgets('pas de fiche méta pour un Pokémon absent de la méta de sa ligue',
+      (tester) async {
+    await _pumpApp(tester);
+    await tester.enterText(find.byType(TextField).first, 'Flambusard');
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Hyper'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Enregistrer'));
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('Enregistrer dans la collection'));
+    await tester.tap(find.text('Enregistrer dans la collection'));
+    await tester.pumpAndSettle();
+    await tester.pump(const Duration(seconds: 6));
+    await tester.tap(find.byTooltip('Paramètres'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Ma collection'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Flambusard').first);
+    await tester.pumpAndSettle();
+
+    final button = find.widgetWithText(OutlinedButton, 'Absent de la méta Hyper');
+    await tester.ensureVisible(button);
+    expect(tester.widget<OutlinedButton>(button).onPressed, isNull);
+  });
 }
