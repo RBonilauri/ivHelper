@@ -776,4 +776,58 @@ void main() {
     await tester.ensureVisible(button);
     expect(tester.widget<OutlinedButton>(button).onPressed, isNull);
   });
+
+  testWidgets('la mosaïque tient au moins 3 Pokémon par ligne sur un téléphone',
+      (tester) async {
+    await _pumpApp(tester);
+    await tester.enterText(find.byType(TextField).first, 'Flambusard');
+    await tester.pumpAndSettle();
+    for (var i = 0; i < 4; i++) {
+      await tester.ensureVisible(find.text('Enregistrer'));
+      await tester.tap(find.text('Enregistrer'));
+      await tester.pumpAndSettle();
+      if (i == 0) {
+        await tester.ensureVisible(find.text('Shiny'));
+        await tester.tap(find.text('Shiny'));
+        await tester.pumpAndSettle();
+      }
+      await tester.ensureVisible(find.text('Enregistrer dans la collection'));
+      await tester.tap(find.text('Enregistrer dans la collection'));
+      await tester.pumpAndSettle();
+    }
+    await tester.pump(const Duration(seconds: 6));
+    await tester.tap(find.byTooltip('Paramètres'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Ma collection'));
+    await tester.pumpAndSettle();
+    // Largeur d'un téléphone pour la collection.
+    tester.view.physicalSize = const Size(360, 1600);
+    await tester.pumpAndSettle();
+    if (find.byTooltip('Afficher en mosaïque').evaluate().isNotEmpty) {
+      await tester.tap(find.byTooltip('Afficher en mosaïque'));
+      await tester.pumpAndSettle();
+    }
+    final tiles = find.byWidgetPredicate(
+      (w) => w is Card && (w.key is ValueKey<String>) &&
+          (w.key! as ValueKey<String>).value.startsWith('collection-'),
+    );
+    await tester.scrollUntilVisible(
+      tiles.first,
+      300,
+      scrollable: find
+          .descendant(
+            of: find.byType(CustomScrollView),
+            matching: find.byType(Scrollable),
+          )
+          .first,
+    );
+    await tester.pumpAndSettle();
+    final rects = tiles.evaluate().map((e) => tester.getRect(find.byWidget(e.widget))).toList();
+    expect(rects.length, greaterThanOrEqualTo(3));
+    final firstRow = rects.where((r) => (r.top - rects.first.top).abs() < 1).toList();
+    expect(firstRow.length, greaterThanOrEqualTo(3));
+    for (final r in firstRow) {
+      expect(r.width, lessThan(360 / 3));
+    }
+  });
 }

@@ -61,7 +61,10 @@ class CollectionScreen extends StatelessWidget {
           listenable: collection,
           builder: (context, _) {
             final rows = collection.visibleRows;
-            final scale = MediaQuery.textScalerOf(context).scale(1);
+            // Mosaïque : au moins 3 colonnes, une de plus par 140 dp de
+            // largeur disponible (marges de 16 dp de chaque côté).
+            final columns = ((MediaQuery.sizeOf(context).width - 32) ~/ 140)
+                .clamp(3, 8);
             return CustomScrollView(
               slivers: <Widget>[
                 SliverPadding(
@@ -81,18 +84,34 @@ class CollectionScreen extends StatelessWidget {
                             onDelete: () => _delete(context, rows[i].entry),
                           ),
                         )
-                      : SliverGrid.builder(
-                          gridDelegate:
-                              SliverGridDelegateWithMaxCrossAxisExtent(
-                            maxCrossAxisExtent: 200,
-                            mainAxisExtent: 168 * scale,
-                            mainAxisSpacing: 8,
-                            crossAxisSpacing: 8,
-                          ),
-                          itemCount: rows.length,
-                          itemBuilder: (context, i) => _GridTile(
-                            row: rows[i],
-                            onTap: () => _openDetail(context, rows[i]),
+                      // Mosaïque en lignes de [columns] cases : chaque ligne
+                      // prend la hauteur de sa case la plus haute (pas de
+                      // débordement avec un grand texte).
+                      : SliverList.builder(
+                          itemCount: (rows.length + columns - 1) ~/ columns,
+                          itemBuilder: (context, line) => Padding(
+                            padding: const EdgeInsets.only(bottom: 6),
+                            child: IntrinsicHeight(
+                              child: Row(
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
+                                children: <Widget>[
+                                  for (var c = 0; c < columns; c++) ...<Widget>[
+                                    if (c > 0) const SizedBox(width: 6),
+                                    Expanded(
+                                      child: line * columns + c < rows.length
+                                          ? _GridTile(
+                                              row: rows[line * columns + c],
+                                              onTap: () => _openDetail(
+                                                context,
+                                                rows[line * columns + c],
+                                              ),
+                                            )
+                                          : const SizedBox.shrink(),
+                                    ),
+                                  ],
+                                ],
+                              ),
+                            ),
                           ),
                         ),
                 ),
@@ -547,14 +566,14 @@ class _GridTile extends StatelessWidget {
       margin: EdgeInsets.zero,
       color: tileColor(context, row),
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(12),
         side: tileBorder(context, row),
       ),
       child: InkWell(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(12),
         onTap: onTap,
         child: Padding(
-          padding: const EdgeInsets.all(10),
+          padding: const EdgeInsets.fromLTRB(7, 6, 7, 7),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
@@ -562,36 +581,76 @@ class _GridTile extends StatelessWidget {
                 children: <Widget>[
                   for (final t in row.species.types)
                     Padding(
-                      padding: const EdgeInsetsDirectional.only(end: 4),
-                      child: TypeBadge(t, size: 24),
+                      padding: const EdgeInsetsDirectional.only(end: 2),
+                      child: TypeBadge(t, size: 18),
                     ),
                   Expanded(
                     child: Align(
                       alignment: AlignmentDirectional.centerEnd,
-                      child: EntryAttributes(e),
+                      child: EntryAttributes(e, compact: true),
                     ),
                   ),
                 ],
               ),
-              const SizedBox(height: 6),
+              const SizedBox(height: 4),
               Text(
                 row.species.nameFr,
-                style: theme.textTheme.titleSmall,
+                style: theme.textTheme.labelLarge?.copyWith(
+                  fontWeight: FontWeight.w700,
+                ),
                 maxLines: 2,
               ),
-              const Spacer(),
-              Text(
-                '${iv.atk}/${iv.def}/${iv.sta} · ${formatPercent(e.percent)}',
-                style: theme.textTheme.bodySmall,
-              ),
               const SizedBox(height: 4),
-              if (e.isRankOne) const RankOneBadge() else LeagueTag(e),
-              if (e.isRankOne) ...<Widget>[
-                const SizedBox(height: 2),
-                Text(e.league.label, style: theme.textTheme.labelSmall),
-              ],
+              const Spacer(),
+              Wrap(
+                spacing: 6,
+                children: <Widget>[
+                  Text(
+                    '${iv.atk}/${iv.def}/${iv.sta}',
+                    style: theme.textTheme.labelSmall,
+                  ),
+                  Text(
+                    formatPercent(e.percent),
+                    style: theme.textTheme.labelSmall,
+                  ),
+                ],
+              ),
+              const SizedBox(height: 3),
+              _CompactLeague(entry: e),
             ],
           ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Ligue et rang d'une case de mosaïque : « Super · 12 », sur fond or avec
+/// une étoile pour un rang 1.
+class _CompactLeague extends StatelessWidget {
+  const _CompactLeague({required this.entry});
+
+  final CollectionEntry entry;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final first = entry.isRankOne;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+      decoration: BoxDecoration(
+        color: first
+            ? rankOneGold
+            : theme.colorScheme.surface.withValues(alpha: 0.85),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Text(
+        first
+            ? '★ ${entry.league.label} · 1'
+            : '${entry.league.label} · ${formatGrouped(entry.rank)}',
+        style: theme.textTheme.labelSmall?.copyWith(
+          fontWeight: FontWeight.w800,
+          color: first ? const Color(0xFF1D2A5B) : null,
         ),
       ),
     );
