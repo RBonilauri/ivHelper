@@ -30,6 +30,9 @@ void main() {
     expect(source.installed.single.buildNumber, 12);
     expect(c.progress, 1);
     expect(c.downloading, isFalse);
+    // L'appli quitte les applis récentes une fois l'installeur ouvert : après
+    // « Ouvrir », une seule fiche ivHelper.
+    expect(source.leftForInstaller, 1);
   });
 
   test('même version : rien à proposer', () async {
@@ -59,6 +62,10 @@ void main() {
     expect(
       failing.message,
       'Le téléchargement a échoué. Essaie via le navigateur.',
+    );
+    expect(
+      (failing.source as FakeUpdateSource).leftForInstaller,
+      0,
     );
     expect(failing.showBanner, isTrue);
   });

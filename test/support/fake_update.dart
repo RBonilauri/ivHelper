@@ -51,6 +51,12 @@ class FakeUpdateSource implements UpdateSource {
     installed.add(release);
   }
 
+  /// Nombre de fois où l'appli a quitté les applis récentes pour l'installeur.
+  int leftForInstaller = 0;
+
+  @override
+  Future<void> leaveForInstaller() async => leftForInstaller++;
+
   @override
   Future<void> openInBrowser(Uri url) async {}
 }
