@@ -68,4 +68,11 @@ void main() {
 
     expect(message, "Lecture impossible : Aucune image de l'écran pour l'instant");
   });
+
+  test('la pastille démarre à 64 dp, convertis en pixels pour le plugin', () {
+    // showOverlay prend des pixels bruts, resizeOverlay des dp.
+    expect(overlayPixels(64, 2.625), 168);
+    expect(overlayPixels(64, 3), 192);
+    expect(overlayPixels(64, 1), 64);
+  });
 }

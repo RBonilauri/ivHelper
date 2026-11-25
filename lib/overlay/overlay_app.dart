@@ -74,6 +74,12 @@ class OverlayApp extends StatelessWidget {
 
 enum _Mode { bubble, scanning, panel }
 
+/// En dessous de ce côté (dp), la fenêtre est une pastille : le panneau n'y
+/// tient pas. Le moteur de la pastille survit à la fermeture de la fenêtre ;
+/// relancée depuis l'app, elle revient en pastille alors que l'état peut être
+/// resté en panneau (le coin blanc du panneau, sans bouton, restait affiché).
+const double _panelMinSide = 120;
+
 /// Pastille, puis panneau de résultats après lecture de l'écran.
 class OverlayHome extends StatefulWidget {
   /// Crée l'écran de la pastille.
@@ -178,6 +184,20 @@ class _OverlayHomeState extends State<OverlayHome> {
     if (mounted) setState(() => _mode = _Mode.bubble);
   }
 
+  /// Ferme la pastille et revient en mode pastille pour la prochaine relance.
+  Future<void> _stop() async {
+    try {
+      await widget.window.stopAll();
+    } finally {
+      if (mounted) {
+        setState(() {
+          _mode = _Mode.bubble;
+          _error = null;
+        });
+      }
+    }
+  }
+
   Future<void> _save() async {
     final species = _selected;
     if (species == null) return;
@@ -247,9 +267,11 @@ class _OverlayHomeState extends State<OverlayHome> {
 
   @override
   Widget build(BuildContext context) {
+    final tiny = MediaQuery.sizeOf(context).shortestSide < _panelMinSide;
     return switch (_mode) {
       _Mode.bubble => _Bubble(onTap: _scanScreen),
       _Mode.scanning => const _Bubble(busy: true),
+      _Mode.panel when tiny => _Bubble(onTap: _scanScreen),
       _Mode.panel => _panel(context),
     };
   }
@@ -287,7 +309,7 @@ class _OverlayHomeState extends State<OverlayHome> {
                 IconButton(
                   tooltip: 'Arrêter la superposition',
                   icon: const Icon(Icons.power_settings_new),
-                  onPressed: widget.window.stopAll,
+                  onPressed: _stop,
                 ),
               ],
             ),
