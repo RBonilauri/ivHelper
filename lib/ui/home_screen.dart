@@ -25,6 +25,7 @@ import 'meta_screen.dart';
 import 'result_panel.dart';
 import 'save_pokemon_sheet.dart';
 import 'search_field.dart';
+import 'search_string_screen.dart';
 import 'settings_drawer.dart';
 import 'team_builder_screen.dart';
 import 'type_badge.dart';
@@ -449,6 +450,11 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         onOpenTeam: () => _openTeam(context),
         onOpenCollection: () => _openCollection(context),
         onStartOverlay: () => unawaited(_startOverlay(context)),
+        onOpenSearch: () => Navigator.of(context).push(
+          MaterialPageRoute<void>(
+            builder: (_) => SearchStringScreen(repository: widget.repository),
+          ),
+        ),
         onExportAccount: () => unawaited(_exportAccount(context)),
         onImportAccount: () => unawaited(_importAccount(context)),
         update: _update,
