@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:http/http.dart' as http;
+import 'package:ivhelper_capture/ivhelper_capture.dart';
 import 'package:open_filex/open_filex.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -69,6 +70,9 @@ class GitHubUpdateSource implements UpdateSource {
       throw StateError('installeur : ${result.message}');
     }
   }
+
+  @override
+  Future<void> leaveForInstaller() => IvhelperCapture.closeTask();
 
   @override
   Future<void> openInBrowser(Uri url) async {

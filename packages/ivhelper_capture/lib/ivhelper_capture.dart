@@ -89,4 +89,9 @@ class IvhelperCapture {
 
   /// Ferme la session de capture et la pastille.
   static Future<void> stop() => _channel.invokeMethod<void>('stop');
+
+  /// Ferme l'écran de l'appli et la retire des applis récentes ; vrai si
+  /// c'était possible (faux depuis la pastille, sans écran).
+  static Future<bool> closeTask() async =>
+      await _channel.invokeMethod<bool>('closeTask') ?? false;
 }

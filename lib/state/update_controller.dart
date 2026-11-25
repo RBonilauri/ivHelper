@@ -7,6 +7,9 @@ abstract interface class UpdateSource {
   /// Réponse de l'API GitHub pour la dernière Release.
   Future<String> latestReleaseJson();
 
+  /// Quitte l'appli (et ses applis récentes) une fois l'installeur ouvert.
+  Future<void> leaveForInstaller();
+
   /// Télécharge l'APK de [release] puis ouvre l'installeur d'Android.
   ///
   /// [onProgress] reçoit l'avancement entre 0 et 1.
@@ -100,6 +103,13 @@ class UpdateController extends ChangeNotifier {
         _notify();
       });
       _message = 'Confirme l\'installation dans la fenêtre d\'Android.';
+      // L'installeur a sa propre tâche : on retire la nôtre, sinon Android
+      // garde l'ancienne fiche et en ouvre une deuxième après « Ouvrir ».
+      try {
+        await source.leaveForInstaller();
+      } on Object {
+        // Rien à faire : l'installation continue.
+      }
     } on Object {
       _message = 'Le téléchargement a échoué. Essaie via le navigateur.';
     }
