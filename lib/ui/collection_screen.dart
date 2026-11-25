@@ -19,10 +19,14 @@ class CollectionScreen extends StatelessWidget {
     required this.collection,
     required this.onOpen,
     this.metaMoves,
+    this.metaLink,
   });
 
   /// Attaques recommandées par la méta (menu de modification).
   final MetaMovesFor? metaMoves;
+
+  /// Lien vers la fiche méta depuis la fiche d'un Pokémon.
+  final CollectionMetaLink? metaLink;
 
   /// État de la collection.
   final CollectionController collection;
@@ -108,6 +112,7 @@ class CollectionScreen extends StatelessWidget {
           entryId: row.entry.id,
           onOpen: onOpen,
           metaMoves: metaMoves,
+          metaLink: metaLink,
         ),
       ),
     );

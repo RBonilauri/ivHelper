@@ -1,17 +1,32 @@
 import 'package:material_ui/material_ui.dart';
 
 import '../core/collection.dart';
+import '../core/meta.dart';
 import '../core/moves.dart';
 import '../state/collection_controller.dart';
 import 'collection_widgets.dart';
 import 'format.dart';
+import 'meta_screen.dart';
 import 'move_label.dart';
 import 'move_line.dart';
 import 'save_pokemon_sheet.dart';
 import 'type_badge.dart';
 
+/// Lien d'un Pokémon de la collection vers sa fiche méta.
+class CollectionMetaLink {
+  /// Crée le lien.
+  const CollectionMetaLink({required this.entryFor, required this.actions});
+
+  /// Entrée méta de [entry] dans [league] (même espèce, forme obscure si
+  /// possible), ou `null` si l'espèce n'y est pas classée.
+  final MetaEntry? Function(CollectionEntry entry, MetaLeague league) entryFor;
+
+  /// Actions de la fiche méta.
+  final MetaActions actions;
+}
+
 /// Fiche d'un Pokémon de la collection : infos, modifier, voir le rang,
-/// supprimer.
+/// voir la fiche méta, supprimer.
 class CollectionDetailScreen extends StatelessWidget {
   /// Crée la fiche de l'entrée [entryId].
   const CollectionDetailScreen({
@@ -20,10 +35,14 @@ class CollectionDetailScreen extends StatelessWidget {
     required this.entryId,
     required this.onOpen,
     this.metaMoves,
+    this.metaLink,
   });
 
   /// Attaques recommandées par la méta (menu de modification).
   final MetaMovesFor? metaMoves;
+
+  /// Lien vers la fiche méta de la ligue du Pokémon.
+  final CollectionMetaLink? metaLink;
 
   /// État de la collection.
   final CollectionController collection;
@@ -55,8 +74,38 @@ class CollectionDetailScreen extends StatelessWidget {
           onEdit: () => _edit(context, row),
           onOpen: () => onOpen(context, row.entry),
           onDelete: () => _delete(context, row.entry),
+          meta: _metaButton(context, row.entry),
         );
       },
+    );
+  }
+
+  /// Bouton vers la fiche méta de la ligue du tag ; désactivé en ligue mini
+  /// (pas de méta) ou si l'espèce n'est pas classée dans cette ligue.
+  Widget? _metaButton(BuildContext context, CollectionEntry entry) {
+    final link = metaLink;
+    if (link == null) return null;
+    final league = MetaLeague.fromKey(entry.league.key);
+    final metaEntry = league == null ? null : link.entryFor(entry, league);
+    final label = league == null
+        ? 'Pas de méta en ligue ${entry.league.label}'
+        : metaEntry == null
+            ? 'Absent de la méta ${league.label}'
+            : 'Voir la fiche méta (${league.label})';
+    return OutlinedButton.icon(
+      onPressed: league == null || metaEntry == null
+          ? null
+          : () => Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (_) => MetaDetailScreen(
+                    entry: metaEntry,
+                    league: league,
+                    actions: link.actions,
+                  ),
+                ),
+              ),
+      icon: const Icon(Icons.insights),
+      label: Text(label),
     );
   }
 
@@ -93,6 +142,7 @@ class _Detail extends StatelessWidget {
     required this.onEdit,
     required this.onOpen,
     required this.onDelete,
+    this.meta,
   });
 
   final CollectionRow row;
@@ -102,6 +152,9 @@ class _Detail extends StatelessWidget {
   final VoidCallback onEdit;
   final VoidCallback onOpen;
   final VoidCallback onDelete;
+
+  /// Bouton vers la fiche méta, ou `null`.
+  final Widget? meta;
 
   @override
   Widget build(BuildContext context) {
@@ -226,6 +279,10 @@ class _Detail extends StatelessWidget {
               icon: const Icon(Icons.edit),
               label: const Text('Modifier'),
             ),
+            if (meta != null) ...<Widget>[
+              const SizedBox(height: 8),
+              meta!,
+            ],
           ],
         ),
       ),

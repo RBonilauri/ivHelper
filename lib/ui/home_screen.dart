@@ -15,6 +15,7 @@ import '../state/lookup_controller.dart';
 import '../state/meta_controller.dart';
 import '../state/team_controller.dart';
 import '../state/update_controller.dart';
+import 'collection_detail_screen.dart';
 import 'collection_screen.dart';
 import 'iv_bar.dart';
 import 'iv_logo.dart';
@@ -117,6 +118,14 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
             collection: _collection,
             onOpen: _openEntry,
             metaMoves: _metaMoves,
+            metaLink: CollectionMetaLink(
+              entryFor: (entry, league) => _meta.data?.entryFor(
+                entry.speciesName,
+                league,
+                shadow: entry.shadow == ShadowState.shadow,
+              ),
+              actions: _metaActions,
+            ),
           ),
         ),
       ),
@@ -240,6 +249,16 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     );
   }
 
+  /// Actions de la fiche méta (onglet Méta et fiche de collection).
+  MetaActions get _metaActions => MetaActions(
+        ownedRank: _ownedRank,
+        isOwned: (name) => _collection.ownedSpecies
+            .contains(name.replaceFirst(' (Obscur)', '')),
+        checkIvs: _checkIvs,
+        addToTeam: (context, entry) => unawaited(_addToTeam(context, entry)),
+        moves: widget.moves,
+      );
+
   /// Attaques recommandées par la méta pour [species] dans [league].
   List<String> _metaMoves(Species species, League league, ShadowState shadow) =>
       _meta.data?.movesetForAnyLeague(
@@ -359,15 +378,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
             builder: (_) => MetaScreen(
               meta: _meta,
               collectionChanges: _collection,
-              actions: MetaActions(
-                ownedRank: _ownedRank,
-                isOwned: (name) => _collection.ownedSpecies
-                    .contains(name.replaceFirst(' (Obscur)', '')),
-                checkIvs: _checkIvs,
-                addToTeam: (context, entry) =>
-                    unawaited(_addToTeam(context, entry)),
-                moves: widget.moves,
-              ),
+              actions: _metaActions,
             ),
           ),
         ),

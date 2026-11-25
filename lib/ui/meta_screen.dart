@@ -4,6 +4,7 @@ import 'package:material_ui/material_ui.dart';
 
 import '../core/meta.dart';
 import '../core/moves.dart';
+import '../core/poke_type.dart';
 import '../state/meta_controller.dart';
 import 'format.dart';
 import 'move_line.dart';
@@ -67,6 +68,9 @@ class MetaScreen extends StatefulWidget {
 class _MetaScreenState extends State<MetaScreen> {
   MetaLeague _league = MetaLeague.great;
   String _filter = '';
+  Set<PokeType> _types = const <PokeType>{};
+  Set<PokeType> _moveTypes = const <PokeType>{};
+  bool _ownedOnly = false;
 
   @override
   void initState() {
@@ -117,16 +121,28 @@ class _MetaScreenState extends State<MetaScreen> {
                 ),
               );
             }
-            final query = _normalize(_filter);
-            final entries = <MetaEntry>[
-              for (final e in data.leagues[_league] ?? const <MetaEntry>[])
-                if (query.isEmpty || _normalize(e.name).contains(query)) e,
-            ];
+            final league = data.leagues[_league] ?? const <MetaEntry>[];
+            final entries = filterMeta(
+              league,
+              query: _filter,
+              types: _types,
+              moveTypes: _moveTypes,
+              keep: _ownedOnly
+                  ? (e) => widget.actions.ownedRank(e, _league) != null
+                  : null,
+            );
             return ListView.builder(
               padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
               itemCount: entries.length + 1,
               itemBuilder: (context, i) {
-                if (i == 0) return _header(theme, data);
+                if (i == 0) {
+                  return _header(
+                    theme,
+                    data,
+                    league,
+                    empty: entries.isEmpty,
+                  );
+                }
                 final e = entries[i - 1];
                 return _MetaTile(
                   entry: e,
@@ -149,7 +165,23 @@ class _MetaScreenState extends State<MetaScreen> {
     );
   }
 
-  Widget _header(ThemeData theme, MetaSnapshot data) {
+  Widget _header(
+    ThemeData theme,
+    MetaSnapshot data,
+    List<MetaEntry> league, {
+    required bool empty,
+  }) {
+    final typeCounts = <PokeType, int>{};
+    final moveCounts = <PokeType, int>{};
+    for (final e in league) {
+      for (final t in e.types) {
+        typeCounts[t] = (typeCounts[t] ?? 0) + 1;
+      }
+      for (final t in <PokeType>{e.fast.type, for (final c in e.charged) c.type}) {
+        moveCounts[t] = (moveCounts[t] ?? 0) + 1;
+      }
+    }
+    final active = _types.length + _moveTypes.length;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
@@ -190,21 +222,118 @@ class _MetaScreenState extends State<MetaScreen> {
           onChanged: (v) => setState(() => _filter = v),
         ),
         const SizedBox(height: 8),
+        FilterChip(
+          key: const ValueKey<String>('meta-owned'),
+          avatar: const Icon(Icons.check_circle_outline, size: 18),
+          label: Text('Possédés en ${_league.label}'),
+          selected: _ownedOnly,
+          onSelected: (on) => setState(() => _ownedOnly = on),
+        ),
+        Card(
+          margin: const EdgeInsets.symmetric(vertical: 8),
+          clipBehavior: Clip.antiAlias,
+          child: ExpansionTile(
+            leading: const Icon(Icons.filter_list),
+            title: Text(active == 0 ? 'Filtres' : 'Filtres ($active)'),
+            subtitle: const Text('Types du Pokémon et des attaques'),
+            childrenPadding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+            expandedCrossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              _TypeChips(
+                title: 'Type du Pokémon',
+                keyPrefix: 'meta-type',
+                counts: typeCounts,
+                selected: _types,
+                onChanged: (s) => setState(() => _types = s),
+              ),
+              const SizedBox(height: 12),
+              _TypeChips(
+                title: "Type d'attaque (jeu recommandé)",
+                keyPrefix: 'meta-move',
+                counts: moveCounts,
+                selected: _moveTypes,
+                onChanged: (s) => setState(() => _moveTypes = s),
+              ),
+              if (active > 0)
+                Align(
+                  alignment: AlignmentDirectional.centerEnd,
+                  child: TextButton(
+                    onPressed: () => setState(() {
+                      _types = const <PokeType>{};
+                      _moveTypes = const <PokeType>{};
+                    }),
+                    child: const Text('Effacer les filtres'),
+                  ),
+                ),
+            ],
+          ),
+        ),
+        if (empty)
+          Padding(
+            padding: const EdgeInsets.all(24),
+            child: Text(
+              'Aucun Pokémon ne correspond à ces filtres.',
+              textAlign: TextAlign.center,
+              style: theme.textTheme.bodyMedium,
+            ),
+          ),
       ],
     );
   }
 }
 
-String _normalize(String s) {
-  const from = 'àâäáãéèêëíìîïóòôöõúùûüçñœ';
-  const to = 'aaaaaeeeeiiiiooooouuuucno';
-  final lower = s.toLowerCase();
-  final buffer = StringBuffer();
-  for (final ch in lower.split('')) {
-    final i = from.indexOf(ch);
-    buffer.write(i >= 0 ? to[i] : ch);
+/// Puces de types à cocher, avec le nombre de Pokémon de la ligue concernés.
+class _TypeChips extends StatelessWidget {
+  const _TypeChips({
+    required this.title,
+    required this.keyPrefix,
+    required this.counts,
+    required this.selected,
+    required this.onChanged,
+  });
+
+  final String title;
+  final String keyPrefix;
+  final Map<PokeType, int> counts;
+  final Set<PokeType> selected;
+  final ValueChanged<Set<PokeType>> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final types = <PokeType>[
+      for (final t in PokeType.values)
+        if (counts.containsKey(t) || selected.contains(t)) t,
+    ];
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        Text(title, style: Theme.of(context).textTheme.labelLarge),
+        const SizedBox(height: 6),
+        Wrap(
+          spacing: 6,
+          runSpacing: 6,
+          children: <Widget>[
+            for (final t in types)
+              FilterChip(
+                key: ValueKey<String>('$keyPrefix-${t.id}'),
+                avatar: ExcludeSemantics(child: TypeBadge(t, size: 20)),
+                label: Text('${t.nameFr} (${counts[t] ?? 0})'),
+                selected: selected.contains(t),
+                showCheckmark: false,
+                selectedColor: typeColors[t]!.withValues(alpha: 0.35),
+                // Pas de cascade ici : `..remove` s'appliquerait aux deux
+                // branches du test et décocherait toujours le type.
+                onSelected: (on) => onChanged(<PokeType>{
+                  for (final x in selected)
+                    if (x != t) x,
+                  if (on) t,
+                }),
+              ),
+          ],
+        ),
+      ],
+    );
   }
-  return buffer.toString().trim();
 }
 
 class _MetaTile extends StatelessWidget {

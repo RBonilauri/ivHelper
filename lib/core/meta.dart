@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'poke_type.dart';
+import 'species_repository.dart';
 
 /// Ligue couverte par la méta.
 enum MetaLeague {
@@ -14,6 +15,15 @@ enum MetaLeague {
   master('master', 'Master', 'sans limite');
 
   const MetaLeague(this.key, this.label, this.cap);
+
+  /// Ligue méta de clé [key] (`great`, `ultra`, `master`), `null` pour la
+  /// ligue mini, qui n'a pas de méta.
+  static MetaLeague? fromKey(String key) {
+    for (final l in values) {
+      if (l.key == key) return l;
+    }
+    return null;
+  }
 
   /// Clé dans `meta.json`.
   final String key;
@@ -154,21 +164,30 @@ class MetaSnapshot {
     String leagueKey, {
     bool shadow = false,
   }) {
-    MetaLeague? league;
-    for (final l in MetaLeague.values) {
-      if (l.key == leagueKey) league = l;
-    }
-    if (league == null) return const <String>[];
+    final league = MetaLeague.fromKey(leagueKey);
+    final pick =
+        league == null ? null : entryFor(speciesName, league, shadow: shadow);
+    if (pick == null) return const <String>[];
+    return <String>[pick.fast.id, for (final c in pick.charged) c.id];
+  }
+
+  /// Entrée de [speciesName] dans [league] : la forme obscure si [shadow] et
+  /// qu'elle est classée, sinon la première forme classée ; `null` si
+  /// l'espèce n'est pas dans cette méta.
+  MetaEntry? entryFor(
+    String speciesName,
+    MetaLeague league, {
+    bool shadow = false,
+  }) {
     final matches = <MetaEntry>[
       for (final e in leagues[league] ?? const <MetaEntry>[])
         if (e.species == speciesName) e,
     ];
-    if (matches.isEmpty) return const <String>[];
-    final pick = matches.firstWhere(
+    if (matches.isEmpty) return null;
+    return matches.firstWhere(
       (e) => e.shadow == shadow,
       orElse: () => matches.first,
     );
-    return <String>[pick.fast.id, for (final c in pick.charged) c.id];
   }
 
   /// Comme [movesetFor] dans la ligue [leagueKey] ; si l'espèce n'y est pas
@@ -222,3 +241,27 @@ List<PokeType> _types(List<dynamic> raw) => <PokeType>[
 List<String> _strings(Object? raw) => <String>[
       for (final v in (raw as List<dynamic>?) ?? const <dynamic>[]) v as String,
     ];
+
+/// Filtre la liste méta. Les critères se combinent (ET) ; dans [types] et
+/// [moveTypes], un seul type choisi suffit (OU). [moveTypes] porte sur les
+/// attaques recommandées (immédiate ou chargées) ; [keep] ajoute un critère
+/// libre (par exemple : possédé dans cette ligue).
+List<MetaEntry> filterMeta(
+  Iterable<MetaEntry> entries, {
+  String query = '',
+  Set<PokeType> types = const <PokeType>{},
+  Set<PokeType> moveTypes = const <PokeType>{},
+  bool Function(MetaEntry entry)? keep,
+}) {
+  final q = normalizeName(query);
+  return <MetaEntry>[
+    for (final e in entries)
+      if ((q.isEmpty || normalizeName(e.name).contains(q)) &&
+          (types.isEmpty || e.types.any(types.contains)) &&
+          (moveTypes.isEmpty ||
+              <MetaMove>[e.fast, ...e.charged]
+                  .any((m) => moveTypes.contains(m.type))) &&
+          (keep == null || keep(e)))
+        e,
+  ];
+}
