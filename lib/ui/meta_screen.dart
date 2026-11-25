@@ -10,6 +10,7 @@ import 'format.dart';
 import 'move_line.dart';
 import 'search_field.dart';
 import 'type_badge.dart';
+import 'type_filter_row.dart';
 
 const Color _owned = Color(0xFFFFCB05);
 const Color _ownedText = Color(0xFF1D2A5B);
@@ -181,7 +182,6 @@ class _MetaScreenState extends State<MetaScreen> {
         moveCounts[t] = (moveCounts[t] ?? 0) + 1;
       }
     }
-    final active = _types.length + _moveTypes.length;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
@@ -229,44 +229,23 @@ class _MetaScreenState extends State<MetaScreen> {
           selected: _ownedOnly,
           onSelected: (on) => setState(() => _ownedOnly = on),
         ),
-        Card(
-          margin: const EdgeInsets.symmetric(vertical: 8),
-          clipBehavior: Clip.antiAlias,
-          child: ExpansionTile(
-            leading: const Icon(Icons.filter_list),
-            title: Text(active == 0 ? 'Filtres' : 'Filtres ($active)'),
-            subtitle: const Text('Types du Pokémon et des attaques'),
-            childrenPadding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
-            expandedCrossAxisAlignment: CrossAxisAlignment.start,
-            children: <Widget>[
-              _TypeChips(
-                title: 'Type du Pokémon',
-                keyPrefix: 'meta-type',
-                counts: typeCounts,
-                selected: _types,
-                onChanged: (s) => setState(() => _types = s),
-              ),
-              const SizedBox(height: 12),
-              _TypeChips(
-                title: "Type d'attaque (jeu recommandé)",
-                keyPrefix: 'meta-move',
-                counts: moveCounts,
-                selected: _moveTypes,
-                onChanged: (s) => setState(() => _moveTypes = s),
-              ),
-              if (active > 0)
-                Align(
-                  alignment: AlignmentDirectional.centerEnd,
-                  child: TextButton(
-                    onPressed: () => setState(() {
-                      _types = const <PokeType>{};
-                      _moveTypes = const <PokeType>{};
-                    }),
-                    child: const Text('Effacer les filtres'),
-                  ),
-                ),
-            ],
-          ),
+        const SizedBox(height: 8),
+        TypeFilterRow(
+          title: 'Types du Pokémon',
+          hint: 'Types du Pokémon (touche pour filtrer)',
+          keyPrefix: 'meta-type',
+          counts: typeCounts,
+          selected: _types,
+          onChanged: (s) => setState(() => _types = s),
+        ),
+        const SizedBox(height: 4),
+        TypeFilterRow(
+          title: "Types d'attaque",
+          hint: "Types d'attaque (jeu recommandé)",
+          keyPrefix: 'meta-move',
+          counts: moveCounts,
+          selected: _moveTypes,
+          onChanged: (s) => setState(() => _moveTypes = s),
         ),
         if (empty)
           Padding(
@@ -277,60 +256,6 @@ class _MetaScreenState extends State<MetaScreen> {
               style: theme.textTheme.bodyMedium,
             ),
           ),
-      ],
-    );
-  }
-}
-
-/// Puces de types à cocher, avec le nombre de Pokémon de la ligue concernés.
-class _TypeChips extends StatelessWidget {
-  const _TypeChips({
-    required this.title,
-    required this.keyPrefix,
-    required this.counts,
-    required this.selected,
-    required this.onChanged,
-  });
-
-  final String title;
-  final String keyPrefix;
-  final Map<PokeType, int> counts;
-  final Set<PokeType> selected;
-  final ValueChanged<Set<PokeType>> onChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    final types = <PokeType>[
-      for (final t in PokeType.values)
-        if (counts.containsKey(t) || selected.contains(t)) t,
-    ];
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: <Widget>[
-        Text(title, style: Theme.of(context).textTheme.labelLarge),
-        const SizedBox(height: 6),
-        Wrap(
-          spacing: 6,
-          runSpacing: 6,
-          children: <Widget>[
-            for (final t in types)
-              FilterChip(
-                key: ValueKey<String>('$keyPrefix-${t.id}'),
-                avatar: ExcludeSemantics(child: TypeBadge(t, size: 20)),
-                label: Text('${t.nameFr} (${counts[t] ?? 0})'),
-                selected: selected.contains(t),
-                showCheckmark: false,
-                selectedColor: typeColors[t]!.withValues(alpha: 0.35),
-                // Pas de cascade ici : `..remove` s'appliquerait aux deux
-                // branches du test et décocherait toujours le type.
-                onSelected: (on) => onChanged(<PokeType>{
-                  for (final x in selected)
-                    if (x != t) x,
-                  if (on) t,
-                }),
-              ),
-          ],
-        ),
       ],
     );
   }
