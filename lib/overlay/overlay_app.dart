@@ -1,9 +1,11 @@
+import 'package:flutter/services.dart';
 import 'package:material_ui/material_ui.dart';
 
 import '../core/collection.dart';
 import '../core/meta.dart';
 import '../core/moves.dart';
 import '../core/screen_reading.dart';
+import '../core/search_string.dart';
 import '../core/species_repository.dart';
 import '../core/stats.dart';
 import '../settings/settings_controller.dart';
@@ -206,6 +208,20 @@ class _OverlayHomeState extends State<OverlayHome> {
     );
   }
 
+  /// Copie le surnom `PVP#rang` du stade et de la ligue choisis.
+  Future<void> _copyNickname(String nickname) async {
+    final messenger = ScaffoldMessenger.of(context);
+    await Clipboard.setData(ClipboardData(text: nickname));
+    messenger
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(
+          duration: const Duration(seconds: 3),
+          content: Text('$nickname copié : colle-le comme surnom dans le jeu.'),
+        ),
+      );
+  }
+
   @override
   Widget build(BuildContext context) {
     return switch (_mode) {
@@ -339,6 +355,24 @@ class _OverlayHomeState extends State<OverlayHome> {
                       : 'Enregistrer ${_selected!.nameFr} (${_league.label})',
                 ),
               ),
+              if (_selected != null) ...<Widget>[
+                const SizedBox(height: 8),
+                Builder(
+                  builder: (context) {
+                    final nickname = pvpNickname(
+                      _collection
+                          .rankFor(_selected!, _iv, _maxLevel, _league)
+                          .rank,
+                    );
+                    return OutlinedButton.icon(
+                      key: const ValueKey<String>('copy-nickname'),
+                      onPressed: () => _copyNickname(nickname),
+                      icon: const Icon(Icons.copy),
+                      label: Text('Copier $nickname'),
+                    );
+                  },
+                ),
+              ],
             ],
           ],
         ),

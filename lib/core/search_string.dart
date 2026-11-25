@@ -161,3 +161,7 @@ const List<SearchPreset> searchPresets = <SearchPreset>[
     text: '0attaque&0défense&0PV',
   ),
 ];
+
+/// Surnom à donner au Pokémon dans le jeu pour retrouver son rang PvP :
+/// `PVP#36` pour un rang 36.
+String pvpNickname(int rank) => 'PVP#$rank';
