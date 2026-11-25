@@ -165,7 +165,7 @@ void main() {
     await tester.tap(find.text('Table des types'));
     await tester.pumpAndSettle();
     expect(
-      find.byKey(const ValueKey<String>('type-card-normal')),
+      find.byKey(const ValueKey<String>('type-pick-normal')),
       findsOneWidget,
     );
   });
