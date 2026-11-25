@@ -13,7 +13,7 @@ La table des types (`lib/core/poke_type.dart`) suit Pokémon GO : super efficace
 
 ## Méta
 
-`assets/meta.json` est généré par `tool/build_meta.py DOSSIER SORTIE [TOP]`. DOSSIER contient `gamemaster.json`, `rankings-1500.json`, `rankings-2500.json` et `rankings-10000.json` (PvPoke, `src/data/rankings/all/overall/`), plus les trois CSV PokéAPI. Le script garde les TOP premiers (100 par défaut), avec la note, le jeu d'attaques recommandé (`moveset`), les meilleurs matchs (`matchups`) et les pires adversaires (`counters`). Les commentaires éditoriaux de PvPoke ne sont pas repris.
+`assets/meta.json` est généré par `tool/build_meta.py DOSSIER SORTIE [TOP]`. DOSSIER contient `gamemaster.json`, `rankings-1500.json`, `rankings-2500.json` et `rankings-10000.json` (PvPoke, `src/data/rankings/all/overall/`), plus les trois CSV PokéAPI. Le script garde les TOP premiers (300 par défaut), avec la note, le jeu d'attaques recommandé (`moveset`), les meilleurs matchs (`matchups`) et les pires adversaires (`counters`). Les commentaires éditoriaux de PvPoke ne sont pas repris.
 
 La tâche planifiée `.github/workflows/meta.yml` le régénère chaque jour et ne committe que si le classement a changé (la date `updated` reste celle du dernier changement).
 
