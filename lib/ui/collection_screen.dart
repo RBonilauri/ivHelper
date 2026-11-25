@@ -61,7 +61,6 @@ class CollectionScreen extends StatelessWidget {
           listenable: collection,
           builder: (context, _) {
             final rows = collection.visibleRows;
-            final scale = MediaQuery.textScalerOf(context).scale(1);
             // Mosaïque : au moins 3 colonnes, une de plus par 140 dp de
             // largeur disponible (marges de 16 dp de chaque côté).
             final columns = ((MediaQuery.sizeOf(context).width - 32) ~/ 140)
@@ -85,17 +84,34 @@ class CollectionScreen extends StatelessWidget {
                             onDelete: () => _delete(context, rows[i].entry),
                           ),
                         )
-                      : SliverGrid.builder(
-                          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                            crossAxisCount: columns,
-                            mainAxisExtent: 124 * scale,
-                            mainAxisSpacing: 6,
-                            crossAxisSpacing: 6,
-                          ),
-                          itemCount: rows.length,
-                          itemBuilder: (context, i) => _GridTile(
-                            row: rows[i],
-                            onTap: () => _openDetail(context, rows[i]),
+                      // Mosaïque en lignes de [columns] cases : chaque ligne
+                      // prend la hauteur de sa case la plus haute (pas de
+                      // débordement avec un grand texte).
+                      : SliverList.builder(
+                          itemCount: (rows.length + columns - 1) ~/ columns,
+                          itemBuilder: (context, line) => Padding(
+                            padding: const EdgeInsets.only(bottom: 6),
+                            child: IntrinsicHeight(
+                              child: Row(
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
+                                children: <Widget>[
+                                  for (var c = 0; c < columns; c++) ...<Widget>[
+                                    if (c > 0) const SizedBox(width: 6),
+                                    Expanded(
+                                      child: line * columns + c < rows.length
+                                          ? _GridTile(
+                                              row: rows[line * columns + c],
+                                              onTap: () => _openDetail(
+                                                context,
+                                                rows[line * columns + c],
+                                              ),
+                                            )
+                                          : const SizedBox.shrink(),
+                                    ),
+                                  ],
+                                ],
+                              ),
+                            ),
                           ),
                         ),
                 ),
@@ -584,14 +600,14 @@ class _GridTile extends StatelessWidget {
                 ),
                 maxLines: 2,
               ),
+              const SizedBox(height: 4),
               const Spacer(),
-              Row(
+              Wrap(
+                spacing: 6,
                 children: <Widget>[
-                  Expanded(
-                    child: Text(
-                      '${iv.atk}/${iv.def}/${iv.sta}',
-                      style: theme.textTheme.labelSmall,
-                    ),
+                  Text(
+                    '${iv.atk}/${iv.def}/${iv.sta}',
+                    style: theme.textTheme.labelSmall,
                   ),
                   Text(
                     formatPercent(e.percent),

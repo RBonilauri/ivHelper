@@ -780,8 +780,6 @@ void main() {
   testWidgets('la mosaïque tient au moins 3 Pokémon par ligne sur un téléphone',
       (tester) async {
     await _pumpApp(tester);
-    tester.view.physicalSize = const Size(360, 1600);
-    await tester.pumpAndSettle();
     await tester.enterText(find.byType(TextField).first, 'Flambusard');
     await tester.pumpAndSettle();
     for (var i = 0; i < 4; i++) {
@@ -801,6 +799,9 @@ void main() {
     await tester.tap(find.byTooltip('Paramètres'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Ma collection'));
+    await tester.pumpAndSettle();
+    // Largeur d'un téléphone pour la collection.
+    tester.view.physicalSize = const Size(360, 1600);
     await tester.pumpAndSettle();
     if (find.byTooltip('Afficher en mosaïque').evaluate().isNotEmpty) {
       await tester.tap(find.byTooltip('Afficher en mosaïque'));
