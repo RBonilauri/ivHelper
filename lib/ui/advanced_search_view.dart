@@ -34,12 +34,12 @@ class AdvancedSearchView extends StatefulWidget {
 }
 
 class _AdvancedSearchViewState extends State<AdvancedSearchView> {
-  final PickGroup _species = PickGroup(const <SearchTerm>[]);
+  final PickGroup _species = PickGroup(const <SearchTerm>[], exclusive: true);
   final PickGroup _types =
       PickGroup(<SearchTerm>[for (final t in PokeType.values) typeTerm(t)]);
-  final PickGroup _categories = PickGroup(categoryTerms);
+  final PickGroup _categories = PickGroup(categoryTerms, exclusive: true);
   final PickGroup _status = PickGroup(statusTerms);
-  final PickGroup _sizes = PickGroup(sizeTerms);
+  final PickGroup _sizes = PickGroup(sizeTerms, exclusive: true);
   final Map<MoveSlot, PickGroup> _moveTypes = <MoveSlot, PickGroup>{
     for (final slot in MoveSlot.values)
       slot: PickGroup(
@@ -48,7 +48,7 @@ class _AdvancedSearchViewState extends State<AdvancedSearchView> {
   };
   final PickGroup _moveNames = PickGroup(const <SearchTerm>[]);
   final PickGroup _elite = PickGroup(<SearchTerm>[eliteTerm]);
-  final PickGroup _stars = PickGroup(starTerms);
+  final PickGroup _stars = PickGroup(starTerms, exclusive: true);
 
   MoveSlot _slot = MoveSlot.any;
 
@@ -103,14 +103,61 @@ class _AdvancedSearchViewState extends State<AdvancedSearchView> {
   String get _result => buildSearch(
         <SearchSection>[for (final g in _groups) g.section()],
         ranges: <String?>[
-          statRange(_atk.start.round(), _atk.end.round(), 'attaque'),
-          statRange(_def.start.round(), _def.end.round(), 'défense'),
-          statRange(_hp.start.round(), _hp.end.round(), 'PV'),
+          ...ivRangeClauses(_buckets, _starsIncluded),
           numberRange('PC', _number('cp-min'), _number('cp-max')),
           numberRange('âge', _number('age-min'), _number('age-max')),
           numberRange('année', _number('year-min'), _number('year-max')),
         ],
       );
+
+  /// Évaluations ajoutées (0 à 4).
+  Set<int> get _starsIncluded => <int>{
+        for (var i = 0; i <= 4; i++)
+          if (_stars.pickOf('$i*') == Pick.include) i,
+      };
+
+  List<(int, int)> get _buckets => <(int, int)>[
+        for (final r in <RangeValues>[_atk, _def, _hp])
+          (r.start.round(), r.end.round()),
+      ];
+
+  /// Tranches permises par les évaluations ajoutées.
+  (int, int) get _limits => starBucketLimits(_starsIncluded);
+
+  static RangeValues _fit(RangeValues r, (int, int) limits) {
+    final (lo, hi) = limits;
+    final a = r.start.round().clamp(lo, hi);
+    final b = r.end.round().clamp(lo, hi);
+    return RangeValues(a.toDouble(), (b < a ? a : b).toDouble());
+  }
+
+  /// Change une évaluation : les jauges suivent les tranches qu'elle impose
+  /// (une jauge restée sur les anciennes limites prend les nouvelles).
+  void _cycleStar(String id) {
+    final before = _limits;
+    _stars.cycle(id);
+    final after = _limits;
+    RangeValues follow(RangeValues r) {
+      final (lo, hi) = before;
+      return r.start.round() == lo && r.end.round() == hi
+          ? RangeValues(after.$1.toDouble(), after.$2.toDouble())
+          : _fit(r, after);
+    }
+
+    _atk = follow(_atk);
+    _def = follow(_def);
+    _hp = follow(_hp);
+  }
+
+  /// Règle une jauge dans les limites, puis décoche les évaluations devenues
+  /// impossibles.
+  void _setStat(void Function(RangeValues) assign, RangeValues v) {
+    assign(_fit(v, _limits));
+    final buckets = _buckets;
+    for (var i = 0; i <= 4; i++) {
+      if (!starPossible(i, buckets)) _stars.uncheck('$i*');
+    }
+  }
 
   void _clearAll() {
     setState(() {
@@ -225,7 +272,7 @@ class _AdvancedSearchViewState extends State<AdvancedSearchView> {
               _Section(
                 open: _open,
                 id: 'status',
-                title: 'Chanceux, shiny, obscur, purifié',
+                title: 'Chanceux, shiny, obscur, purifié, costume',
                 group: _status,
                 onChanged: () => setState(() {}),
                 children: <Widget>[
@@ -349,15 +396,17 @@ class _AdvancedSearchViewState extends State<AdvancedSearchView> {
                 id: 'iv',
                 title: 'IV',
                 group: _stars,
-                extraCount: <RangeValues>[_atk, _def, _hp]
-                    .where((r) => r.start > 0 || r.end < 4)
-                    .length,
+                extraCount: ivRangeClauses(_buckets, _starsIncluded).length,
                 onChanged: () => setState(() {}),
                 children: <Widget>[
                   Text('Évaluation', style: theme.textTheme.labelLarge),
                   _PickWrap(
                     section: 'stars',
                     group: _stars,
+                    onTap: (id) => setState(() => _cycleStar(id)),
+                    isEnabled: (id) =>
+                        _stars.pickOf(id) != Pick.off ||
+                        starPossible(int.parse(id[0]), _buckets),
                     onChanged: () => setState(() {}),
                   ),
                   const SizedBox(height: 8),
@@ -369,19 +418,39 @@ class _AdvancedSearchViewState extends State<AdvancedSearchView> {
                     id: 'atk',
                     label: 'Attaque',
                     values: _atk,
-                    onChanged: (v) => setState(() => _atk = v),
+                    limits: _limits,
+                    onChanged: (v) =>
+                        setState(() => _setStat((r) => _atk = r, v)),
                   ),
                   _IvSlider(
                     id: 'def',
                     label: 'Défense',
                     values: _def,
-                    onChanged: (v) => setState(() => _def = v),
+                    limits: _limits,
+                    onChanged: (v) =>
+                        setState(() => _setStat((r) => _def = r, v)),
                   ),
                   _IvSlider(
                     id: 'hp',
                     label: 'PV',
                     values: _hp,
-                    onChanged: (v) => setState(() => _hp = v),
+                    limits: _limits,
+                    onChanged: (v) =>
+                        setState(() => _setStat((r) => _hp = r, v)),
+                  ),
+                  if (_limits != (0, 4))
+                    Text(
+                      _limits == (4, 4)
+                          ? '4★ impose 15 partout : les jauges sont bloquées.'
+                          : 'Limité par l\'évaluation : '
+                              '${ivBucketLabel(_limits.$1).split('-').first} '
+                              'et plus par stat.',
+                      key: const ValueKey<String>('adv-iv-limit'),
+                      style: theme.textTheme.bodySmall,
+                    ),
+                  Text(
+                    'Une évaluation impossible avec ces jauges est grisée.',
+                    style: theme.textTheme.bodySmall,
                   ),
                 ],
               ),
@@ -531,7 +600,7 @@ class _Section extends StatelessWidget {
             fontWeight: n > 0 ? FontWeight.w800 : null,
           ),
         ),
-        trailing: g != null && g.includedCount >= 2
+        trailing: g != null && !g.exclusive && g.includedCount >= 2
             ? Row(
                 mainAxisSize: MainAxisSize.min,
                 children: <Widget>[
@@ -572,7 +641,15 @@ class _PickWrap extends StatelessWidget {
     required this.onChanged,
     this.removable = false,
     this.typeOf,
+    this.onTap,
+    this.isEnabled,
   });
+
+  /// Remplace le passage à l'état suivant (rubrique IV).
+  final void Function(String id)? onTap;
+
+  /// Vrai si la case peut être touchée (sinon grisée).
+  final bool Function(String id)? isEnabled;
 
   final String section;
   final PickGroup group;
@@ -594,9 +671,15 @@ class _PickWrap extends StatelessWidget {
             term: t,
             pick: group.pickOf(t.id),
             type: typeOf?.call(t.id),
+            enabled: isEnabled?.call(t.id) ?? true,
             onTap: () {
-              group.cycle(t.id);
-              onChanged();
+              final tap = onTap;
+              if (tap != null) {
+                tap(t.id);
+              } else {
+                group.cycle(t.id);
+                onChanged();
+              }
             },
             onRemove: removable
                 ? () {
@@ -619,8 +702,10 @@ class _TriChip extends StatelessWidget {
     super.key,
     this.type,
     this.onRemove,
+    this.enabled = true,
   });
 
+  final bool enabled;
   final SearchTerm term;
   final Pick pick;
   final VoidCallback onTap;
@@ -647,7 +732,10 @@ class _TriChip extends StatelessWidget {
     };
     final t = type;
     return InputChip(
-        tooltip: '${term.label} : $state',
+        tooltip: enabled
+            ? '${term.label} : $state'
+            : '${term.label} : impossible avec ces IV',
+        isEnabled: enabled,
         backgroundColor: bg,
         avatar: t != null
             ? Stack(
@@ -698,12 +786,16 @@ class _IvSlider extends StatelessWidget {
     required this.id,
     required this.label,
     required this.values,
+    required this.limits,
     required this.onChanged,
   });
 
   final String id;
   final String label;
   final RangeValues values;
+
+  /// Tranches permises ; une seule = jauge bloquée.
+  final (int, int) limits;
   final ValueChanged<RangeValues> onChanged;
 
   @override
@@ -726,7 +818,7 @@ class _IvSlider extends StatelessWidget {
             max: 4,
             divisions: 4,
             labels: RangeLabels(ivBucketLabel(lo), ivBucketLabel(hi)),
-            onChanged: onChanged,
+            onChanged: limits.$1 == limits.$2 ? null : onChanged,
           ),
         ),
         SizedBox(width: 48, child: Text(text, textAlign: TextAlign.end)),
