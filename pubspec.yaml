@@ -28,4 +28,5 @@ flutter:
   assets:
     - assets/species.json
     - assets/moves.json
+    - assets/game_data_version.json
     - assets/meta.json

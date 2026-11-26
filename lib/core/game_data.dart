@@ -1,49 +1,92 @@
+import 'dart:convert';
+
 import 'moves.dart';
 import 'species_repository.dart';
 
-/// Squelette.
+/// Données du jeu (espèces et attaques), datées du jour où PvPoke les a
+/// changées. La plus récente entre celles de l'appli, du cache et du dépôt
+/// est utilisée.
 class GameData {
-  /// Squelette.
+  /// Crée les données.
   GameData({required this.updated, required this.species, required this.moves});
 
-  /// Squelette.
+  /// Lit `species.json` et `moves.json` ; lève [FormatException] s'ils sont
+  /// illisibles ou vides.
   factory GameData.parse({
     required String updated,
     required String speciesJson,
     required String movesJson,
-  }) =>
-      GameData(
-        updated: updated,
-        species: SpeciesRepository(const <Species>[]),
-        moves: MoveBook(const <Move>[]),
-      );
+  }) {
+    final SpeciesRepository species;
+    final MoveBook moves;
+    try {
+      species = SpeciesRepository.fromJson(speciesJson);
+      moves = MoveBook.fromJson(movesJson);
+    } on Object catch (e) {
+      throw FormatException('Données du jeu illisibles : $e');
+    }
+    if (species.all.isEmpty || moves.all.isEmpty) {
+      throw const FormatException('Données du jeu vides');
+    }
+    return GameData(updated: updated, species: species, moves: moves);
+  }
 
-  /// Squelette.
+  /// Date du dernier changement, `AAAA-MM-JJ`.
   final String updated;
 
-  /// Squelette.
+  /// Espèces.
   final SpeciesRepository species;
 
-  /// Squelette.
+  /// Attaques.
   final MoveBook moves;
 
-  /// Squelette.
-  bool isNewerThan(String other) => false;
+  /// Vrai si ces données sont plus récentes que la date [other].
+  bool isNewerThan(String other) => updated.compareTo(other) > 0;
 }
 
-/// Squelette.
-String readDataVersion(String json) => '';
+final RegExp _date = RegExp(r'^\d{4}-\d{2}-\d{2}$');
 
-/// Squelette.
+/// Date `AAAA-MM-JJ` de `game_data_version.json` ; [FormatException] sinon.
+String readDataVersion(String json) {
+  final decoded = jsonDecode(json);
+  final updated = decoded is Map<String, dynamic> ? decoded['updated'] : null;
+  if (updated is! String || !_date.hasMatch(updated)) {
+    throw const FormatException('Version des données illisible');
+  }
+  return updated;
+}
+
+/// Cache des données téléchargées : un seul texte JSON.
 String encodeGameDataCache({
   required String updated,
   required String speciesJson,
   required String movesJson,
 }) =>
-    '';
+    jsonEncode(<String, String>{
+      'updated': updated,
+      'species': speciesJson,
+      'moves': movesJson,
+    });
 
-/// Squelette.
+/// Relit [encodeGameDataCache] ; [FormatException] si le cache est abîmé.
 ({String updated, String species, String moves}) decodeGameDataCache(
   String raw,
-) =>
-    (updated: '', species: '', moves: '');
+) {
+  final decoded = jsonDecode(raw);
+  if (decoded is Map<String, dynamic> &&
+      decoded['updated'] is String &&
+      decoded['species'] is String &&
+      decoded['moves'] is String &&
+      _date.hasMatch(decoded['updated'] as String)) {
+    return (
+      updated: decoded['updated'] as String,
+      species: decoded['species'] as String,
+      moves: decoded['moves'] as String,
+    );
+  }
+  throw const FormatException('Cache des données abîmé');
+}
+
+/// `AAAA-MM-JJ` → `JJ/MM/AAAA`.
+String isoDateFr(String iso) =>
+    _date.hasMatch(iso) ? '${iso.substring(8)}/${iso.substring(5, 7)}/${iso.substring(0, 4)}' : iso;

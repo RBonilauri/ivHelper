@@ -1,7 +1,9 @@
-name: Méta PvPoke
+name: Données PvPoke
 
-# Chaque jour, récupère le classement PvPoke et republie assets/meta.json s'il a
-# changé. L'app télécharge ce fichier à l'ouverture de l'onglet Méta.
+# Chaque jour, récupère les données PvPoke et republie assets/meta.json,
+# assets/species.json et assets/moves.json s'ils ont changé (avec la date du
+# changement dans assets/game_data_version.json). L'appli télécharge la méta à
+# l'ouverture de l'onglet Méta, et les espèces et attaques au démarrage.
 on:
   schedule:
     - cron: '17 4 * * *'
@@ -29,14 +31,23 @@ jobs:
           done
       - name: Générer la méta
         run: python3 tool/build_meta.py /tmp/src assets/meta.json
-      - name: Publier si la méta a changé
+      - name: Générer les espèces et les attaques
         run: |
-          if git diff --quiet assets/meta.json; then
-            echo "Méta inchangée"
+          python3 tool/build_species.py /tmp/src/gamemaster.json \
+            /tmp/src/pokemon_species_names.csv /tmp/src/moves.csv \
+            /tmp/src/move_names.csv assets/species.json assets/moves.json
+          if ! git diff --quiet assets/species.json assets/moves.json; then
+            printf '{"updated":"%s"}\n' "$(date +%F)" > assets/game_data_version.json
+          fi
+      - name: Publier ce qui a changé
+        run: |
+          files="assets/meta.json assets/species.json assets/moves.json assets/game_data_version.json"
+          if git diff --quiet $files; then
+            echo "Données inchangées"
             exit 0
           fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add assets/meta.json
-          git commit -m "data: méta PvPoke du $(date +%F)"
+          git add $files
+          git commit -m "data: données PvPoke du $(date +%F)"
           git push

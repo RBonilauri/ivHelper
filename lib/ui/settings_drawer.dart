@@ -1,5 +1,6 @@
 import 'package:material_ui/material_ui.dart';
 
+import '../core/game_data.dart';
 import '../settings/settings_controller.dart';
 import '../state/update_controller.dart';
 import 'iv_logo.dart';
@@ -19,6 +20,7 @@ class SettingsDrawer extends StatelessWidget {
     required this.onOpenSearch,
     required this.onExportAccount,
     required this.onImportAccount,
+    this.gameDataUpdated,
   });
 
   /// Lance la pastille flottante.
@@ -32,6 +34,9 @@ class SettingsDrawer extends StatelessWidget {
 
   /// Importe un compte depuis un fichier.
   final VoidCallback onImportAccount;
+
+  /// Date des données du jeu en service (`AAAA-MM-JJ`), ou `null`.
+  final String? gameDataUpdated;
 
   /// Mise à jour de l'app.
   final UpdateController update;
@@ -211,6 +216,12 @@ class SettingsDrawer extends StatelessWidget {
                       'Version ${update.currentVersion}',
                       style: theme.textTheme.titleSmall,
                     ),
+                    if (gameDataUpdated != null)
+                      Text(
+                        'Données du jeu du ${isoDateFr(gameDataUpdated!)}',
+                        key: const ValueKey<String>('game-data-date'),
+                        style: theme.textTheme.bodySmall,
+                      ),
                     if (update.message != null)
                       Padding(
                         padding: const EdgeInsets.only(top: 4),

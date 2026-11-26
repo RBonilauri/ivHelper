@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ivhelper/core/game_data.dart';
 
@@ -49,5 +51,11 @@ void main() {
     expect(back.species, speciesJson());
     expect(back.moves, movesJson());
     expect(() => decodeGameDataCache('{"updated":1}'), throwsFormatException);
+  });
+
+  test('la version incluse dans l\'appli est lisible', () {
+    final raw = File('assets/game_data_version.json').readAsStringSync();
+    expect(readDataVersion(raw), matches(RegExp(r'^\d{4}-\d{2}-\d{2}$')));
+    expect(isoDateFr('2026-11-25'), '25/11/2026');
   });
 }
