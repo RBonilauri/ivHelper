@@ -1091,6 +1091,10 @@ void main() {
     expect(copied.last, '0-1attaque&3-4défense&3-4PV&PC-1500');
     expect(find.text('Chaîne copiée : colle-la dans la recherche du jeu.'), findsOneWidget);
 
+    // Ligue et top n'apparaissent qu'avec un Pokémon reconnu.
+    expect(find.byKey(const ValueKey<String>('search-league-great')), findsNothing);
+    expect(find.byKey(const ValueKey<String>('search-top-10')), findsNothing);
+
     // Pour une espèce, ligue Super et top 10 par défaut.
     await tester.enterText(
       find.byKey(const ValueKey<String>('search-species')).first,
@@ -1221,5 +1225,88 @@ void main() {
     await tester.tap(find.byKey(const ValueKey<String>('adv-clear')));
     await tester.pumpAndSettle();
     expect(result(), 'Coche des cases pour construire ta recherche.');
+  });
+
+  testWidgets('générateur avancé : évaluation et jauges d\'IV cohérentes',
+      (tester) async {
+    await _pumpApp(tester);
+    await tester.tap(find.byTooltip('Paramètres'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Chaînes de recherche'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey<String>('search-tab-advanced')));
+    await tester.pumpAndSettle();
+
+    String result() => tester
+        .widget<Text>(find.byKey(const ValueKey<String>('adv-result')))
+        .data!;
+    Future<void> tap(String key) async {
+      final f = find.byKey(ValueKey<String>(key));
+      await tester.ensureVisible(f);
+      await tester.pumpAndSettle();
+      await tester.tap(f);
+      await tester.pumpAndSettle();
+    }
+
+    RangeSlider slider(String id) => tester
+        .widget<RangeSlider>(find.byKey(ValueKey<String>('adv-iv-$id')));
+    bool chipEnabled(String key) => tester
+        .widget<InputChip>(
+          find.descendant(
+            of: find.byKey(ValueKey<String>(key)),
+            matching: find.byType(InputChip),
+          ),
+        )
+        .isEnabled;
+
+    // Costume avec chanceux, shiny…
+    await tap('adv-title-status');
+    await tap('adv-status-costume');
+    expect(result(), 'costume');
+    await tap('adv-status-costume');
+    await tap('adv-status-costume');
+
+    // Tailles : choix exclusifs, toujours OU (pas de bouton ET).
+    await tap('adv-title-sizes');
+    await tap('adv-sizes-xxs');
+    await tap('adv-sizes-xxl');
+    expect(result(), 'xxs,xxl');
+    expect(find.byKey(const ValueKey<String>('adv-op-sizes')), findsNothing);
+    await tap('adv-sizes-xxs');
+    await tap('adv-sizes-xxs');
+    await tap('adv-sizes-xxl');
+    await tap('adv-sizes-xxl');
+    expect(result(), 'Coche des cases pour construire ta recherche.');
+
+    // 4★ impose 15 partout : jauges bloquées, bornes implicites omises.
+    await tap('adv-title-iv');
+    await tap('adv-stars-4*');
+    expect(result(), '4*');
+    expect(slider('atk').onChanged, isNull);
+    expect(slider('atk').values, const RangeValues(4, 4));
+    expect(find.byKey(const ValueKey<String>('adv-iv-limit')), findsOneWidget);
+
+    // Exclu, puis décoché : les jauges redeviennent libres.
+    await tap('adv-stars-4*');
+    expect(result(), '!4*');
+    expect(slider('atk').onChanged, isNotNull);
+    expect(slider('atk').values, const RangeValues(0, 4));
+    await tap('adv-stars-4*');
+    expect(result(), 'Coche des cases pour construire ta recherche.');
+
+    // Attaque baissée au plus à 6-10 : 4★ devient impossible (grisée).
+    final atk = find.byKey(const ValueKey<String>('adv-iv-atk'));
+    await tester.ensureVisible(atk);
+    await tester.pumpAndSettle();
+    final box = tester.getRect(atk);
+    await tester.dragFrom(
+      Offset(box.right - 24, box.center.dy),
+      Offset(-(box.width - 48) / 2, 0),
+    );
+    await tester.pumpAndSettle();
+    expect(slider('atk').values.end, lessThan(4));
+    expect(result(), startsWith('0-'));
+    expect(chipEnabled('adv-stars-4*'), isFalse);
+    expect(chipEnabled('adv-stars-3*'), isTrue);
   });
 }

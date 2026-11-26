@@ -201,5 +201,7 @@ void main() {
     sizes.cycle('xxl');
     sizes.all = true;
     expect(sizes.section().clauses(), <String>['xxs,xxl']);
+    sizes.uncheck('xxl');
+    expect(sizes.section().clauses(), <String>['xxs']);
   });
 }
