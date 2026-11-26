@@ -302,6 +302,10 @@ enum CollectionSort {
 const List<int?> rankThresholds = <int?>[null, 1, 10, 50];
 
 /// Filtres combinés de la collection (tous doivent être satisfaits).
+///
+/// Les attaques se filtrent en deux côtés, immédiate et chargée : dans un
+/// côté, une des attaques ou un des types choisis suffit (OU) ; entre les
+/// deux côtés, [movesEither] choisit ET (par défaut) ou OU.
 class CollectionFilter {
   /// Crée un filtre ; sans argument, il laisse tout passer.
   const CollectionFilter({
@@ -309,8 +313,6 @@ class CollectionFilter {
     this.maxRank,
     this.maxMetaRank,
     this.types = const <PokeType>{},
-    this.moveTypes = const <PokeType>{},
-    this.moveQuery = '',
     this.favoritesOnly = false,
     this.fastMoves = const <String>{},
     this.fastTypes = const <PokeType>{},
@@ -318,21 +320,6 @@ class CollectionFilter {
     this.chargedTypes = const <PokeType>{},
     this.movesEither = false,
   });
-
-  /// Squelette (à implémenter).
-  final Set<String> fastMoves;
-
-  /// Squelette (à implémenter).
-  final Set<PokeType> fastTypes;
-
-  /// Squelette (à implémenter).
-  final Set<String> chargedMoves;
-
-  /// Squelette (à implémenter).
-  final Set<PokeType> chargedTypes;
-
-  /// Squelette (à implémenter).
-  final bool movesEither;
 
   /// Ligue du tag, ou `null` pour toutes.
   final League? league;
@@ -346,14 +333,30 @@ class CollectionFilter {
   /// Le Pokémon doit avoir au moins un de ces types (vide : tous).
   final Set<PokeType> types;
 
-  /// Il doit avoir une attaque d'au moins un de ces types (vide : tous).
-  final Set<PokeType> moveTypes;
-
-  /// Il doit avoir une attaque dont le nom contient ce texte (vide : tous).
-  final String moveQuery;
-
   /// Vrai pour ne garder que les favoris.
   final bool favoritesOnly;
+
+  /// Attaques immédiates choisies (identifiants).
+  final Set<String> fastMoves;
+
+  /// Types d'attaque immédiate choisis.
+  final Set<PokeType> fastTypes;
+
+  /// Attaques chargées choisies (identifiants).
+  final Set<String> chargedMoves;
+
+  /// Types d'attaque chargée choisis.
+  final Set<PokeType> chargedTypes;
+
+  /// Vrai si un seul des côtés immédiate / chargée suffit (OU), faux s'il faut
+  /// les deux (ET).
+  final bool movesEither;
+
+  /// Vrai si le côté immédiate filtre quelque chose.
+  bool get filtersFast => fastMoves.isNotEmpty || fastTypes.isNotEmpty;
+
+  /// Vrai si le côté chargée filtre quelque chose.
+  bool get filtersCharged => chargedMoves.isNotEmpty || chargedTypes.isNotEmpty;
 
   /// Nombre de filtres actifs.
   int get activeCount =>
@@ -361,8 +364,8 @@ class CollectionFilter {
       (maxRank == null ? 0 : 1) +
       (maxMetaRank == null ? 0 : 1) +
       (types.isEmpty ? 0 : 1) +
-      (moveTypes.isEmpty ? 0 : 1) +
-      (moveQuery.trim().isEmpty ? 0 : 1) +
+      (filtersFast ? 1 : 0) +
+      (filtersCharged ? 1 : 0) +
       (favoritesOnly ? 1 : 0);
 
   /// Copie avec les champs donnés remplacés ; [clearLeague], [clearMaxRank] et
@@ -375,8 +378,6 @@ class CollectionFilter {
     int? maxMetaRank,
     bool clearMaxMetaRank = false,
     Set<PokeType>? types,
-    Set<PokeType>? moveTypes,
-    String? moveQuery,
     bool? favoritesOnly,
     Set<String>? fastMoves,
     Set<PokeType>? fastTypes,
@@ -390,9 +391,12 @@ class CollectionFilter {
         maxMetaRank:
             clearMaxMetaRank ? null : (maxMetaRank ?? this.maxMetaRank),
         types: types ?? this.types,
-        moveTypes: moveTypes ?? this.moveTypes,
-        moveQuery: moveQuery ?? this.moveQuery,
         favoritesOnly: favoritesOnly ?? this.favoritesOnly,
+        fastMoves: fastMoves ?? this.fastMoves,
+        fastTypes: fastTypes ?? this.fastTypes,
+        chargedMoves: chargedMoves ?? this.chargedMoves,
+        chargedTypes: chargedTypes ?? this.chargedTypes,
+        movesEither: movesEither ?? this.movesEither,
       );
 
   /// Vrai si [row] passe tous les filtres ; [metaRankOf] donne le rang méta
@@ -411,16 +415,22 @@ class CollectionFilter {
     if (types.isNotEmpty && !row.species.types.any(types.contains)) {
       return false;
     }
-    final moves = row.filterMoves;
-    if (moveTypes.isNotEmpty && !moves.any((m) => moveTypes.contains(m.type))) {
-      return false;
-    }
-    final q = normalizeName(moveQuery);
-    if (q.isNotEmpty &&
-        !moves.any((m) => normalizeName(m.nameFr).contains(q))) {
-      return false;
-    }
-    return true;
+    return _acceptsMoves(row.filterMoves);
+  }
+
+  bool _acceptsMoves(List<Move> moves) {
+    if (!filtersFast && !filtersCharged) return true;
+    bool side(bool fast, Set<String> ids, Set<PokeType> kinds) => moves.any(
+          (m) =>
+              m.isFast == fast &&
+              (ids.contains(m.id) || kinds.contains(m.type)),
+        );
+    final fast = filtersFast ? side(true, fastMoves, fastTypes) : null;
+    final charged =
+        filtersCharged ? side(false, chargedMoves, chargedTypes) : null;
+    return movesEither
+        ? (fast ?? false) || (charged ?? false)
+        : (fast ?? true) && (charged ?? true);
   }
 }
 
@@ -482,13 +492,35 @@ List<CollectionRow> filterAndSort(
   return list;
 }
 
-/// Squelette (à implémenter).
-List<Move> moveOptions(Iterable<CollectionRow> rows, {required bool fast}) =>
-    const <Move>[];
+/// Attaques immédiates ([fast]) ou chargées de [rows] (celles enregistrées,
+/// sinon apprenables), sans doublon, par ordre alphabétique (accents ignorés).
+List<Move> moveOptions(Iterable<CollectionRow> rows, {required bool fast}) {
+  final byId = <String, Move>{
+    for (final r in rows)
+      for (final m in r.filterMoves)
+        if (m.isFast == fast) m.id: m,
+  };
+  return byId.values.toList()
+    ..sort(
+      (a, b) => normalizeName(a.nameFr).compareTo(normalizeName(b.nameFr)),
+    );
+}
 
-/// Squelette (à implémenter).
+/// Nombre de Pokémon de [rows] ayant une attaque immédiate ([fast]) ou
+/// chargée de chaque type.
 Map<PokeType, int> moveTypeCounts(
   Iterable<CollectionRow> rows, {
   required bool fast,
-}) =>
-    const <PokeType, int>{};
+}) {
+  final counts = <PokeType, int>{};
+  for (final r in rows) {
+    final kinds = <PokeType>{
+      for (final m in r.filterMoves)
+        if (m.isFast == fast) m.type,
+    };
+    for (final t in kinds) {
+      counts[t] = (counts[t] ?? 0) + 1;
+    }
+  }
+  return counts;
+}
