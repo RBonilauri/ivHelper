@@ -181,7 +181,7 @@ class CollectionController extends ChangeNotifier {
   }
 
   /// Enregistre [species] avec ses [iv] et les [options] ; le rang dans la
-  /// ligue choisie est figé maintenant.
+  /// ligue choisie est calculé maintenant, puis à chaque chargement.
   CollectionEntry add(
     Species species,
     Iv iv,
@@ -200,37 +200,15 @@ class CollectionController extends ChangeNotifier {
     return entry;
   }
 
-  /// Remplace les options de l'entrée [id] ; le rang est recalculé si la
-  /// ligue change.
+  /// Remplace les options de l'entrée [id] ; le rang est recalculé.
   void update(String id, SaveOptions options) {
     final i = _entries.indexWhere((e) => e.id == id);
     if (i < 0) return;
     final old = _entries[i];
     final species = repository.findByName(old.speciesName);
     if (species == null) return;
-    final fresh = _build(id, species, old.iv, old.maxLevel, options);
-    _entries[i] = old.league == options.league
-        ? CollectionEntry(
-            id: id,
-            speciesName: old.speciesName,
-            iv: old.iv,
-            maxLevel: old.maxLevel,
-            league: old.league,
-            rank: old.rank,
-            percent: old.percent,
-            cp: old.cp,
-            level: old.level,
-            fastMove: fresh.fastMove,
-            chargedMove1: fresh.chargedMove1,
-            chargedMove2: fresh.chargedMove2,
-            shadow: fresh.shadow,
-            size: fresh.size,
-            lucky: fresh.lucky,
-            shiny: fresh.shiny,
-            costume: fresh.costume,
-            favorite: old.favorite,
-          )
-        : fresh.withFavorite(old.favorite);
+    _entries[i] = _build(id, species, old.iv, old.maxLevel, options)
+        .withFavorite(old.favorite);
     _changed();
   }
 
@@ -262,10 +240,13 @@ class CollectionController extends ChangeNotifier {
     var migrated = false;
     _entries.clear();
     for (final item in decoded) {
-      final entry = CollectionEntry.fromJson(item) ?? _legacy(item);
+      final read = CollectionEntry.fromJson(item);
+      final entry = read ?? _legacy(item);
       if (entry == null) continue;
-      if (CollectionEntry.fromJson(item) == null) migrated = true;
-      _entries.add(entry);
+      if (read == null) migrated = true;
+      final fresh = _refreshed(entry);
+      if (!identical(fresh, entry)) migrated = true;
+      _entries.add(fresh);
     }
     if (migrated) {
       _changed();
@@ -294,6 +275,26 @@ class CollectionController extends ChangeNotifier {
       Iv(iv[0] as int, iv[1] as int, iv[2] as int),
       maxLevel is num ? maxLevel.toDouble() : 51,
       const SaveOptions(league: League.great),
+    );
+  }
+
+  /// [entry] avec son rang recalculé sur les données actuelles (rang jamais
+  /// figé : il suit les stats de l'espèce) ; la même entrée si rien ne change.
+  CollectionEntry _refreshed(CollectionEntry entry) {
+    final species = repository.findByName(entry.speciesName);
+    if (species == null || species.nameFr != entry.speciesName) return entry;
+    final r = rankFor(species, entry.iv, entry.maxLevel, entry.league);
+    if (r.rank == entry.rank &&
+        r.percent == entry.percent &&
+        r.cp == entry.cp &&
+        r.level == entry.level) {
+      return entry;
+    }
+    return entry.withRank(
+      rank: r.rank,
+      percent: r.percent,
+      cp: r.cp,
+      level: r.level,
     );
   }
 

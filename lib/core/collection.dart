@@ -66,7 +66,8 @@ PokeSize _sizeOf(Object? key) {
   return PokeSize.none;
 }
 
-/// Un Pokémon enregistré, avec le rang de ses IV figé à l'enregistrement.
+/// Un Pokémon enregistré, avec le rang de ses IV (recalculé à chaque
+/// chargement avec les données actuelles, jamais figé).
 class CollectionEntry {
   /// Crée une entrée.
   const CollectionEntry({
@@ -210,6 +211,34 @@ class CollectionEntry {
         shiny: shiny,
         costume: costume,
         favorite: value,
+      );
+
+  /// Copie avec le rang, le pourcentage, les PC et le niveau remplacés.
+  CollectionEntry withRank({
+    required int rank,
+    required double percent,
+    required int cp,
+    required double level,
+  }) =>
+      CollectionEntry(
+        id: id,
+        speciesName: speciesName,
+        iv: iv,
+        maxLevel: maxLevel,
+        league: league,
+        rank: rank,
+        percent: percent,
+        cp: cp,
+        level: level,
+        fastMove: fastMove,
+        chargedMove1: chargedMove1,
+        chargedMove2: chargedMove2,
+        shadow: shadow,
+        size: size,
+        lucky: lucky,
+        shiny: shiny,
+        costume: costume,
+        favorite: favorite,
       );
 
   /// Vrai si c'est le meilleur rang possible dans sa ligue.
