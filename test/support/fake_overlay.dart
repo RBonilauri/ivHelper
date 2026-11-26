@@ -36,6 +36,15 @@ class FakeOverlayWindow implements OverlayWindow {
 
   @override
   Future<void> stopAll() async => calls.add('stop');
+
+  /// Textes copiés.
+  final List<String> copied = <String>[];
+
+  @override
+  Future<bool> copyText(String text) async {
+    copied.add(text);
+    return true;
+  }
 }
 
 /// Lecteur d'écran qui renvoie un résultat préparé.

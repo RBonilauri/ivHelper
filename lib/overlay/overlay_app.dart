@@ -1,4 +1,3 @@
-import 'package:flutter/services.dart';
 import 'package:material_ui/material_ui.dart';
 
 import '../core/collection.dart';
@@ -254,13 +253,17 @@ class _OverlayHomeState extends State<OverlayHome> {
   /// Copie le surnom `PVP#rang` du stade et de la ligue choisis.
   Future<void> _copyNickname(String nickname) async {
     final messenger = ScaffoldMessenger.of(context);
-    await Clipboard.setData(ClipboardData(text: nickname));
+    final copied = await widget.window.copyText(nickname);
     messenger
       ..hideCurrentSnackBar()
       ..showSnackBar(
         SnackBar(
           duration: const Duration(seconds: 3),
-          content: Text('$nickname copié : colle-le comme surnom dans le jeu.'),
+          content: Text(
+            copied
+                ? '$nickname copié : colle-le comme surnom dans le jeu.'
+                : 'Copie impossible : écris $nickname comme surnom.',
+          ),
         ),
       );
   }

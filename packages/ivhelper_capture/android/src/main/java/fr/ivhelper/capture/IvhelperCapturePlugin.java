@@ -1,6 +1,8 @@
 package fr.ivhelper.capture;
 
 import android.app.Activity;
+import android.content.ClipData;
+import android.content.ClipboardManager;
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.Bitmap;
@@ -115,6 +117,21 @@ public class IvhelperCapturePlugin
                         MAIN.post(() -> result.error("CAPTURE_FAILED", message, null));
                     }
                 }).start();
+                break;
+            case "copyText":
+                // La pastille tourne dans un moteur Flutter sans activité :
+                // le canal « flutter/platform » (Clipboard.setData) n'y a pas
+                // de gestionnaire et l'appel était ignoré. On écrit donc
+                // directement dans le presse-papiers d'Android.
+                final String text = call.argument("text");
+                final ClipboardManager clipboard =
+                        (ClipboardManager) context.getSystemService(Context.CLIPBOARD_SERVICE);
+                if (clipboard == null || text == null) {
+                    result.success(false);
+                    return;
+                }
+                clipboard.setPrimaryClip(ClipData.newPlainText("ivHelper", text));
+                result.success(true);
                 break;
             case "stop":
                 CaptureService.stopAll(context);

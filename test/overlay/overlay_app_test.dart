@@ -1,4 +1,3 @@
-import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ivhelper/core/collection.dart';
 import 'package:ivhelper/core/meta.dart';
@@ -86,20 +85,8 @@ void main() {
     expect(find.text('Enregistrer Nostenfer (Hyper)'), findsOneWidget);
 
     // Sous « Enregistrer » : copier le surnom PVP#rang de la case choisie.
-    final copied = <String>[];
-    tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
-      SystemChannels.platform,
-      (call) async {
-        if (call.method == 'Clipboard.setData') {
-          copied.add((call.arguments as Map<Object?, Object?>)['text']! as String);
-        }
-        return null;
-      },
-    );
-    addTearDown(
-      () => tester.binding.defaultBinaryMessenger
-          .setMockMethodCallHandler(SystemChannels.platform, null),
-    );
+    // La copie passe par la fenêtre (plugin natif) et non par Clipboard,
+    // sans effet dans le moteur de la pastille.
     final rank = rankIv(_crobat.base, const Iv(0, 13, 10), maxLevel: 51).ultra.mine.rank;
     final copy = find.byKey(const ValueKey<String>('copy-nickname'));
     expect(
@@ -109,7 +96,7 @@ void main() {
     expect(find.text('Copier PVP#$rank'), findsOneWidget);
     await tester.tap(copy);
     await tester.pumpAndSettle();
-    expect(copied, <String>['PVP#$rank']);
+    expect(window.copied, <String>['PVP#$rank']);
     expect(find.text('PVP#$rank copié : colle-le comme surnom dans le jeu.'), findsOneWidget);
     await tester.pump(const Duration(seconds: 4));
     await tester.pumpAndSettle();
