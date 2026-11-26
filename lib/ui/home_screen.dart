@@ -452,7 +452,10 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         onStartOverlay: () => unawaited(_startOverlay(context)),
         onOpenSearch: () => Navigator.of(context).push(
           MaterialPageRoute<void>(
-            builder: (_) => SearchStringScreen(repository: widget.repository),
+            builder: (_) => SearchStringScreen(
+              repository: widget.repository,
+              moves: widget.moves,
+            ),
           ),
         ),
         onExportAccount: () => unawaited(_exportAccount(context)),

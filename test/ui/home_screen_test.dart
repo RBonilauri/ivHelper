@@ -1111,4 +1111,115 @@ void main() {
     await tester.pumpAndSettle();
     expect(copied.last, '+flambusard&3-4attaque&3-4défense&3-4PV&PC-2500');
   });
+
+  testWidgets('chaînes de recherche : générateur avancé à trois états',
+      (tester) async {
+    final copied = <String>[];
+    tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+      SystemChannels.platform,
+      (call) async {
+        if (call.method == 'Clipboard.setData') {
+          copied.add((call.arguments as Map<Object?, Object?>)['text']! as String);
+        }
+        return null;
+      },
+    );
+    addTearDown(
+      () => tester.binding.defaultBinaryMessenger
+          .setMockMethodCallHandler(SystemChannels.platform, null),
+    );
+    await _pumpApp(tester);
+    await tester.tap(find.byTooltip('Paramètres'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Chaînes de recherche'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey<String>('search-tab-advanced')));
+    await tester.pumpAndSettle();
+
+    String result() => tester
+        .widget<Text>(find.byKey(const ValueKey<String>('adv-result')))
+        .data!;
+    Future<void> tap(String key) async {
+      final f = find.byKey(ValueKey<String>(key));
+      await tester.ensureVisible(f);
+      await tester.pumpAndSettle();
+      await tester.tap(f);
+      await tester.pumpAndSettle();
+    }
+
+    expect(result(), 'Coche des cases pour construire ta recherche.');
+
+    // Types : 1 appui ajoute, 2 excluent, 3 retirent ; OU puis ET.
+    await tap('adv-title-types');
+    await tap('adv-types-fire');
+    expect(result(), 'feu');
+    await tap('adv-types-flying');
+    expect(result(), 'feu,vol');
+    await tap('adv-op-types');
+    expect(result(), 'feu&vol');
+    await tap('adv-op-types');
+    await tap('adv-types-flying');
+    expect(result(), 'feu&!vol');
+    await tap('adv-types-flying');
+    expect(result(), 'feu');
+
+    // Pokémon : famille en tête de la chaîne.
+    await tap('adv-title-species');
+    await tester.enterText(
+      find.descendant(
+        of: find.byKey(const ValueKey<String>('adv-species-search')),
+        matching: find.byType(TextField),
+      ),
+      'flamb',
+    );
+    await tester.pumpAndSettle();
+    await tap('adv-add-family-663');
+    expect(result(), '+flambusard&feu');
+
+    // Statut : shiny exclu.
+    await tap('adv-title-status');
+    await tap('adv-status-chromatique');
+    await tap('adv-status-chromatique');
+    expect(result(), '+flambusard&feu&!chromatique');
+
+    // Attaque chargée Vol, puis attaque par nom.
+    await tap('adv-title-move');
+    await tap('adv-move-slot');
+    await tester.tap(find.text('Chargée'));
+    await tester.pumpAndSettle();
+    await tap('adv-move-types-charged-flying');
+    expect(result(), '+flambusard&feu&!chromatique&@2vol,@3vol');
+    await tap('adv-title-moves');
+    await tester.enterText(
+      find.descendant(
+        of: find.byKey(const ValueKey<String>('adv-move-search')),
+        matching: find.byType(TextField),
+      ),
+      'calci',
+    );
+    await tester.pumpAndSettle();
+    await tap('adv-add-move-INCINERATE');
+    expect(result(), '+flambusard&feu&!chromatique&@2vol,@3vol&@calcination');
+
+    // PC et date de capture.
+    await tap('adv-title-cp');
+    await tap('adv-cp-cap-1500');
+    await tap('adv-title-date');
+    await tap('adv-age-6');
+    expect(
+      result(),
+      '+flambusard&feu&!chromatique&@2vol,@3vol&@calcination&PC-1500&âge0-6',
+    );
+
+    await tester.tap(find.byKey(const ValueKey<String>('adv-copy')));
+    await tester.pumpAndSettle();
+    expect(copied.last, result());
+
+    // Le bandeau « Chaîne copiée » couvre la barre du bas quelques secondes.
+    await tester.pump(const Duration(seconds: 5));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey<String>('adv-clear')));
+    await tester.pumpAndSettle();
+    expect(result(), 'Coche des cases pour construire ta recherche.');
+  });
 }

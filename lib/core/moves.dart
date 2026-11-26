@@ -124,6 +124,9 @@ class MoveBook {
   /// Attaque d'identifiant [id], ou `null`.
   Move? operator [](String id) => _byId[id];
 
+  /// Toutes les attaques, triées par nom.
+  List<Move> get all => resolve(_byId.keys);
+
   /// Attaques connues parmi [ids], triées par nom.
   List<Move> resolve(Iterable<String> ids) {
     final list = <Move>[

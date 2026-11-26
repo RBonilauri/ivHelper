@@ -2,21 +2,30 @@ import 'package:flutter/services.dart';
 import 'package:material_ui/material_ui.dart';
 
 import '../core/league.dart';
+import '../core/moves.dart';
 import '../core/rank_table.dart';
 import '../core/search_string.dart';
 import '../core/species_repository.dart';
+import 'advanced_search_view.dart';
 import 'format.dart';
 import 'search_field.dart';
 
-/// Chaînes de recherche à coller dans la boîte de Pokémon GO : une chaîne
-/// calculée pour une espèce et une ligue, et des recherches prêtes à
-/// l'emploi.
+/// Chaînes de recherche à coller dans la boîte de Pokémon GO : onglet
+/// « Rang PvP » (une chaîne calculée pour une espèce et une ligue, et des
+/// recherches prêtes à l'emploi) et onglet « Avancée » (générateur à cases).
 class SearchStringScreen extends StatefulWidget {
   /// Crée la page.
-  const SearchStringScreen({required this.repository, super.key});
+  const SearchStringScreen({
+    required this.repository,
+    required this.moves,
+    super.key,
+  });
 
   /// Espèces connues.
   final SpeciesRepository repository;
+
+  /// Attaques connues (générateur avancé).
+  final MoveBook moves;
 
   @override
   State<SearchStringScreen> createState() => _SearchStringScreenState();
@@ -52,10 +61,22 @@ class _SearchStringScreenState extends State<SearchStringScreen> {
             top: _top,
             cpCap: _league == League.master ? null : _league.cpCap,
           );
-    return Scaffold(
-      appBar: AppBar(title: const Text('Chaînes de recherche')),
+    return DefaultTabController(
+      length: 2,
+      child: Scaffold(
+      appBar: AppBar(
+        title: const Text('Chaînes de recherche'),
+        bottom: const TabBar(
+          tabs: <Widget>[
+            Tab(key: ValueKey<String>('search-tab-pvp'), text: 'Rang PvP'),
+            Tab(key: ValueKey<String>('search-tab-advanced'), text: 'Avancée'),
+          ],
+        ),
+      ),
       body: SafeArea(
-        child: ListView(
+        child: TabBarView(
+          children: <Widget>[
+            ListView(
           padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
           children: <Widget>[
             Text(
@@ -140,7 +161,15 @@ class _SearchStringScreenState extends State<SearchStringScreen> {
             ),
           ],
         ),
+            AdvancedSearchView(
+              repository: widget.repository,
+              moves: widget.moves,
+              onCopy: _copy,
+            ),
+          ],
+        ),
       ),
+    ),
     );
   }
 }
