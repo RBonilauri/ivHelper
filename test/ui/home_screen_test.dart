@@ -1215,6 +1215,9 @@ void main() {
     await tester.pumpAndSettle();
     expect(copied.last, result());
 
+    // Le bandeau « Chaîne copiée » couvre la barre du bas quelques secondes.
+    await tester.pump(const Duration(seconds: 5));
+    await tester.pumpAndSettle();
     await tester.tap(find.byKey(const ValueKey<String>('adv-clear')));
     await tester.pumpAndSettle();
     expect(result(), 'Coche des cases pour construire ta recherche.');
