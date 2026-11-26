@@ -87,6 +87,14 @@ class IvhelperCapture {
     return CapturedScreen.fromMap(map);
   }
 
+  /// Copie [text] dans le presse-papiers d'Android ; vrai si c'est fait.
+  /// Utile depuis la pastille, où `Clipboard.setData` n'a pas d'effet.
+  static Future<bool> copyText(String text) async =>
+      await _channel.invokeMethod<bool>('copyText', <String, Object?>{
+        'text': text,
+      }) ??
+      false;
+
   /// Ferme la session de capture et la pastille.
   static Future<void> stop() => _channel.invokeMethod<void>('stop');
 

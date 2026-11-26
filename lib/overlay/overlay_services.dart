@@ -28,6 +28,9 @@ abstract interface class OverlayWindow {
 
   /// Ferme la pastille et la capture.
   Future<void> stopAll();
+
+  /// Copie [text] dans le presse-papiers ; vrai si c'est fait.
+  Future<bool> copyText(String text);
 }
 
 /// Lecture réelle : MediaProjection, ML Kit et analyse des barres.
@@ -137,6 +140,22 @@ class PluginOverlayWindow implements OverlayWindow {
   Future<void> stopAll() async {
     await IvhelperCapture.stop();
     await FlutterOverlayWindow.closeOverlay();
+  }
+
+  /// Dans la pastille, `Clipboard.setData` est sans effet (pas d'activité,
+  /// donc pas de gestionnaire du canal « flutter/platform ») : on passe par
+  /// le plugin natif, et seulement à défaut par `Clipboard`.
+  @override
+  Future<bool> copyText(String text) async {
+    try {
+      if (await IvhelperCapture.copyText(text)) return true;
+    } on PlatformException {
+      // Repli ci-dessous.
+    } on MissingPluginException {
+      // Repli ci-dessous.
+    }
+    await Clipboard.setData(ClipboardData(text: text));
+    return true;
   }
 }
 
