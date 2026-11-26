@@ -14,6 +14,7 @@ class PrefsSettingsStore implements SettingsStore {
   static const String _scaleKey = 'fontScale';
   static const String _teamKey = 'team';
   static const String _metaKey = 'meta';
+  static const String _gameDataKey = 'gameData';
   static const String _collectionKey = 'collection';
   static const String _historyKey = 'history';
 
@@ -39,6 +40,14 @@ class PrefsSettingsStore implements SettingsStore {
   @override
   Future<void> writeTeam(String value) async {
     await prefs.setString(_teamKey, value);
+  }
+
+  @override
+  Future<String?> readGameData() async => prefs.getString(_gameDataKey);
+
+  @override
+  Future<void> writeGameData(String value) async {
+    await prefs.setString(_gameDataKey, value);
   }
 
   @override

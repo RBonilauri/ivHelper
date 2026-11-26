@@ -26,6 +26,12 @@ abstract interface class SettingsStore {
   /// Enregistre la dernière méta téléchargée (JSON).
   Future<void> writeMeta(String value);
 
+  /// Données du jeu téléchargées (espèces et attaques), ou `null`.
+  Future<String?> readGameData();
+
+  /// Enregistre les données du jeu téléchargées.
+  Future<void> writeGameData(String value);
+
   /// Lit la collection enregistrée (JSON), ou `null`.
   Future<String?> readCollection();
 
@@ -74,6 +80,14 @@ class MemorySettingsStore implements SettingsStore {
 
   @override
   Future<void> writeMeta(String value) async => _meta = value;
+
+  String? _gameData;
+
+  @override
+  Future<String?> readGameData() async => _gameData;
+
+  @override
+  Future<void> writeGameData(String value) async => _gameData = value;
 
   @override
   Future<String?> readCollection() async => _collection;
