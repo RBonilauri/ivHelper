@@ -177,12 +177,13 @@ final List<SearchTerm> categoryTerms = <SearchTerm>[
   _word('ultra-chimère', 'Ultra-chimère'),
 ];
 
-/// Chanceux, shiny, obscur, purifié.
+/// Chanceux, shiny, obscur, purifié, costume (Pokémon d'événement).
 final List<SearchTerm> statusTerms = <SearchTerm>[
   _word('chanceux', 'Chanceux'),
   _word('chromatique', 'Shiny'),
   _word('obscur', 'Obscur'),
   _word('purifié', 'Purifié'),
+  _word('costume', 'Costume'),
 ];
 
 /// Tailles XXS à XXL.
@@ -202,10 +203,14 @@ final SearchTerm eliteTerm = _word('@spécial', 'Attaque élite');
 /// attaques) gardent leur ordre d'ajout.
 class PickGroup {
   /// Crée la rubrique avec ses cases fixes [terms].
-  PickGroup([List<SearchTerm> terms = const <SearchTerm>[]])
+  PickGroup(List<SearchTerm> terms, {this.exclusive = false})
       : _terms = <String, SearchTerm>{for (final t in terms) t.id: t};
 
   final Map<String, SearchTerm> _terms;
+
+  /// Vrai si les cases s'excluent (taille, évaluation…) : les cases ajoutées
+  /// sont toujours reliées par OU, ET n'aurait aucun résultat.
+  final bool exclusive;
   final Map<String, Pick> _picks = <String, Pick>{};
 
   /// Vrai pour relier les cases ajoutées par ET au lieu de OU.
@@ -219,6 +224,9 @@ class PickGroup {
 
   /// Passe la case [id] à l'état suivant.
   void cycle(String id) => _picks[id] = pickOf(id).next;
+
+  /// Décoche la case [id].
+  void uncheck(String id) => _picks.remove(id);
 
   /// Ajoute la case [term] (si absente) et la coche.
   void add(SearchTerm term) {
@@ -257,6 +265,75 @@ class PickGroup {
           for (final t in _terms.values)
             if (pickOf(t.id) == Pick.exclude) t,
         ],
-        all: all,
+        all: all && !exclusive,
       );
+}
+
+/// Plus petit et plus grand IV de chaque tranche du jeu (0 à 4).
+const List<int> _bucketMin = <int>[0, 1, 6, 11, 15];
+const List<int> _bucketMax = <int>[0, 5, 10, 14, 15];
+
+/// Total d'IV (sur 45) couvert par l'évaluation [star] du jeu : 0★ jusqu'à
+/// 22, 1★ de 23 à 29, 2★ de 30 à 36, 3★ de 37 à 44, 4★ à 45.
+(int, int) starTotal(int star) => const <(int, int)>[
+      (0, 22),
+      (23, 29),
+      (30, 36),
+      (37, 44),
+      (45, 45),
+    ][star.clamp(0, 4)];
+
+/// Total d'IV possible quand chaque stat est dans ses tranches [buckets]
+/// (`(min, max)` de 0 à 4, dans l'ordre attaque, défense, PV).
+(int, int) ivTotalRange(List<(int, int)> buckets) {
+  var lo = 0;
+  var hi = 0;
+  for (final (a, b) in buckets) {
+    lo += _bucketMin[a.clamp(0, 4)];
+    hi += _bucketMax[b.clamp(0, 4)];
+  }
+  return (lo, hi);
+}
+
+/// Vrai si l'évaluation [star] est possible avec les tranches [buckets].
+bool starPossible(int star, List<(int, int)> buckets) {
+  final (lo, hi) = ivTotalRange(buckets);
+  final (a, b) = starTotal(star);
+  return a <= hi && b >= lo;
+}
+
+/// Tranches permises pour une stat quand les évaluations [stars] sont
+/// ajoutées (une suffit) : une stat vaut au moins le total minimal moins 30
+/// (les deux autres à 15) et au plus le total maximal.
+(int, int) starBucketLimits(Set<int> stars) {
+  if (stars.isEmpty) return (0, 4);
+  var minTotal = 45;
+  var maxTotal = 0;
+  for (final star in stars) {
+    final (a, b) = starTotal(star);
+    if (a < minTotal) minTotal = a;
+    if (b > maxTotal) maxTotal = b;
+  }
+  final need = minTotal - 30;
+  var lo = 0;
+  while (lo < 4 && _bucketMax[lo] < need) {
+    lo++;
+  }
+  var hi = 4;
+  while (hi > 0 && _bucketMin[hi] > maxTotal) {
+    hi--;
+  }
+  return (lo, hi);
+}
+
+/// Bornes d'IV par stat (attaque, défense, PV) ; une borne égale à celle que
+/// les évaluations ajoutées [stars] imposent déjà est omise.
+List<String> ivRangeClauses(List<(int, int)> buckets, Set<int> stars) {
+  final limits = starBucketLimits(stars);
+  const keys = <String>['attaque', 'défense', 'PV'];
+  return <String>[
+    for (var i = 0; i < buckets.length && i < keys.length; i++)
+      if (buckets[i] != limits)
+        if (statRange(buckets[i].$1, buckets[i].$2, keys[i]) case final r?) r,
+  ];
 }

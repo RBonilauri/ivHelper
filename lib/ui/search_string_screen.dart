@@ -94,6 +94,7 @@ class _SearchStringScreenState extends State<SearchStringScreen> {
               hint: 'Nosferapti ou 41',
               onChanged: (v) => setState(() => _query = v),
             ),
+            if (species != null) ...<Widget>[
             const SizedBox(height: 8),
             Wrap(
               spacing: 6,
@@ -124,6 +125,7 @@ class _SearchStringScreenState extends State<SearchStringScreen> {
                   ),
               ],
             ),
+            ],
             const SizedBox(height: 8),
             if (_query.trim().isNotEmpty && species == null)
               Text('Pokémon inconnu.', style: theme.textTheme.bodySmall)
