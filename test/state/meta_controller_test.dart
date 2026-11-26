@@ -37,6 +37,7 @@ void main() {
     await c.ensureLoaded();
     expect(c.data!.updated, '2026-11-24');
     expect(c.message, 'Nouvelle méta du 24/11/2026.');
+    expect(c.messageIsError, isFalse);
     expect(await store.readMeta(), contains('Nouveau'));
   });
 
@@ -48,6 +49,7 @@ void main() {
     await c.ensureLoaded();
     expect(c.data!.updated, '2026-11-20');
     expect(c.message, 'Hors ligne : méta du 20/11/2026 conservée.');
+    expect(c.messageIsError, isTrue);
   });
 
   test('le cache plus récent que la copie incluse est utilisé hors ligne',
@@ -72,6 +74,7 @@ void main() {
     await c.ensureLoaded();
     expect(c.data!.updated, '2026-11-22');
     expect(c.message, 'Méta à jour.');
+    expect(c.messageIsError, isFalse);
   });
 
   test('ensureLoaded ne vérifie en ligne qu\'une fois', () async {

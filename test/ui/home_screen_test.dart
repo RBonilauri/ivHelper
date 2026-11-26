@@ -216,6 +216,8 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Pires adversaires'), findsOneWidget);
     expect(find.text('Altaria'), findsOneWidget);
+    expect(find.byKey(const ValueKey<String>('info-meta-source')), findsOneWidget);
+    expect(find.textContaining('Source : classement'), findsNothing);
     expect(find.text('Ta défense \u22123'), findsOneWidget);
     expect(
       find.byKey(const ValueKey<String>('charge-bars-BRAVE_BIRD')),
@@ -364,7 +366,8 @@ void main() {
       findsOneWidget,
     );
     expect(find.byKey(const ValueKey<String>('owned-Florges')), findsNothing);
-    expect(find.text('En jaune : tu l\'as dans ta collection'), findsOneWidget);
+    expect(find.text('En jaune : tu l\'as dans ta collection'), findsNothing);
+    expect(find.byTooltip('En jaune : tu l\'as dans ta collection'), findsOneWidget);
     await tester.pump(const Duration(seconds: 10));
     await tester.pumpAndSettle();
   });
@@ -409,7 +412,7 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.text('Flambusard').last);
     await tester.pumpAndSettle();
-    expect(find.text('Importé de ta collection'), findsOneWidget);
+    expect(find.byTooltip('Importé de ta collection'), findsOneWidget);
     expect(find.text('Roche ×2,56'), findsOneWidget);
 
     await tester.ensureVisible(find.text('Importer de ma collection').at(1));
@@ -765,6 +768,11 @@ void main() {
     await tester.tap(find.text('Flambusard').first);
     await tester.pumpAndSettle();
 
+    expect(find.text('Rang figé au moment de l\'enregistrement.'), findsNothing);
+    expect(
+      find.byTooltip('Rang figé au moment de l\'enregistrement.'),
+      findsOneWidget,
+    );
     final button = find.text('Voir la fiche méta (Super)');
     await tester.ensureVisible(button);
     await tester.tap(button);
@@ -1090,6 +1098,11 @@ void main() {
     await tester.pumpAndSettle();
     expect(copied.last, '0-1attaque&3-4défense&3-4PV&PC-1500');
     expect(find.text('Chaîne copiée : colle-la dans la recherche du jeu.'), findsOneWidget);
+
+    // Explications dans le « i » du haut, plus sous forme de phrases.
+    expect(find.byKey(const ValueKey<String>('info-search-pvp')), findsOneWidget);
+    expect(find.textContaining('Copie une chaîne'), findsNothing);
+    expect(find.textContaining('Astuce :'), findsNothing);
 
     // Ligue et top n'apparaissent qu'avec un Pokémon reconnu.
     expect(find.byKey(const ValueKey<String>('search-league-great')), findsNothing);

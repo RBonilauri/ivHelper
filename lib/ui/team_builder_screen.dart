@@ -11,6 +11,7 @@ import 'format.dart';
 import 'move_label.dart';
 import 'search_field.dart';
 import 'type_badge.dart';
+import 'info_button.dart';
 
 const Color _good = Color(0xFF2EAD74);
 const Color _bad = Color(0xFFE5484D);
@@ -109,26 +110,21 @@ class _SlotCard extends StatelessWidget {
             Row(
               children: <Widget>[
                 if (slot.collectionId != null)
-                  Expanded(
-                    child: Row(
-                      children: <Widget>[
-                        Icon(
-                          Icons.collections_bookmark,
-                          size: 16,
-                          color: theme.colorScheme.primary,
-                        ),
-                        const SizedBox(width: 4),
-                        Flexible(
-                          child: Text(
-                            'Importé de ta collection',
-                            style: theme.textTheme.bodySmall,
-                          ),
-                        ),
-                      ],
+                  Tooltip(
+                    key: ValueKey<String>('imported-$index'),
+                    message: 'Importé de ta collection',
+                    triggerMode: TooltipTriggerMode.tap,
+                    showDuration: const Duration(seconds: 30),
+                    child: Padding(
+                      padding: const EdgeInsets.all(6),
+                      child: Icon(
+                        Icons.collections_bookmark,
+                        size: 20,
+                        color: theme.colorScheme.primary,
+                      ),
                     ),
-                  )
-                else
-                  const Spacer(),
+                  ),
+                const Spacer(),
                 TextButton.icon(
                   onPressed: () => _import(context),
                   icon: const Icon(Icons.collections_bookmark_outlined),
@@ -161,10 +157,12 @@ class _SlotCard extends StatelessWidget {
                 options: team.chargedOptionsFor(index, 2),
                 onChanged: (m) => team.setCharged(index, 2, m),
               ),
-              const SizedBox(height: 4),
-              Text(
-                '$eliteLegend · nombre : puissance en combat',
-                style: theme.textTheme.bodySmall,
+              Align(
+                alignment: AlignmentDirectional.centerEnd,
+                child: InfoButton(
+                  '$eliteLegend · nombre : puissance en combat',
+                  key: ValueKey<String>('info-moves-$index'),
+                ),
               ),
             ],
             if (defense != null) ...<Widget>[

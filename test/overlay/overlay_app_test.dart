@@ -83,11 +83,22 @@ void main() {
     await tester.tap(find.byKey(const ValueKey<String>('cell-Nostenfer-ultra')));
     await tester.pumpAndSettle();
     expect(find.text('Enregistrer Nostenfer (Hyper)'), findsOneWidget);
+    // Meilleur ami décoché par défaut (niveau 50).
+    expect(
+      tester
+          .widget<SwitchListTile>(
+            find.widgetWithText(SwitchListTile, 'Meilleur ami (niveau 51)'),
+          )
+          .value,
+      isFalse,
+    );
+    expect(find.textContaining('Touche une case'), findsNothing);
+    expect(find.byKey(const ValueKey<String>('info-family-table')), findsOneWidget);
 
     // Sous « Enregistrer » : copier le surnom PVP#rang de la case choisie.
     // La copie passe par la fenêtre (plugin natif) et non par Clipboard,
     // sans effet dans le moteur de la pastille.
-    final rank = rankIv(_crobat.base, const Iv(0, 13, 10), maxLevel: 51).ultra.mine.rank;
+    final rank = rankIv(_crobat.base, const Iv(0, 13, 10), maxLevel: 50).ultra.mine.rank;
     final copy = find.byKey(const ValueKey<String>('copy-nickname'));
     expect(
       tester.getTopLeft(copy).dy,
@@ -240,7 +251,7 @@ void main() {
     // Chanceux lu à l'écran : coché d'office, poussière divisée par deux.
     final lucky = find.widgetWithText(FilterChip, 'Chanceux');
     expect(tester.widget<FilterChip>(lucky).selected, isTrue);
-    final target = rankIv(_crobat.base, const Iv(0, 13, 10), maxLevel: 51)
+    final target = rankIv(_crobat.base, const Iv(0, 13, 10), maxLevel: 50)
         .great
         .mine
         .level;

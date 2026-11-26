@@ -27,6 +27,7 @@ class MetaController extends ChangeNotifier {
   MetaSnapshot? _data;
   bool _refreshing = false;
   String? _message;
+  bool _messageIsError = false;
   Future<void>? _loading;
   bool _disposed = false;
 
@@ -38,6 +39,10 @@ class MetaController extends ChangeNotifier {
 
   /// Message d'état de la dernière vérification, ou `null`.
   String? get message => _message;
+
+  /// Vrai si [message] signale un problème (hors ligne, méta indisponible) :
+  /// il reste affiché, les autres vont dans la bulle d'information.
+  bool get messageIsError => _messageIsError;
 
   /// Charge la méta locale puis vérifie en ligne, une seule fois.
   Future<void> ensureLoaded() => _loading ??= _loadThenRefresh();
@@ -55,6 +60,7 @@ class MetaController extends ChangeNotifier {
     if (_refreshing) return;
     _refreshing = true;
     _message = null;
+    _messageIsError = false;
     _notify();
     final previous = _data;
     String? raw;
@@ -68,6 +74,7 @@ class MetaController extends ChangeNotifier {
       _message = previous == null
           ? 'Méta indisponible : vérifie ta connexion.'
           : 'Hors ligne : méta du ${previous.updatedFr} conservée.';
+      _messageIsError = true;
     } else {
       _consider(remote);
       if (identical(_data, remote)) await store.writeMeta(raw!);

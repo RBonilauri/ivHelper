@@ -5,6 +5,7 @@ import '../core/advanced_search.dart';
 import '../core/moves.dart';
 import '../core/poke_type.dart';
 import '../core/species_repository.dart';
+import 'info_button.dart';
 import 'search_field.dart';
 import 'type_badge.dart';
 
@@ -186,13 +187,15 @@ class _AdvancedSearchViewState extends State<AdvancedSearchView> {
             key: const ValueKey<String>('adv-list'),
             padding: const EdgeInsets.fromLTRB(12, 12, 12, 16),
             children: <Widget>[
-              Text(
-                '1 appui : ajouter · 2 appuis : exclure (!) · 3 appuis : '
-                'retirer. Les rubriques se cumulent (ET) ; dans une rubrique, '
-                'le bouton ET/OU relie les cases ajoutées.',
-                style: theme.textTheme.bodySmall,
+              const Align(
+                alignment: AlignmentDirectional.centerEnd,
+                child: InfoButton(
+                  '1 appui : ajouter · 2 appuis : exclure (!) · 3 appuis : '
+                  'retirer. Les rubriques se cumulent (ET) ; dans une '
+                  'rubrique, le bouton ET/OU relie les cases ajoutées.',
+                  key: ValueKey<String>('info-search-advanced'),
+                ),
               ),
-              const SizedBox(height: 8),
               _Section(
                 open: _open,
                 id: 'species',

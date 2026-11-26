@@ -11,6 +11,7 @@ import 'move_label.dart';
 import 'move_line.dart';
 import 'save_pokemon_sheet.dart';
 import 'type_badge.dart';
+import 'info_button.dart';
 
 /// Lien d'un Pokémon de la collection vers sa fiche méta.
 class CollectionMetaLink {
@@ -244,9 +245,19 @@ class _Detail extends StatelessWidget {
                       ],
                     ),
                     const SizedBox(height: 12),
-                    Text(
-                      '${e.league.label} · rang ${formatGrouped(e.rank)}',
-                      style: theme.textTheme.headlineSmall,
+                    Row(
+                      children: <Widget>[
+                        Flexible(
+                          child: Text(
+                            '${e.league.label} · rang ${formatGrouped(e.rank)}',
+                            style: theme.textTheme.headlineSmall,
+                          ),
+                        ),
+                        const InfoButton(
+                          'Rang figé au moment de l\'enregistrement.',
+                          key: ValueKey<String>('info-frozen-rank'),
+                        ),
+                      ],
                     ),
                     Text(
                       '${formatPercent(e.percent)} · PC ${formatGrouped(e.cp)}'
@@ -269,13 +280,17 @@ class _Detail extends StatelessWidget {
                 ),
               ),
             ),
-            const SizedBox(height: 8),
-            Text(
-              'Rang figé au moment de l\'enregistrement.',
-              style: theme.textTheme.bodySmall,
-            ),
             const SizedBox(height: 16),
-            Text('Attaques', style: theme.textTheme.titleSmall),
+            Row(
+              children: <Widget>[
+                Text('Attaques', style: theme.textTheme.titleSmall),
+                if (row.recordedMoves.any((m) => row.species.isElite(m.id)))
+                  const InfoButton(
+                    eliteLegend,
+                    key: ValueKey<String>('info-elite'),
+                  ),
+              ],
+            ),
             const SizedBox(height: 6),
             if (row.recordedMoves.isEmpty)
               Text('Aucune attaque enregistrée.', style: theme.textTheme.bodySmall)
@@ -308,8 +323,6 @@ class _Detail extends StatelessWidget {
                     ),
                 ],
             ],
-            if (row.recordedMoves.any((m) => row.species.isElite(m.id)))
-              Text(eliteLegend, style: theme.textTheme.bodySmall),
             const SizedBox(height: 20),
             FilledButton.icon(
               onPressed: onOpen,

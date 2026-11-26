@@ -30,13 +30,17 @@ void main() {
     for (final t in PokeType.values) {
       expect(find.byKey(ValueKey<String>('type-pick-${t.id}')), findsOneWidget);
     }
-    // Six par ligne : trois lignes, pas une longue liste de cartes.
+    // Cinq par ligne : quatre lignes (5, 5, 5, 3).
     final tops = <double>{
       for (final t in PokeType.values)
         tester.getTopLeft(find.byKey(ValueKey<String>('type-pick-${t.id}'))).dy,
     };
-    expect(tops, hasLength(3));
-    expect(find.text('Touche un type, ou deux pour un double type.'), findsOneWidget);
+    expect(tops, hasLength(4));
+    expect(find.text('Touche un type, ou deux pour un double type.'), findsNothing);
+    expect(
+      find.byKey(const ValueKey<String>('info-type-chart')),
+      findsOneWidget,
+    );
   });
 
   testWidgets('un type : sa défense et son attaque, immunités à part',
