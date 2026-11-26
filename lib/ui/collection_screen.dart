@@ -229,45 +229,61 @@ class _Controls extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
-        Row(
+        // Wrap : sur un écran étroit ou en grand texte, le tri passe à la
+        // ligne au lieu de déborder.
+        SizedBox(
+          width: double.infinity,
+          child: Wrap(
+          alignment: WrapAlignment.spaceBetween,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          spacing: 8,
+          runSpacing: 4,
           children: <Widget>[
-            Badge(
-              isLabelVisible: active > 0,
-              label: Text('$active'),
-              child: FilledButton.tonalIcon(
-                key: const ValueKey<String>('filters-toggle'),
-                onPressed: () => collection.setFiltersOpen(!open),
-                icon: Icon(open ? Icons.expand_less : Icons.tune),
-                label: const Text('Filtres'),
-              ),
-            ),
-            if (active > 0) ...<Widget>[
-              const SizedBox(width: 4),
-              IconButton(
-                tooltip: 'Effacer les filtres',
-                icon: const Icon(Icons.filter_alt_off),
-                onPressed: () =>
-                    collection.setFilter(const CollectionFilter()),
-              ),
-            ],
-            const Spacer(),
-            const Icon(Icons.sort, size: 18),
-            const SizedBox(width: 4),
-            DropdownButton<CollectionSort>(
-              value: collection.sort,
-              underline: const SizedBox.shrink(),
-              items: <DropdownMenuItem<CollectionSort>>[
-                for (final s in CollectionSort.values)
-                  DropdownMenuItem<CollectionSort>(
-                    value: s,
-                    child: Text(s.label),
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: <Widget>[
+                Badge(
+                  isLabelVisible: active > 0,
+                  label: Text('$active'),
+                  child: FilledButton.tonalIcon(
+                    key: const ValueKey<String>('filters-toggle'),
+                    onPressed: () => collection.setFiltersOpen(!open),
+                    icon: Icon(open ? Icons.expand_less : Icons.tune),
+                    label: const Text('Filtres'),
+                  ),
+                ),
+                if (active > 0)
+                  IconButton(
+                    tooltip: 'Effacer les filtres',
+                    icon: const Icon(Icons.filter_alt_off),
+                    onPressed: () =>
+                        collection.setFilter(const CollectionFilter()),
                   ),
               ],
-              onChanged: (s) {
-                if (s != null) collection.setSort(s);
-              },
+            ),
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: <Widget>[
+                const Icon(Icons.sort, size: 18),
+                const SizedBox(width: 4),
+                DropdownButton<CollectionSort>(
+                  value: collection.sort,
+                  underline: const SizedBox.shrink(),
+                  items: <DropdownMenuItem<CollectionSort>>[
+                    for (final s in CollectionSort.values)
+                      DropdownMenuItem<CollectionSort>(
+                        value: s,
+                        child: Text(s.label),
+                      ),
+                  ],
+                  onChanged: (s) {
+                    if (s != null) collection.setSort(s);
+                  },
+                ),
+              ],
             ),
           ],
+        ),
         ),
         AnimatedSize(
           duration: const Duration(milliseconds: 200),
@@ -315,7 +331,10 @@ class _FilterPanel extends StatelessWidget {
     final filter = collection.filter;
     final favoriteCount =
         collection.visibleRowsUnfiltered.where((r) => r.entry.favorite).length;
-    void set(CollectionFilter f) => collection.setFilter(f);
+    void set(CollectionFilter Function(CollectionFilter current) change) =>
+        // Toujours partir du filtre actuel, pas de celui de cet affichage :
+        // deux appuis rapides ne s'écrasent pas.
+        collection.setFilter(change(collection.filter));
     return Card(
       margin: const EdgeInsets.only(top: 8),
       child: Padding(
@@ -333,7 +352,7 @@ class _FilterPanel extends StatelessWidget {
               ),
               title: Text('Favoris uniquement ($favoriteCount)'),
               value: filter.favoritesOnly,
-              onChanged: (on) => set(filter.copyWith(favoritesOnly: on)),
+              onChanged: (on) => set((f) => f.copyWith(favoritesOnly: on)),
             ),
             _ChoiceLine<League?>(
               title: 'Ligue',
@@ -343,9 +362,9 @@ class _FilterPanel extends StatelessWidget {
               ],
               selected: filter.league,
               onSelected: (l) => set(
-                l == null
-                    ? filter.copyWith(clearLeague: true)
-                    : filter.copyWith(league: l),
+                (f) => l == null
+                    ? f.copyWith(clearLeague: true)
+                    : f.copyWith(league: l),
               ),
             ),
             _ChoiceLine<int?>(
@@ -353,9 +372,9 @@ class _FilterPanel extends StatelessWidget {
               options: _rankOptions('iv-rank'),
               selected: filter.maxRank,
               onSelected: (t) => set(
-                t == null
-                    ? filter.copyWith(clearMaxRank: true)
-                    : filter.copyWith(maxRank: t),
+                (f) => t == null
+                    ? f.copyWith(clearMaxRank: true)
+                    : f.copyWith(maxRank: t),
               ),
             ),
             _ChoiceLine<int?>(
@@ -363,9 +382,9 @@ class _FilterPanel extends StatelessWidget {
               options: _rankOptions('meta-rank'),
               selected: filter.maxMetaRank,
               onSelected: (t) => set(
-                t == null
-                    ? filter.copyWith(clearMaxMetaRank: true)
-                    : filter.copyWith(maxMetaRank: t),
+                (f) => t == null
+                    ? f.copyWith(clearMaxMetaRank: true)
+                    : f.copyWith(maxMetaRank: t),
               ),
             ),
             const Divider(height: 16),
@@ -379,7 +398,7 @@ class _FilterPanel extends StatelessWidget {
               Align(
                 alignment: AlignmentDirectional.centerEnd,
                 child: TextButton.icon(
-                  onPressed: () => set(const CollectionFilter()),
+                  onPressed: () => set((_) => const CollectionFilter()),
                   icon: const Icon(Icons.filter_alt_off, size: 18),
                   label: const Text('Effacer les filtres'),
                 ),
