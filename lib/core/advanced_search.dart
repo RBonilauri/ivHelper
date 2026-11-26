@@ -202,10 +202,13 @@ final SearchTerm eliteTerm = _word('@spécial', 'Attaque élite');
 /// attaques) gardent leur ordre d'ajout.
 class PickGroup {
   /// Crée la rubrique avec ses cases fixes [terms].
-  PickGroup([List<SearchTerm> terms = const <SearchTerm>[]])
+  PickGroup([List<SearchTerm> terms = const <SearchTerm>[], {this.exclusive = false}])
       : _terms = <String, SearchTerm>{for (final t in terms) t.id: t};
 
   final Map<String, SearchTerm> _terms;
+
+  /// Squelette.
+  final bool exclusive;
   final Map<String, Pick> _picks = <String, Pick>{};
 
   /// Vrai pour relier les cases ajoutées par ET au lieu de OU.
@@ -260,3 +263,19 @@ class PickGroup {
         all: all,
       );
 }
+
+/// Squelette.
+(int, int) starTotal(int star) => (0, 0);
+
+/// Squelette.
+(int, int) ivTotalRange(List<(int, int)> buckets) => (0, 0);
+
+/// Squelette.
+bool starPossible(int star, List<(int, int)> buckets) => true;
+
+/// Squelette.
+(int, int) starBucketLimits(Set<int> stars) => (0, 4);
+
+/// Squelette.
+List<String> ivRangeClauses(List<(int, int)> buckets, Set<int> stars) =>
+    const <String>[];

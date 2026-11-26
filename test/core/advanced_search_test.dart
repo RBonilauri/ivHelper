@@ -105,7 +105,7 @@ void main() {
     expect(<String>[for (final t in sizeTerms) ...t.atoms],
         <String>['xxs', 'xs', 'xl', 'xxl']);
     expect(<String>[for (final t in statusTerms) ...t.atoms],
-        <String>['chanceux', 'chromatique', 'obscur', 'purifié']);
+        <String>['chanceux', 'chromatique', 'obscur', 'purifié', 'costume']);
     expect(<String>[for (final t in categoryTerms) ...t.atoms],
         <String>['légendaire', 'fabuleux', 'ultra-chimère']);
     expect(starTerms.last.atoms, <String>['4*']);
@@ -152,5 +152,54 @@ void main() {
     expect(g.terms, hasLength(18));
     mons.clear(dropTerms: true);
     expect(mons.terms, isEmpty);
+  });
+
+  test('étoiles : total d\'IV de chaque évaluation et possibilité', () {
+    expect(starTotal(0), (0, 22));
+    expect(starTotal(1), (23, 29));
+    expect(starTotal(2), (30, 36));
+    expect(starTotal(3), (37, 44));
+    expect(starTotal(4), (45, 45));
+    const all = <(int, int)>[(0, 4), (0, 4), (0, 4)];
+    expect(ivTotalRange(all), (0, 45));
+    expect(ivTotalRange(const <(int, int)>[(3, 4), (4, 4), (1, 2)]), (27, 40));
+    for (var star = 0; star <= 4; star++) {
+      expect(starPossible(star, all), isTrue);
+    }
+    // Attaque 0-15, défense 15, PV 1-10 : au plus 40, jamais 4★.
+    const low = <(int, int)>[(0, 4), (4, 4), (1, 2)];
+    expect(starPossible(4, low), isFalse);
+    expect(starPossible(3, low), isTrue);
+    // Tout à 15 : seulement 4★.
+    const max = <(int, int)>[(4, 4), (4, 4), (4, 4)];
+    expect(<int>[for (var s = 0; s <= 4; s++) if (starPossible(s, max)) s], <int>[4]);
+  });
+
+  test('étoiles ajoutées : tranches permises pour chaque stat', () {
+    expect(starBucketLimits(const <int>{}), (0, 4));
+    expect(starBucketLimits(const <int>{4}), (4, 4));
+    // 3★ : total 37 ou plus, donc chaque stat vaut au moins 7 (tranche 6-10).
+    expect(starBucketLimits(const <int>{3}), (2, 4));
+    expect(starBucketLimits(const <int>{3, 4}), (2, 4));
+    expect(starBucketLimits(const <int>{0}), (0, 4));
+    expect(starBucketLimits(const <int>{2}), (0, 4));
+  });
+
+  test('bornes d\'IV : omises quand l\'évaluation les impose déjà', () {
+    const max = <(int, int)>[(4, 4), (4, 4), (4, 4)];
+    expect(ivRangeClauses(max, const <int>{4}), isEmpty);
+    expect(ivRangeClauses(max, const <int>{}), <String>['4attaque', '4défense', '4PV']);
+    expect(
+      ivRangeClauses(const <(int, int)>[(2, 4), (3, 4), (0, 4)], const <int>{3}),
+      <String>['3-4défense'],
+    );
+  });
+
+  test('rubrique à choix exclusifs : toujours OU', () {
+    final sizes = PickGroup(sizeTerms, exclusive: true);
+    sizes.cycle('xxs');
+    sizes.cycle('xxl');
+    sizes.all = true;
+    expect(sizes.section().clauses(), <String>['xxs,xxl']);
   });
 }
