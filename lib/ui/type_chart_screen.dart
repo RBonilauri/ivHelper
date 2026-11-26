@@ -2,6 +2,7 @@ import 'package:material_ui/material_ui.dart';
 
 import '../core/poke_type.dart';
 import 'collection_widgets.dart';
+import 'info_button.dart';
 import 'type_badge.dart';
 
 const Color _good = Color(0xFF2EAD74);
@@ -51,25 +52,24 @@ class _TypeChartScreenState extends State<TypeChartScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     return Scaffold(
-      appBar: AppBar(title: const Text('Table des types')),
+      appBar: AppBar(
+        title: const Text('Table des types'),
+        actions: const <Widget>[
+          InfoButton(
+            'Touche un type, ou deux pour un double type.\n'
+            'Pokémon GO : super efficace ×1,6 · peu efficace ×0,625 · '
+            'sans effet ×0,39.',
+            key: ValueKey<String>('info-type-chart'),
+          ),
+          SizedBox(width: 8),
+        ],
+      ),
       body: SafeArea(
         child: ListView(
           padding: const EdgeInsets.fromLTRB(12, 12, 12, 24),
           children: <Widget>[
-            Text(
-              'Touche un type, ou deux pour un double type.',
-              style: theme.textTheme.bodyMedium,
-            ),
-            const SizedBox(height: 8),
             _TypeGrid(picked: _picked, onTap: _toggle),
-            const SizedBox(height: 4),
-            Text(
-              'Pokémon GO : super efficace ×1,6 · peu efficace ×0,625 · '
-              'sans effet ×0,39',
-              style: theme.textTheme.bodySmall,
-            ),
             if (_picked.isNotEmpty) ...<Widget>[
               const SizedBox(height: 12),
               _DefenseCard(types: _picked),
@@ -95,7 +95,7 @@ class _TypeGrid extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    const perRow = 6;
+    const perRow = 5;
     const types = PokeType.values;
     return Column(
       children: <Widget>[
@@ -155,7 +155,7 @@ class _GridCell extends StatelessWidget {
               padding: const EdgeInsets.symmetric(vertical: 4),
               child: Column(
                 children: <Widget>[
-                  TypeBadge(type, size: 38, ring: selected ? rankOneGold : null),
+                  TypeBadge(type, size: 50, ring: selected ? rankOneGold : null),
                   const SizedBox(height: 2),
                   Text(
                     type.nameFr,

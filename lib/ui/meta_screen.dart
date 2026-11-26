@@ -11,6 +11,7 @@ import 'move_line.dart';
 import 'search_field.dart';
 import 'type_badge.dart';
 import 'type_filter_row.dart';
+import 'info_button.dart';
 
 const Color _owned = Color(0xFFFFCB05);
 const Color _ownedText = Color(0xFF1D2A5B);
@@ -203,19 +204,28 @@ class _MetaScreenState extends State<MetaScreen> {
           selected: <MetaLeague>{_league},
           onSelectionChanged: (s) => setState(() => _league = s.first),
         ),
-        const SizedBox(height: 8),
-        Text(
-          'Classement PvPoke · mis à jour le ${data.updatedFr}',
-          style: theme.textTheme.bodySmall,
-        ),
-        if (widget.meta.message != null)
-          Text(
-            widget.meta.message!,
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: theme.colorScheme.primary,
+        const SizedBox(height: 4),
+        Row(
+          children: <Widget>[
+            if (widget.meta.message != null && widget.meta.messageIsError)
+              Expanded(
+                child: Text(
+                  widget.meta.message!,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.error,
+                  ),
+                ),
+              )
+            else
+              const Spacer(),
+            InfoButton(
+              'Classement PvPoke · mis à jour le ${data.updatedFr}'
+              '${widget.meta.message != null && !widget.meta.messageIsError ? '\n${widget.meta.message}' : ''}',
+              key: const ValueKey<String>('info-meta-date'),
             ),
-          ),
-        const SizedBox(height: 8),
+          ],
+        ),
+        const SizedBox(height: 4),
         SearchField(
           label: 'Filtrer par nom',
           dense: true,
@@ -406,7 +416,16 @@ class MetaDetailScreen extends StatelessWidget {
     final theme = Theme.of(context);
     final score = entry.score;
     return Scaffold(
-      appBar: AppBar(title: Text(entry.name)),
+      appBar: AppBar(
+        title: Text(entry.name),
+        actions: const <Widget>[
+          InfoButton(
+            'Source : classement général PvPoke (pvpoke.com).',
+            key: ValueKey<String>('info-meta-source'),
+          ),
+          SizedBox(width: 8),
+        ],
+      ),
       body: SafeArea(
         child: ListView(
           padding: const EdgeInsets.all(16),
@@ -449,12 +468,16 @@ class MetaDetailScreen extends StatelessWidget {
               book: actions.moves,
             ),
             if (<MetaMove>[entry.fast, ...entry.charged].any((m) => m.elite))
-              Text(
+              ...<Widget>[const SizedBox(height: 10), Text(
                 '* attaque d\'événement (Élite)',
                 style: theme.textTheme.bodySmall,
-              ),
+              )],
             const SizedBox(height: 16),
             _NameList(
+              info: <String>[...entry.bestMatchups, ...entry.worstMatchups]
+                      .any(actions.isOwned)
+                  ? 'En jaune : tu l\'as dans ta collection'
+                  : null,
               title: 'Meilleurs matchs',
               icon: Icons.thumb_up_alt_outlined,
               color: const Color(0xFF2EAD74),
@@ -468,18 +491,6 @@ class MetaDetailScreen extends StatelessWidget {
               names: entry.worstMatchups,
               isOwned: actions.isOwned,
             ),
-            if (<String>[...entry.bestMatchups, ...entry.worstMatchups]
-                .any(actions.isOwned))
-              Row(
-                children: <Widget>[
-                  const Icon(Icons.check_circle, size: 16, color: _owned),
-                  const SizedBox(width: 6),
-                  Text(
-                    'En jaune : tu l\'as dans ta collection',
-                    style: theme.textTheme.bodySmall,
-                  ),
-                ],
-              ),
             const SizedBox(height: 16),
             FilledButton.icon(
               onPressed: entry.species == null
@@ -495,11 +506,6 @@ class MetaDetailScreen extends StatelessWidget {
                   : () => actions.addToTeam(context, entry),
               icon: const Icon(Icons.group_add),
               label: const Text('Ajouter à mon équipe'),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'Source : classement général PvPoke (pvpoke.com).',
-              style: theme.textTheme.bodySmall,
             ),
           ],
         ),
@@ -559,8 +565,11 @@ class _NameList extends StatelessWidget {
     required this.color,
     required this.names,
     required this.isOwned,
+    this.info,
   });
 
+  /// Explication dans un « i » à côté du titre, ou `null`.
+  final String? info;
   final String title;
   final IconData icon;
   final Color color;
@@ -581,6 +590,8 @@ class _NameList extends StatelessWidget {
               Icon(icon, size: 18, color: color),
               const SizedBox(width: 6),
               Text(title, style: theme.textTheme.titleSmall),
+              if (info != null)
+                InfoButton(info!, key: const ValueKey<String>('info-owned')),
             ],
           ),
           const SizedBox(height: 6),

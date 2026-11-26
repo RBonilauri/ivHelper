@@ -7,6 +7,7 @@ import '../core/species_repository.dart';
 import '../core/stats.dart';
 import '../state/collection_controller.dart';
 import 'format.dart';
+import 'info_button.dart';
 import 'move_label.dart';
 import 'type_badge.dart';
 
@@ -143,14 +144,16 @@ class _SavePokemonSheetState extends State<SavePokemonSheet> {
             ),
           ),
           const SizedBox(height: 16),
-          _Label('Attaques (facultatif)'),
-          Padding(
-            padding: const EdgeInsets.only(bottom: 6),
-            child: Text(
-              '$eliteLegend · en gras : attaque de la méta'
-              ' · nombre : puissance en combat',
-              style: theme.textTheme.bodySmall,
-            ),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              _Label('Attaques (facultatif)'),
+              const InfoButton(
+                '$eliteLegend · en gras : attaque de la méta'
+                ' · nombre : puissance en combat',
+                key: ValueKey<String>('info-save-moves'),
+              ),
+            ],
           ),
           _MoveField(
             species: widget.species,

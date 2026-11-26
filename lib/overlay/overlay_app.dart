@@ -14,6 +14,7 @@ import '../state/collection_controller.dart';
 import '../ui/app_theme.dart';
 import '../ui/family_rank_table.dart';
 import '../ui/format.dart';
+import '../ui/info_button.dart';
 import '../ui/iv_bar.dart';
 import '../ui/iv_logo.dart';
 import '../ui/save_pokemon_sheet.dart';
@@ -121,7 +122,7 @@ class _OverlayHomeState extends State<OverlayHome> {
   Species? _species;
   List<Species> _family = const <Species>[];
   Iv _iv = const Iv(15, 15, 15);
-  double _maxLevel = 51;
+  double _maxLevel = 50;
   Species? _selected;
   League _league = League.great;
   bool _lucky = false;
@@ -387,11 +388,13 @@ class _OverlayHomeState extends State<OverlayHome> {
                   _league = l;
                 }),
               ),
-              const SizedBox(height: 4),
-              Text(
-                'Touche une case pour choisir le stade et la ligue à '
-                'enregistrer. • = stade affiché dans le jeu.',
-                style: theme.textTheme.bodySmall,
+              const Align(
+                alignment: AlignmentDirectional.centerEnd,
+                child: InfoButton(
+                  'Touche une case pour choisir le stade et la ligue à '
+                  'enregistrer. • = stade affiché dans le jeu.',
+                  key: ValueKey<String>('info-family-table'),
+                ),
               ),
               if (_selected != null) ...<Widget>[
                 const SizedBox(height: 8),
@@ -631,10 +634,27 @@ class _LeagueDetails extends StatelessWidget {
                 style: theme.textTheme.bodySmall,
               )
             else ...<Widget>[
-              Text(
-                'Niveau ${formatLevel(from)} → ${formatLevel(target)} · '
-                '${cost.powerUps} amélioration${cost.powerUps > 1 ? 's' : ''}',
-                style: theme.textTheme.bodyMedium,
+              Row(
+                children: <Widget>[
+                  Flexible(
+                    child: Text(
+                      'Niveau ${formatLevel(from)} → ${formatLevel(target)} · '
+                      '${cost.powerUps} amélioration'
+                      '${cost.powerUps > 1 ? 's' : ''}',
+                      style: theme.textTheme.bodyMedium,
+                    ),
+                  ),
+                  if (target > 50 || evolves)
+                    InfoButton(
+                      <String>[
+                        if (target > 50)
+                          'Niveau 51 : bonus de meilleur ami, sans coût.',
+                        if (evolves)
+                          'Sans le coût d\'évolution en ${species.nameFr}.',
+                      ].join('\n'),
+                      key: const ValueKey<String>('info-cost'),
+                    ),
+                ],
               ),
               const SizedBox(height: 4),
               Wrap(
@@ -662,19 +682,6 @@ class _LeagueDetails extends StatelessWidget {
                     ),
                 ],
               ),
-              if (target > 50 || evolves)
-                Padding(
-                  padding: const EdgeInsets.only(top: 4),
-                  child: Text(
-                    <String>[
-                      if (target > 50)
-                        'Niveau 51 : bonus de meilleur ami, sans coût.',
-                      if (evolves)
-                        'Sans le coût d\'évolution en ${species.nameFr}.',
-                    ].join(' '),
-                    style: theme.textTheme.bodySmall,
-                  ),
-                ),
             ],
           ],
         ),

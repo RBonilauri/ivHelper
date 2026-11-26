@@ -8,6 +8,7 @@ import '../core/search_string.dart';
 import '../core/species_repository.dart';
 import 'advanced_search_view.dart';
 import 'format.dart';
+import 'info_button.dart';
 import 'search_field.dart';
 
 /// Chaînes de recherche à coller dans la boîte de Pokémon GO : onglet
@@ -79,14 +80,24 @@ class _SearchStringScreenState extends State<SearchStringScreen> {
             ListView(
           padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
           children: <Widget>[
-            Text(
-              'Copie une chaîne puis colle-la dans la recherche de ta boîte '
-              'Pokémon GO pour trouver tes candidats sans évaluer chaque '
-              'Pokémon.',
-              style: theme.textTheme.bodyMedium,
+            Row(
+              children: <Widget>[
+                Expanded(
+                  child: Text(
+                    'Pour une espèce',
+                    style: theme.textTheme.titleMedium,
+                  ),
+                ),
+                const InfoButton(
+                  'Copie une chaîne puis colle-la dans la recherche de ta '
+                  'boîte Pokémon GO pour trouver tes candidats sans évaluer '
+                  'chaque Pokémon.\n'
+                  'Astuce : ajoute « +nom& » au début pour limiter à une '
+                  'famille, par exemple « +nosferapti& ».',
+                  key: ValueKey<String>('info-search-pvp'),
+                ),
+              ],
             ),
-            const SizedBox(height: 16),
-            Text('Pour une espèce', style: theme.textTheme.titleMedium),
             const SizedBox(height: 8),
             SearchField(
               key: const ValueKey<String>('search-species'),
@@ -156,11 +167,6 @@ class _SearchStringScreenState extends State<SearchStringScreen> {
               ),
               const SizedBox(height: 8),
             ],
-            Text(
-              'Astuce : ajoute « +nom& » au début pour limiter à une '
-              'famille, par exemple « +nosferapti& ».',
-              style: theme.textTheme.bodySmall,
-            ),
           ],
         ),
             AdvancedSearchView(
