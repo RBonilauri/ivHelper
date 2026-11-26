@@ -272,6 +272,10 @@ void main() {
     expect(find.text('1 Pokémon sur 1'), findsOneWidget);
     expect(find.text('Hyper · rang 21'), findsOneWidget);
     expect(find.text('XXL'), findsOneWidget);
+    // Filtres repliés par défaut.
+    expect(find.text('Rang d\'IV'), findsNothing);
+    await tester.tap(find.byKey(const ValueKey<String>('filters-toggle')));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('Super'));
     await tester.pumpAndSettle();
     expect(find.text('0 Pokémon sur 1'), findsOneWidget);
@@ -323,7 +327,9 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.text('Ma collection'));
     await tester.pumpAndSettle();
-    expect(find.text('★ Rang 1'), findsOneWidget);
+    // Une seule étiquette dorée, sans badge « ★ Rang 1 » en doublon.
+    expect(find.text('★ Master · rang 1'), findsOneWidget);
+    expect(find.text('★ Rang 1'), findsNothing);
     await tester.pump(const Duration(seconds: 10));
     await tester.pumpAndSettle();
   });
@@ -571,6 +577,8 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.text('Ma collection'));
     await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey<String>('filters-toggle')));
+    await tester.pumpAndSettle();
     expect(find.byKey(const ValueKey<String>('type-filter-fire')), findsOneWidget);
     expect(find.byKey(const ValueKey<String>('type-filter-water')), findsNothing);
     await tester.tap(find.byKey(const ValueKey<String>('type-filter-flying')));
@@ -789,7 +797,9 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('2 Pokémon sur 2'), findsOneWidget);
 
-    expect(find.text('Rang de ligue'), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey<String>('filters-toggle')));
+    await tester.pumpAndSettle();
+    expect(find.text('Rang méta'), findsOneWidget);
     await tester.tap(find.byKey(const ValueKey<String>('meta-rank-1')));
     await tester.pumpAndSettle();
     expect(find.text('1 Pokémon sur 2'), findsOneWidget);
@@ -803,7 +813,7 @@ void main() {
     await tester.tap(find.byKey(const ValueKey<String>('meta-rank-all')));
     await tester.pumpAndSettle();
     expect(find.text('1 Pokémon sur 2'), findsOneWidget);
-    expect(find.text('Hyper · rang 1'), findsOneWidget);
+    expect(find.text('★ Hyper · rang 1'), findsOneWidget);
     await tester.tap(find.byKey(const ValueKey<String>('iv-rank-all')));
     await tester.pumpAndSettle();
     expect(find.text('2 Pokémon sur 2'), findsOneWidget);
@@ -827,6 +837,8 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('2 Pokémon sur 2'), findsOneWidget);
     expect(find.text('Attaques'), findsNothing);
+    await tester.tap(find.byKey(const ValueKey<String>('filters-toggle')));
+    await tester.pumpAndSettle();
 
     // Immédiate : seules les attaques immédiates sont proposées.
     await tester.tap(find.byKey(const ValueKey<String>('move-filter-fast')));

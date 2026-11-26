@@ -140,6 +140,17 @@ class CollectionController extends ChangeNotifier {
     return null;
   }
 
+  bool _filtersOpen = false;
+
+  /// Vrai si le panneau des filtres est ouvert (fermé par défaut).
+  bool get filtersOpen => _filtersOpen;
+
+  /// Ouvre ou ferme le panneau des filtres.
+  void setFiltersOpen(bool value) {
+    _filtersOpen = value;
+    notifyListeners();
+  }
+
   /// Change les filtres.
   void setFilter(CollectionFilter value) {
     _filter = value;

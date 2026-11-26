@@ -109,15 +109,25 @@ class LeagueTag extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    // Rang 1 : une seule étiquette dorée « ★ Master · rang 1 » au lieu de
+    // l'étiquette de ligue plus le badge « ★ Rang 1 » (doublon).
+    final first = entry.isRankOne;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
       decoration: BoxDecoration(
-        color: theme.colorScheme.surface.withValues(alpha: 0.85),
+        color: first
+            ? rankOneGold
+            : theme.colorScheme.surface.withValues(alpha: 0.85),
         borderRadius: BorderRadius.circular(10),
       ),
       child: Text(
-        '${entry.league.label} · rang ${entry.rank}',
-        style: theme.textTheme.labelMedium?.copyWith(fontWeight: FontWeight.w700),
+        first
+            ? '★ ${entry.league.label} · rang 1'
+            : '${entry.league.label} · rang ${entry.rank}',
+        style: theme.textTheme.labelMedium?.copyWith(
+          fontWeight: first ? FontWeight.w800 : FontWeight.w700,
+          color: first ? const Color(0xFF1D2A5B) : null,
+        ),
       ),
     );
   }
