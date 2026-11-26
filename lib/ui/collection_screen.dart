@@ -148,50 +148,71 @@ class CollectionScreen extends StatelessWidget {
   }
 }
 
-/// Rangée « Tous / Top 1 / Top 10 / Top 50 » d'un filtre de rang.
-class _RankChips extends StatelessWidget {
-  const _RankChips({
+/// Puces compactes d'un choix unique : un titre à gauche, les puces à
+/// droite (passent à la ligne si la place manque).
+class _ChoiceLine<T> extends StatelessWidget {
+  const _ChoiceLine({
     required this.title,
-    required this.keyPrefix,
+    required this.options,
     required this.selected,
     required this.onSelected,
   });
 
   final String title;
 
-  /// Préfixe des clés : `<keyPrefix>-all`, `<keyPrefix>-10`…
-  final String keyPrefix;
-
-  /// Seuil choisi, ou `null` pour tous.
-  final int? selected;
-
-  final ValueChanged<int?> onSelected;
+  /// (valeur, libellé, clé) de chaque puce.
+  final List<(T, String, String?)> options;
+  final T selected;
+  final ValueChanged<T> onSelected;
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: <Widget>[
-        Text(title, style: Theme.of(context).textTheme.labelLarge),
-        const SizedBox(height: 4),
-        Wrap(
-          spacing: 6,
-          runSpacing: 6,
-          children: <Widget>[
-            for (final t in rankThresholds)
-              ChoiceChip(
-                key: ValueKey<String>('$keyPrefix-${t ?? 'all'}'),
-                label: Text(t == null ? 'Tous' : 'Top $t'),
-                selected: selected == t,
-                onSelected: (_) => onSelected(t),
-              ),
-          ],
-        ),
-      ],
+    final theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          SizedBox(
+            width: 92,
+            child: Padding(
+              padding: const EdgeInsets.only(top: 8),
+              child: Text(title, style: theme.textTheme.labelLarge),
+            ),
+          ),
+          Expanded(
+            child: Wrap(
+              spacing: 4,
+              runSpacing: 4,
+              children: <Widget>[
+                for (final (value, label, key) in options)
+                  ChoiceChip(
+                    key: key == null ? null : ValueKey<String>(key),
+                    label: Text(label),
+                    visualDensity: VisualDensity.compact,
+                    showCheckmark: false,
+                    selected: selected == value,
+                    onSelected: (_) => onSelected(value),
+                  ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
 
+/// Options « Tous / Top 1 / Top 10 / Top 50 » d'un filtre de rang ; clés
+/// `<keyPrefix>-all`, `<keyPrefix>-10`…
+List<(int?, String, String?)> _rankOptions(String keyPrefix) =>
+    <(int?, String, String?)>[
+      for (final t in rankThresholds)
+        (t, t == null ? 'Tous' : 'Top $t', '$keyPrefix-${t ?? 'all'}'),
+    ];
+
+/// En-tête de la collection : bouton « Filtres » (panneau replié par
+/// défaut), effacement rapide, nombre de Pokémon et tri.
 class _Controls extends StatelessWidget {
   const _Controls({required this.collection, required this.shown});
 
@@ -203,95 +224,33 @@ class _Controls extends StatelessWidget {
     final theme = Theme.of(context);
     final filter = collection.filter;
     final total = collection.total;
-    final favoriteCount =
-        collection.visibleRowsUnfiltered.where((r) => r.entry.favorite).length;
+    final active = filter.activeCount;
+    final open = collection.filtersOpen;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
-        Text('Ligue', style: theme.textTheme.labelLarge),
-        const SizedBox(height: 4),
-        Wrap(
-          spacing: 6,
-          runSpacing: 6,
+        Row(
           children: <Widget>[
-            ChoiceChip(
-              label: const Text('Toutes'),
-              selected: filter.league == null,
-              onSelected: (_) =>
-                  collection.setFilter(collection.filter.copyWith(clearLeague: true)),
-            ),
-            for (final l in League.values)
-              ChoiceChip(
-                label: Text(l.label),
-                selected: filter.league == l,
-                onSelected: (_) =>
-                    collection.setFilter(collection.filter.copyWith(league: l)),
+            Badge(
+              isLabelVisible: active > 0,
+              label: Text('$active'),
+              child: FilledButton.tonalIcon(
+                key: const ValueKey<String>('filters-toggle'),
+                onPressed: () => collection.setFiltersOpen(!open),
+                icon: Icon(open ? Icons.expand_less : Icons.tune),
+                label: const Text('Filtres'),
               ),
-          ],
-        ),
-        const SizedBox(height: 10),
-        FilterChip(
-          avatar: Icon(
-            filter.favoritesOnly ? Icons.favorite : Icons.favorite_border,
-            size: 18,
-            color: favoriteRed,
-          ),
-          label: Text('Favoris uniquement ($favoriteCount)'),
-          selected: filter.favoritesOnly,
-          onSelected: (on) => collection.setFilter(
-            collection.filter.copyWith(favoritesOnly: on),
-          ),
-        ),
-        const SizedBox(height: 10),
-        _RankChips(
-          title: 'Rang d\'IV',
-          keyPrefix: 'iv-rank',
-          selected: filter.maxRank,
-          onSelected: (t) => collection.setFilter(
-            t == null
-                ? collection.filter.copyWith(clearMaxRank: true)
-                : collection.filter.copyWith(maxRank: t),
-          ),
-        ),
-        const SizedBox(height: 10),
-        _RankChips(
-          title: 'Rang de ligue',
-          keyPrefix: 'meta-rank',
-          selected: filter.maxMetaRank,
-          onSelected: (t) => collection.setFilter(
-            t == null
-                ? collection.filter.copyWith(clearMaxMetaRank: true)
-                : collection.filter.copyWith(maxMetaRank: t),
-          ),
-        ),
-        const SizedBox(height: 10),
-        _TypeFilterRow(collection: collection),
-        const SizedBox(height: 10),
-        Wrap(
-          spacing: 6,
-          runSpacing: 6,
-          children: <Widget>[
-            MoveFilterButtons(collection: collection),
-            if (filter.activeCount > 0)
-              ActionChip(
-                avatar: const Icon(Icons.filter_alt_off, size: 18),
-                label: const Text('Effacer les filtres'),
+            ),
+            if (active > 0) ...<Widget>[
+              const SizedBox(width: 4),
+              IconButton(
+                tooltip: 'Effacer les filtres',
+                icon: const Icon(Icons.filter_alt_off),
                 onPressed: () =>
                     collection.setFilter(const CollectionFilter()),
               ),
-          ],
-        ),
-        const SizedBox(height: 6),
-        Row(
-          children: <Widget>[
-            Expanded(
-              child: Text(
-                total == 0
-                    ? 'Aucun Pokémon enregistré'
-                    : '$shown Pokémon sur $total',
-                style: theme.textTheme.bodyMedium,
-              ),
-            ),
+            ],
+            const Spacer(),
             const Icon(Icons.sort, size: 18),
             const SizedBox(width: 4),
             DropdownButton<CollectionSort>(
@@ -309,6 +268,18 @@ class _Controls extends StatelessWidget {
               },
             ),
           ],
+        ),
+        AnimatedSize(
+          duration: const Duration(milliseconds: 200),
+          alignment: Alignment.topCenter,
+          child: open
+              ? _FilterPanel(collection: collection)
+              : const SizedBox(width: double.infinity),
+        ),
+        const SizedBox(height: 6),
+        Text(
+          total == 0 ? 'Aucun Pokémon enregistré' : '$shown Pokémon sur $total',
+          style: theme.textTheme.bodyMedium,
         ),
         if (total == 0)
           Padding(
@@ -328,6 +299,95 @@ class _Controls extends StatelessWidget {
             ),
           ),
       ],
+    );
+  }
+}
+
+/// Panneau des filtres, dans une carte : favoris, ligue, rangs, types,
+/// attaques, puis « Effacer les filtres ».
+class _FilterPanel extends StatelessWidget {
+  const _FilterPanel({required this.collection});
+
+  final CollectionController collection;
+
+  @override
+  Widget build(BuildContext context) {
+    final filter = collection.filter;
+    final favoriteCount =
+        collection.visibleRowsUnfiltered.where((r) => r.entry.favorite).length;
+    void set(CollectionFilter f) => collection.setFilter(f);
+    return Card(
+      margin: const EdgeInsets.only(top: 8),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(12, 4, 12, 12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            SwitchListTile(
+              key: const ValueKey<String>('favorites-only'),
+              contentPadding: EdgeInsets.zero,
+              dense: true,
+              secondary: Icon(
+                filter.favoritesOnly ? Icons.favorite : Icons.favorite_border,
+                color: favoriteRed,
+              ),
+              title: Text('Favoris uniquement ($favoriteCount)'),
+              value: filter.favoritesOnly,
+              onChanged: (on) => set(filter.copyWith(favoritesOnly: on)),
+            ),
+            _ChoiceLine<League?>(
+              title: 'Ligue',
+              options: <(League?, String, String?)>[
+                (null, 'Toutes', null),
+                for (final l in League.values) (l, l.label, null),
+              ],
+              selected: filter.league,
+              onSelected: (l) => set(
+                l == null
+                    ? filter.copyWith(clearLeague: true)
+                    : filter.copyWith(league: l),
+              ),
+            ),
+            _ChoiceLine<int?>(
+              title: 'Rang d\'IV',
+              options: _rankOptions('iv-rank'),
+              selected: filter.maxRank,
+              onSelected: (t) => set(
+                t == null
+                    ? filter.copyWith(clearMaxRank: true)
+                    : filter.copyWith(maxRank: t),
+              ),
+            ),
+            _ChoiceLine<int?>(
+              title: 'Rang méta',
+              options: _rankOptions('meta-rank'),
+              selected: filter.maxMetaRank,
+              onSelected: (t) => set(
+                t == null
+                    ? filter.copyWith(clearMaxMetaRank: true)
+                    : filter.copyWith(maxMetaRank: t),
+              ),
+            ),
+            const Divider(height: 16),
+            _TypeFilterRow(collection: collection),
+            const SizedBox(height: 10),
+            Text('Attaques', style: Theme.of(context).textTheme.labelLarge),
+            const SizedBox(height: 4),
+            MoveFilterButtons(collection: collection),
+            if (filter.activeCount > 0) ...<Widget>[
+              const SizedBox(height: 8),
+              Align(
+                alignment: AlignmentDirectional.centerEnd,
+                child: TextButton.icon(
+                  onPressed: () => set(const CollectionFilter()),
+                  icon: const Icon(Icons.filter_alt_off, size: 18),
+                  label: const Text('Effacer les filtres'),
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
     );
   }
 }
@@ -429,7 +489,6 @@ class _ListTile extends StatelessWidget {
                       children: <Widget>[
                         LeagueTag(e),
                         if (metaRank != null) MetaRankTag(metaRank!),
-                        if (e.isRankOne) const RankOneBadge(),
                         EntryAttributes(e),
                       ],
                     ),
