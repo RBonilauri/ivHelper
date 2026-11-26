@@ -65,4 +65,13 @@ void main() {
       StatTarget.opponent,
     );
   });
+
+  test('MoveBook.all : toutes les attaques, par nom', () {
+    final book = MoveBook(const <Move>[
+      Move(id: 'B', nameFr: 'Rapace', type: PokeType.flying, isFast: false),
+      Move(id: 'A', nameFr: 'Calcination', type: PokeType.fire, isFast: true),
+    ]);
+    expect(<String>[for (final m in book.all) m.nameFr],
+        <String>['Calcination', 'Rapace']);
+  });
 }
