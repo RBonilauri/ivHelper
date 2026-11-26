@@ -148,6 +148,50 @@ class CollectionScreen extends StatelessWidget {
   }
 }
 
+/// Rangée « Tous / Top 1 / Top 10 / Top 50 » d'un filtre de rang.
+class _RankChips extends StatelessWidget {
+  const _RankChips({
+    required this.title,
+    required this.keyPrefix,
+    required this.selected,
+    required this.onSelected,
+  });
+
+  final String title;
+
+  /// Préfixe des clés : `<keyPrefix>-all`, `<keyPrefix>-10`…
+  final String keyPrefix;
+
+  /// Seuil choisi, ou `null` pour tous.
+  final int? selected;
+
+  final ValueChanged<int?> onSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        Text(title, style: Theme.of(context).textTheme.labelLarge),
+        const SizedBox(height: 4),
+        Wrap(
+          spacing: 6,
+          runSpacing: 6,
+          children: <Widget>[
+            for (final t in rankThresholds)
+              ChoiceChip(
+                key: ValueKey<String>('$keyPrefix-${t ?? 'all'}'),
+                label: Text(t == null ? 'Tous' : 'Top $t'),
+                selected: selected == t,
+                onSelected: (_) => onSelected(t),
+              ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
 class _Controls extends StatelessWidget {
   const _Controls({required this.collection, required this.shown});
 
@@ -201,23 +245,26 @@ class _Controls extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 10),
-        Text('Rang d\'IV', style: theme.textTheme.labelLarge),
-        const SizedBox(height: 4),
-        Wrap(
-          spacing: 6,
-          runSpacing: 6,
-          children: <Widget>[
-            for (final t in rankThresholds)
-              ChoiceChip(
-                label: Text(t == null ? 'Tous' : 'Top $t'),
-                selected: filter.maxRank == t,
-                onSelected: (_) => collection.setFilter(
-                  t == null
-                      ? collection.filter.copyWith(clearMaxRank: true)
-                      : collection.filter.copyWith(maxRank: t),
-                ),
-              ),
-          ],
+        _RankChips(
+          title: 'Rang d\'IV',
+          keyPrefix: 'iv-rank',
+          selected: filter.maxRank,
+          onSelected: (t) => collection.setFilter(
+            t == null
+                ? collection.filter.copyWith(clearMaxRank: true)
+                : collection.filter.copyWith(maxRank: t),
+          ),
+        ),
+        const SizedBox(height: 10),
+        _RankChips(
+          title: 'Rang de ligue',
+          keyPrefix: 'meta-rank',
+          selected: filter.maxMetaRank,
+          onSelected: (t) => collection.setFilter(
+            t == null
+                ? collection.filter.copyWith(clearMaxMetaRank: true)
+                : collection.filter.copyWith(maxMetaRank: t),
+          ),
         ),
         const SizedBox(height: 10),
         _TypeFilterRow(collection: collection),
