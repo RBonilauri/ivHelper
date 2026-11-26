@@ -298,8 +298,8 @@ enum CollectionSort {
   final String label;
 }
 
-/// Seuils du filtre de rang d'IV (`null` : tous).
-const List<int?> rankThresholds = <int?>[null, 10, 50];
+/// Seuils des filtres de rang d'IV et de rang de ligue (`null` : tous).
+const List<int?> rankThresholds = <int?>[null, 1, 10, 50];
 
 /// Filtres combinés de la collection (tous doivent être satisfaits).
 class CollectionFilter {
@@ -307,6 +307,7 @@ class CollectionFilter {
   const CollectionFilter({
     this.league,
     this.maxRank,
+    this.maxMetaRank,
     this.types = const <PokeType>{},
     this.moveTypes = const <PokeType>{},
     this.moveQuery = '',
@@ -318,6 +319,9 @@ class CollectionFilter {
 
   /// Rang maximal accepté dans la ligue du tag, ou `null` pour tous.
   final int? maxRank;
+
+  /// Rang méta maximal dans la ligue du tag, ou `null` pour tous.
+  final int? maxMetaRank;
 
   /// Le Pokémon doit avoir au moins un de ces types (vide : tous).
   final Set<PokeType> types;
@@ -335,18 +339,21 @@ class CollectionFilter {
   int get activeCount =>
       (league == null ? 0 : 1) +
       (maxRank == null ? 0 : 1) +
+      (maxMetaRank == null ? 0 : 1) +
       (types.isEmpty ? 0 : 1) +
       (moveTypes.isEmpty ? 0 : 1) +
       (moveQuery.trim().isEmpty ? 0 : 1) +
       (favoritesOnly ? 1 : 0);
 
-  /// Copie avec les champs donnés remplacés ; [clearLeague] et [clearMaxRank]
-  /// retirent ces filtres.
+  /// Copie avec les champs donnés remplacés ; [clearLeague], [clearMaxRank] et
+  /// [clearMaxMetaRank] retirent ces filtres.
   CollectionFilter copyWith({
     League? league,
     bool clearLeague = false,
     int? maxRank,
     bool clearMaxRank = false,
+    int? maxMetaRank,
+    bool clearMaxMetaRank = false,
     Set<PokeType>? types,
     Set<PokeType>? moveTypes,
     String? moveQuery,
@@ -355,19 +362,27 @@ class CollectionFilter {
       CollectionFilter(
         league: clearLeague ? null : (league ?? this.league),
         maxRank: clearMaxRank ? null : (maxRank ?? this.maxRank),
+        maxMetaRank:
+            clearMaxMetaRank ? null : (maxMetaRank ?? this.maxMetaRank),
         types: types ?? this.types,
         moveTypes: moveTypes ?? this.moveTypes,
         moveQuery: moveQuery ?? this.moveQuery,
         favoritesOnly: favoritesOnly ?? this.favoritesOnly,
       );
 
-  /// Vrai si [row] passe tous les filtres.
-  bool accepts(CollectionRow row) {
+  /// Vrai si [row] passe tous les filtres ; [metaRankOf] donne le rang méta
+  /// (sans lui, ou non classé, le filtre de rang de ligue refuse l'entrée).
+  bool accepts(CollectionRow row, [MetaRankOf? metaRankOf]) {
     final e = row.entry;
     if (favoritesOnly && !e.favorite) return false;
     if (league != null && e.league != league) return false;
     final max = maxRank;
     if (max != null && e.rank > max) return false;
+    final maxMeta = maxMetaRank;
+    if (maxMeta != null) {
+      final meta = metaRankOf?.call(e);
+      if (meta == null || meta > maxMeta) return false;
+    }
     if (types.isNotEmpty && !row.species.types.any(types.contains)) {
       return false;
     }
@@ -388,14 +403,15 @@ class CollectionFilter {
 typedef MetaRankOf = int? Function(CollectionEntry entry);
 
 /// Applique [filter] à [rows] puis les trie selon [sort] ; [metaRankOf] sert
-/// au tri par rang méta (sans lui, tous sont « non classés »).
+/// au filtre de rang de ligue et au tri par rang méta (sans lui, tous sont
+/// « non classés »).
 List<CollectionRow> filterAndSort(
   Iterable<CollectionRow> rows,
   CollectionFilter filter,
   CollectionSort sort, {
   MetaRankOf? metaRankOf,
 }) {
-  final list = rows.where(filter.accepts).toList();
+  final list = rows.where((r) => filter.accepts(r, metaRankOf)).toList();
   int byName(CollectionRow a, CollectionRow b) => normalizeName(
         a.species.nameFr,
       ).compareTo(normalizeName(b.species.nameFr));

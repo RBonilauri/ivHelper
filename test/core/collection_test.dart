@@ -102,7 +102,32 @@ void main() {
       _apply(const CollectionFilter(maxRank: 50, league: League.great)),
       <String>['Écayon'],
     );
-    expect(rankThresholds, <int?>[null, 10, 50]);
+    expect(_apply(const CollectionFilter(maxRank: 1)), <String>['Flambusard']);
+    expect(rankThresholds, <int?>[null, 1, 10, 50]);
+  });
+
+  test('filtre de rang de ligue : rang méta dans la ligue du tag', () {
+    final meta = <String, int?>{'Flambusard': 12, 'Écayon': 1, 'Carapuce': null};
+    List<String> apply(CollectionFilter f) => _names(filterAndSort(
+          _rows,
+          f,
+          CollectionSort.dex,
+          metaRankOf: (e) => meta[e.speciesName],
+        ));
+    expect(apply(const CollectionFilter(maxMetaRank: 1)), <String>['Écayon']);
+    expect(apply(const CollectionFilter(maxMetaRank: 50)),
+        <String>['Écayon', 'Flambusard']);
+    // Combiné au rang d'IV (Écayon est rang 45 d'IV).
+    expect(apply(const CollectionFilter(maxMetaRank: 50, maxRank: 10)),
+        <String>['Flambusard']);
+    // Sans méta, rien n'est classé : rien ne passe.
+    expect(_apply(const CollectionFilter(maxMetaRank: 50)), isEmpty);
+    const f = CollectionFilter(maxMetaRank: 10, maxRank: 1);
+    expect(f.activeCount, 2);
+    final cleared = f.copyWith(clearMaxMetaRank: true);
+    expect(cleared.maxMetaRank, isNull);
+    expect(cleared.maxRank, 1);
+    expect(f.copyWith(maxMetaRank: 1).maxMetaRank, 1);
   });
 
   test('filtre de type : au moins un des types choisis', () {

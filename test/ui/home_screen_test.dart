@@ -276,13 +276,13 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('0 Pokémon sur 1'), findsOneWidget);
     await tester.tap(find.text('Toutes'));
-    await tester.tap(find.text('Top 50'));
+    await tester.tap(find.byKey(const ValueKey<String>('iv-rank-50')));
     await tester.pumpAndSettle();
     expect(find.text('1 Pokémon sur 1'), findsOneWidget);
-    await tester.tap(find.text('Top 10'));
+    await tester.tap(find.byKey(const ValueKey<String>('iv-rank-10')));
     await tester.pumpAndSettle();
     expect(find.text('0 Pokémon sur 1'), findsOneWidget);
-    await tester.tap(find.text('Tous'));
+    await tester.tap(find.byKey(const ValueKey<String>('iv-rank-all')));
     await tester.pumpAndSettle();
 
     await tester.tap(find.byTooltip('Afficher en mosaïque'));
@@ -763,6 +763,50 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Pires adversaires'), findsOneWidget);
     expect(find.text('Altaria'), findsOneWidget);
+  });
+
+  testWidgets('collection : Top 1 du rang d\'IV et filtre de rang de ligue',
+      (tester) async {
+    await _pumpApp(tester);
+    await tester.enterText(find.byType(TextField).first, 'Flambusard');
+    await tester.pumpAndSettle();
+    // Super (n° 1 de la méta factice), puis Hyper (absent de la méta).
+    for (final hyper in <bool>[false, true]) {
+      if (hyper) {
+        await tester.tap(find.text('Hyper'));
+        await tester.pumpAndSettle();
+      }
+      await tester.tap(find.text('Enregistrer'));
+      await tester.pumpAndSettle();
+      await tester.ensureVisible(find.text('Enregistrer dans la collection'));
+      await tester.tap(find.text('Enregistrer dans la collection'));
+      await tester.pumpAndSettle();
+      await tester.pump(const Duration(seconds: 6));
+    }
+    await tester.tap(find.byTooltip('Paramètres'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Ma collection'));
+    await tester.pumpAndSettle();
+    expect(find.text('2 Pokémon sur 2'), findsOneWidget);
+
+    expect(find.text('Rang de ligue'), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey<String>('meta-rank-1')));
+    await tester.pumpAndSettle();
+    expect(find.text('1 Pokémon sur 2'), findsOneWidget);
+    expect(find.text('Super · rang 2246'), findsOneWidget);
+
+    // Combiné au Top 1 d'IV : le 15/15/15 n'est pas rang 1 en Super.
+    await tester.tap(find.byKey(const ValueKey<String>('iv-rank-1')));
+    await tester.pumpAndSettle();
+    expect(find.text('0 Pokémon sur 2'), findsOneWidget);
+    // Sans le rang de ligue : au niveau max 50, il est rang 1 en Hyper.
+    await tester.tap(find.byKey(const ValueKey<String>('meta-rank-all')));
+    await tester.pumpAndSettle();
+    expect(find.text('1 Pokémon sur 2'), findsOneWidget);
+    expect(find.text('Hyper · rang 1'), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey<String>('iv-rank-all')));
+    await tester.pumpAndSettle();
+    expect(find.text('2 Pokémon sur 2'), findsOneWidget);
   });
 
   testWidgets('pas de fiche méta pour un Pokémon absent de la méta de sa ligue',
