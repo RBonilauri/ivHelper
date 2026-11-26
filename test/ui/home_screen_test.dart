@@ -211,7 +211,14 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.text('Méta'));
     await tester.pumpAndSettle();
-    expect(find.textContaining('mis à jour le 20/11/2026'), findsOneWidget);
+    // Date et état dans le « i » : pas d'erreur, donc rien en clair.
+    expect(find.textContaining('mis à jour le'), findsNothing);
+    expect(
+      find.byWidgetPredicate(
+        (w) => w is Tooltip && (w.message ?? '').contains('mis à jour le 20/11/2026'),
+      ),
+      findsOneWidget,
+    );
     await tester.tap(find.byKey(const ValueKey<String>('meta-1')));
     await tester.pumpAndSettle();
     expect(find.text('Pires adversaires'), findsOneWidget);
