@@ -799,9 +799,11 @@ void main() {
     await tester.tap(find.byKey(const ValueKey<String>('iv-rank-1')));
     await tester.pumpAndSettle();
     expect(find.text('0 Pokémon sur 2'), findsOneWidget);
+    // Sans le rang de ligue : au niveau max 50, il est rang 1 en Hyper.
     await tester.tap(find.byKey(const ValueKey<String>('meta-rank-all')));
     await tester.pumpAndSettle();
-    expect(find.text('0 Pokémon sur 2'), findsOneWidget);
+    expect(find.text('1 Pokémon sur 2'), findsOneWidget);
+    expect(find.text('Hyper · rang 1'), findsOneWidget);
     await tester.tap(find.byKey(const ValueKey<String>('iv-rank-all')));
     await tester.pumpAndSettle();
     expect(find.text('2 Pokémon sur 2'), findsOneWidget);
