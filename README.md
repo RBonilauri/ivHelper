@@ -25,7 +25,7 @@ Tu as un Pokémon avec ses IV (Attaque / Défense / PV). Tu veux savoir **où il
 - **Dernières recherches** : sans Pokémon saisi, les 8 dernières (une par espèce, avec leurs IV).
 - **Quatre volets : Mini · 500, Super · 1500, Hyper · 2500, Master · sans limite**, avec ton rang, ton pourcentage et le haut du classement : top 10, puis « Afficher 10 de plus ».
 - **Niveau maximal** 50 par défaut, ou 51 (bonus meilleur ami). **Plancher d'IV** « Min 10/10/10 » (216 combinaisons).
-- **Enregistrer** dans la collection, avec la ligue, le rang figé à ce moment et en option : attaques (celles de la méta en gras), obscur ou purifié, taille (XXS à XXL), chanceux, shiny, costume. Doublons permis.
+- **Enregistrer** dans la collection, avec la ligue et le rang (recalculé à chaque ouverture avec les données actuelles), et en option : attaques (celles de la méta en gras), obscur ou purifié, taille (XXS à XXL), chanceux, shiny, costume. Doublons permis.
 
 ### Superposition (Android)
 

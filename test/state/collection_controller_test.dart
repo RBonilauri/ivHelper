@@ -38,7 +38,7 @@ CollectionController _controller(SettingsStore store) => CollectionController(
 const _max = Iv(15, 15, 15);
 
 void main() {
-  test('le rang de la ligue choisie est figé à l\'enregistrement', () {
+  test('le rang de la ligue choisie est calculé à l\'enregistrement', () {
     final c = _controller(MemorySettingsStore());
     final great = c.add(_flambusard, _max, 51, const SaveOptions(league: League.great));
     final ultra = c.add(_flambusard, _max, 51, const SaveOptions(league: League.ultra));
@@ -87,7 +87,7 @@ void main() {
         <String>['Calcination', 'Rapace']);
   });
 
-  test('modifier : options remplacées, rang refigé si la ligue change', () {
+  test('modifier : options remplacées, rang recalculé', () {
     final c = _controller(MemorySettingsStore());
     final e = c.add(_flambusard, _max, 51, const SaveOptions(league: League.great));
     c.update(e.id, const SaveOptions(league: League.great, shiny: true));
@@ -181,5 +181,23 @@ void main() {
     expect(reloaded.entries.single.favorite, isTrue);
     reloaded.toggleFavorite(e.id);
     expect(reloaded.entries.single.favorite, isFalse);
+  });
+
+  test('rang recalculé au chargement, jamais figé, et réenregistré', () async {
+    final store = MemorySettingsStore();
+    // Valeurs périmées (données d'une ancienne version, par exemple).
+    await store.writeCollection(
+      '[{"id":"a","species":"Flambusard","iv":[15,15,15],"maxLevel":51,'
+      '"league":"great","rank":999,"percent":50,"cp":1,"level":1}]',
+    );
+    final c = _controller(store);
+    await c.load();
+    final e = c.entries.single;
+    expect(e.rank, 2246);
+    expect(e.cp, 1480);
+    expect(e.level, 23.5);
+    expect(e.percent, greaterThan(50));
+    await Future<void>.delayed(Duration.zero);
+    expect(await store.readCollection(), contains('"rank":2246'));
   });
 }

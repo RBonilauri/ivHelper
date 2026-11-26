@@ -254,7 +254,7 @@ class _Detail extends StatelessWidget {
                           ),
                         ),
                         const InfoButton(
-                          'Rang figé au moment de l\'enregistrement.',
+                          'Rang recalculé à chaque ouverture avec les données actuelles.',
                           key: ValueKey<String>('info-frozen-rank'),
                         ),
                       ],

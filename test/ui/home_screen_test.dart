@@ -775,9 +775,9 @@ void main() {
     await tester.tap(find.text('Flambusard').first);
     await tester.pumpAndSettle();
 
-    expect(find.text('Rang figé au moment de l\'enregistrement.'), findsNothing);
+    expect(find.text('Rang recalculé à chaque ouverture avec les données actuelles.'), findsNothing);
     expect(
-      find.byTooltip('Rang figé au moment de l\'enregistrement.'),
+      find.byTooltip('Rang recalculé à chaque ouverture avec les données actuelles.'),
       findsOneWidget,
     );
     final button = find.text('Voir la fiche méta (Super)');
