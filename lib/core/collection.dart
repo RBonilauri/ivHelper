@@ -307,6 +307,7 @@ class CollectionFilter {
   const CollectionFilter({
     this.league,
     this.maxRank,
+    this.maxMetaRank,
     this.types = const <PokeType>{},
     this.moveTypes = const <PokeType>{},
     this.moveQuery = '',
@@ -318,6 +319,9 @@ class CollectionFilter {
 
   /// Rang maximal accepté dans la ligue du tag, ou `null` pour tous.
   final int? maxRank;
+
+  /// Rang méta maximal dans la ligue du tag, ou `null` pour tous.
+  final int? maxMetaRank;
 
   /// Le Pokémon doit avoir au moins un de ces types (vide : tous).
   final Set<PokeType> types;
@@ -347,6 +351,8 @@ class CollectionFilter {
     bool clearLeague = false,
     int? maxRank,
     bool clearMaxRank = false,
+    int? maxMetaRank,
+    bool clearMaxMetaRank = false,
     Set<PokeType>? types,
     Set<PokeType>? moveTypes,
     String? moveQuery,
