@@ -140,7 +140,7 @@ void main() {
     expect(g.pickOf('water'), Pick.off);
     expect(g.section().clauses(), <String>['feu']);
 
-    final mons = PickGroup();
+    final mons = PickGroup(const <SearchTerm>[]);
     mons.add(speciesTerm('Nosferapti', family: true));
     mons.add(speciesTerm('Pikachu', family: false));
     expect(mons.section().clauses(), <String>['+nosferapti,pikachu']);

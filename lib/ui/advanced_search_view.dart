@@ -34,7 +34,7 @@ class AdvancedSearchView extends StatefulWidget {
 }
 
 class _AdvancedSearchViewState extends State<AdvancedSearchView> {
-  final PickGroup _species = PickGroup();
+  final PickGroup _species = PickGroup(const <SearchTerm>[]);
   final PickGroup _types =
       PickGroup(<SearchTerm>[for (final t in PokeType.values) typeTerm(t)]);
   final PickGroup _categories = PickGroup(categoryTerms);
@@ -46,7 +46,7 @@ class _AdvancedSearchViewState extends State<AdvancedSearchView> {
         <SearchTerm>[for (final t in PokeType.values) moveTypeTerm(t, slot)],
       ),
   };
-  final PickGroup _moveNames = PickGroup();
+  final PickGroup _moveNames = PickGroup(const <SearchTerm>[]);
   final PickGroup _elite = PickGroup(<SearchTerm>[eliteTerm]);
   final PickGroup _stars = PickGroup(starTerms);
 
