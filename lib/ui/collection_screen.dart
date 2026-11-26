@@ -61,7 +61,8 @@ class CollectionScreen extends StatelessWidget {
         child: ListenableBuilder(
           listenable: collection,
           builder: (context, _) {
-            final rows = collection.visibleRows;
+            final metaRankOf = metaLink?.metaRankOf;
+            final rows = collection.visibleRowsWith(metaRankOf);
             // Mosaïque : au moins 3 colonnes, une de plus par 140 dp de
             // largeur disponible (marges de 16 dp de chaque côté).
             final columns = ((MediaQuery.sizeOf(context).width - 32) ~/ 140)
@@ -81,6 +82,7 @@ class CollectionScreen extends StatelessWidget {
                           itemCount: rows.length,
                           itemBuilder: (context, i) => _ListTile(
                             row: rows[i],
+                            metaRank: metaRankOf?.call(rows[i].entry),
                             onTap: () => _openDetail(context, rows[i]),
                             onDelete: () => _delete(context, rows[i].entry),
                           ),
@@ -102,6 +104,9 @@ class CollectionScreen extends StatelessWidget {
                                       child: line * columns + c < rows.length
                                           ? _GridTile(
                                               row: rows[line * columns + c],
+                                              metaRank: metaRankOf?.call(
+                                                rows[line * columns + c].entry,
+                                              ),
                                               onTap: () => _openDetail(
                                                 context,
                                                 rows[line * columns + c],
@@ -154,6 +159,8 @@ class _Controls extends StatelessWidget {
     final theme = Theme.of(context);
     final filter = collection.filter;
     final total = collection.total;
+    final favoriteCount =
+        collection.visibleRowsUnfiltered.where((r) => r.entry.favorite).length;
     final moveCount =
         filter.moveTypes.length + (filter.moveQuery.trim().isEmpty ? 0 : 1);
     return Column(
@@ -179,6 +186,19 @@ class _Controls extends StatelessWidget {
                     collection.setFilter(collection.filter.copyWith(league: l)),
               ),
           ],
+        ),
+        const SizedBox(height: 10),
+        FilterChip(
+          avatar: Icon(
+            filter.favoritesOnly ? Icons.favorite : Icons.favorite_border,
+            size: 18,
+            color: favoriteRed,
+          ),
+          label: Text('Favoris uniquement ($favoriteCount)'),
+          selected: filter.favoritesOnly,
+          onSelected: (on) => collection.setFilter(
+            collection.filter.copyWith(favoritesOnly: on),
+          ),
         ),
         const SizedBox(height: 10),
         Text('Rang d\'IV', style: theme.textTheme.labelLarge),
@@ -404,6 +424,7 @@ class _TypePicker extends StatelessWidget {
 class _ListTile extends StatelessWidget {
   const _ListTile({
     required this.row,
+    this.metaRank,
     required this.onTap,
     required this.onDelete,
   });
@@ -411,6 +432,9 @@ class _ListTile extends StatelessWidget {
   final CollectionRow row;
   final VoidCallback onTap;
   final VoidCallback onDelete;
+
+  /// Rang dans la méta de la ligue du tag, ou `null`.
+  final int? metaRank;
 
   @override
   Widget build(BuildContext context) {
@@ -446,7 +470,17 @@ class _ListTile extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: <Widget>[
-                    Text(row.species.nameFr, style: theme.textTheme.titleSmall),
+                    Row(
+                      children: <Widget>[
+                        Expanded(
+                          child: Text(
+                            row.species.nameFr,
+                            style: theme.textTheme.titleSmall,
+                          ),
+                        ),
+                        if (e.favorite) const FavoriteHeart(size: 18),
+                      ],
+                    ),
                     const SizedBox(height: 4),
                     Wrap(
                       spacing: 6,
@@ -454,6 +488,7 @@ class _ListTile extends StatelessWidget {
                       crossAxisAlignment: WrapCrossAlignment.center,
                       children: <Widget>[
                         LeagueTag(e),
+                        if (metaRank != null) MetaRankTag(metaRank!),
                         if (e.isRankOne) const RankOneBadge(),
                         EntryAttributes(e),
                       ],
@@ -481,10 +516,13 @@ class _ListTile extends StatelessWidget {
 }
 
 class _GridTile extends StatelessWidget {
-  const _GridTile({required this.row, required this.onTap});
+  const _GridTile({required this.row, required this.onTap, this.metaRank});
 
   final CollectionRow row;
   final VoidCallback onTap;
+
+  /// Rang dans la méta de la ligue du tag, ou `null`.
+  final int? metaRank;
 
   @override
   Widget build(BuildContext context) {
@@ -520,6 +558,10 @@ class _GridTile extends StatelessWidget {
                       child: EntryAttributes(e, compact: true),
                     ),
                   ),
+                  if (e.favorite) ...<Widget>[
+                    const SizedBox(width: 2),
+                    const FavoriteHeart(size: 14),
+                  ],
                 ],
               ),
               const SizedBox(height: 4),
@@ -547,6 +589,10 @@ class _GridTile extends StatelessWidget {
               ),
               const SizedBox(height: 3),
               _CompactLeague(entry: e),
+              if (metaRank != null) ...<Widget>[
+                const SizedBox(height: 3),
+                MetaRankTag(metaRank!, compact: true),
+              ],
             ],
           ),
         ),

@@ -121,6 +121,11 @@ class CollectionController extends ChangeNotifier {
   /// Lignes filtrées et triées.
   List<CollectionRow> get visibleRows => filterAndSort(_rows(), _filter, _sort);
 
+  /// Comme [visibleRows], avec le rang méta [metaRankOf] pour le tri
+  /// « Rang méta ».
+  List<CollectionRow> visibleRowsWith(MetaRankOf? metaRankOf) =>
+      filterAndSort(_rows(), _filter, _sort, metaRankOf: metaRankOf);
+
   /// Toutes les lignes, sans filtre ni tri.
   List<CollectionRow> get visibleRowsUnfiltered => _rows();
 
@@ -212,8 +217,17 @@ class CollectionController extends ChangeNotifier {
             lucky: fresh.lucky,
             shiny: fresh.shiny,
             costume: fresh.costume,
+            favorite: old.favorite,
           )
-        : fresh;
+        : fresh.withFavorite(old.favorite);
+    _changed();
+  }
+
+  /// Ajoute ou retire l'entrée [id] des favoris.
+  void toggleFavorite(String id) {
+    final i = _entries.indexWhere((e) => e.id == id);
+    if (i < 0) return;
+    _entries[i] = _entries[i].withFavorite(!_entries[i].favorite);
     _changed();
   }
 

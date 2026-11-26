@@ -6,6 +6,56 @@ import 'type_badge.dart';
 /// Or des Pokémon rang 1.
 const Color rankOneGold = Color(0xFFE0A800);
 
+/// Rouge du cœur des favoris (distinct de l'or des rangs 1).
+const Color favoriteRed = Color(0xFFE5484D);
+
+/// Cœur d'un Pokémon favori.
+class FavoriteHeart extends StatelessWidget {
+  /// Crée le cœur.
+  const FavoriteHeart({super.key, this.size = 20});
+
+  /// Taille de l'icône.
+  final double size;
+
+  @override
+  Widget build(BuildContext context) => Semantics(
+        label: 'Favori',
+        child: Icon(Icons.favorite, size: size, color: favoriteRed),
+      );
+}
+
+/// Étiquette du rang dans la méta : « Méta #12 ».
+class MetaRankTag extends StatelessWidget {
+  /// Crée l'étiquette du rang méta [rank].
+  const MetaRankTag(this.rank, {super.key, this.compact = false});
+
+  /// Rang dans la méta.
+  final int rank;
+
+  /// Vrai pour la mosaïque.
+  final bool compact;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: compact ? 5 : 8, vertical: compact ? 0 : 2),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.primaryContainer,
+        borderRadius: BorderRadius.circular(compact ? 6 : 10),
+      ),
+      child: Text(
+        'Méta #$rank',
+        style: (compact ? theme.textTheme.labelSmall : theme.textTheme.labelMedium)
+            ?.copyWith(
+          fontWeight: FontWeight.w800,
+          color: theme.colorScheme.onPrimaryContainer,
+        ),
+      ),
+    );
+  }
+}
+
 /// Couleur de fond d'une case : le premier type, adouci.
 Color tileColor(BuildContext context, CollectionRow row) =>
     typeTint(context, row.species.types);
