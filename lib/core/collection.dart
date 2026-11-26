@@ -312,7 +312,27 @@ class CollectionFilter {
     this.moveTypes = const <PokeType>{},
     this.moveQuery = '',
     this.favoritesOnly = false,
+    this.fastMoves = const <String>{},
+    this.fastTypes = const <PokeType>{},
+    this.chargedMoves = const <String>{},
+    this.chargedTypes = const <PokeType>{},
+    this.movesEither = false,
   });
+
+  /// Squelette (à implémenter).
+  final Set<String> fastMoves;
+
+  /// Squelette (à implémenter).
+  final Set<PokeType> fastTypes;
+
+  /// Squelette (à implémenter).
+  final Set<String> chargedMoves;
+
+  /// Squelette (à implémenter).
+  final Set<PokeType> chargedTypes;
+
+  /// Squelette (à implémenter).
+  final bool movesEither;
 
   /// Ligue du tag, ou `null` pour toutes.
   final League? league;
@@ -358,6 +378,11 @@ class CollectionFilter {
     Set<PokeType>? moveTypes,
     String? moveQuery,
     bool? favoritesOnly,
+    Set<String>? fastMoves,
+    Set<PokeType>? fastTypes,
+    Set<String>? chargedMoves,
+    Set<PokeType>? chargedTypes,
+    bool? movesEither,
   }) =>
       CollectionFilter(
         league: clearLeague ? null : (league ?? this.league),
@@ -456,3 +481,14 @@ List<CollectionRow> filterAndSort(
   });
   return list;
 }
+
+/// Squelette (à implémenter).
+List<Move> moveOptions(Iterable<CollectionRow> rows, {required bool fast}) =>
+    const <Move>[];
+
+/// Squelette (à implémenter).
+Map<PokeType, int> moveTypeCounts(
+  Iterable<CollectionRow> rows, {
+  required bool fast,
+}) =>
+    const <PokeType, int>{};
