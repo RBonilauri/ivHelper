@@ -17,4 +17,6 @@ La table des types (`lib/core/poke_type.dart`) suit Pokémon GO : super efficace
 
 La tâche planifiée `.github/workflows/meta.yml` le régénère chaque jour et ne committe que si le classement a changé (la date `updated` reste celle du dernier changement).
 
+La même tâche régénère `assets/species.json` et `assets/moves.json` avec `tool/build_species.py` (le résultat est identique tant que PvPoke ne change rien). S'ils changent, elle écrit la date du jour dans `assets/game_data_version.json` (`{"updated": "AAAA-MM-JJ"}`) ; l'appli télécharge alors les deux fichiers depuis `main` et les met en service au retour suivant dans l'appli.
+
 Les formes alternatives aux stats ou types différents (Kyurem Noir/Blanc, Motisma, Deoxys, Dialga et Palkia Originels…) sont incluses dans `species.json` avec un libellé anglais entre parenthèses ; les costumes, de mêmes stats que la forme de base, restent écartés.

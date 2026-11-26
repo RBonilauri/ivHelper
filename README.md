@@ -70,7 +70,7 @@ L'app n'est pas sur le Play Store.
 
 **Clé de signature** : la CI signe avec la clé fournie par les secrets du dépôt `ANDROID_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS` et `ANDROID_KEY_PASSWORD` (`tool/configure_signing.py`). Sans ces secrets, l'APK est signé avec une clé de débogage et aucune Release n'est publiée. Les APK de chaque exécution restent disponibles en artefact `ivhelper-apk` dans l'onglet Actions.
 
-**Méta à jour sans réinstaller** : une tâche planifiée (`.github/workflows/meta.yml`, chaque jour à 4 h 17 UTC, ou à la main depuis l'onglet Actions) régénère `assets/meta.json` depuis PvPoke et ne le publie que s'il a changé. L'app le télécharge, le garde en cache, et retombe sur la copie incluse sans réseau.
+**Méta et données du jeu à jour sans réinstaller** : une tâche planifiée (`.github/workflows/meta.yml`, chaque jour à 4 h 17 UTC, ou à la main depuis l'onglet Actions) régénère depuis PvPoke la méta (`assets/meta.json`) ainsi que les espèces et attaques (`assets/species.json`, `assets/moves.json`, datées dans `assets/game_data_version.json`), et ne publie que ce qui a changé. L'app télécharge la méta à l'ouverture de l'onglet Méta ; les espèces et attaques au démarrage et au retour dans l'app, puis les met en service au retour suivant (stats rééquilibrées, nouveaux Pokémon et nouvelles attaques sans attendre une version). Tout est gardé en cache ; sans réseau, l'app retombe sur la copie incluse. La date des données du jeu est affichée dans le menu, sous la version.
 
 **iPhone** : pas de version pour l'instant (phase 4).
 

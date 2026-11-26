@@ -53,6 +53,7 @@ Future<void> _pumpApp(
   String? meta,
   int currentBuild = 0,
   FakeAccountFiles? files,
+  String? gameDataUpdated,
 }) async {
   tester.view.physicalSize = const Size(800, 2200);
   tester.view.devicePixelRatio = 1;
@@ -67,6 +68,7 @@ Future<void> _pumpApp(
       overlayLauncher: FakeOverlayLauncher(),
       accountFiles: files ?? FakeAccountFiles(),
       currentBuild: currentBuild,
+      gameDataUpdated: gameDataUpdated,
     ),
   );
 }
@@ -1328,5 +1330,14 @@ void main() {
     expect(result(), startsWith('0-'));
     expect(chipEnabled('adv-stars-4*'), isFalse);
     expect(chipEnabled('adv-stars-3*'), isTrue);
+  });
+
+  testWidgets('le menu affiche la date des données du jeu', (tester) async {
+    await _pumpApp(tester, gameDataUpdated: '2026-11-25');
+    await tester.tap(find.byTooltip('Paramètres'));
+    await tester.pumpAndSettle();
+    final date = find.byKey(const ValueKey<String>('game-data-date'));
+    await tester.ensureVisible(date);
+    expect(find.text('Données du jeu du 25/11/2026'), findsOneWidget);
   });
 }

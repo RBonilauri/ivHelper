@@ -45,6 +45,7 @@ class HomeScreen extends StatefulWidget {
     required this.currentBuild,
     required this.overlayLauncher,
     required this.accountFiles,
+    this.gameDataUpdated,
   });
 
   /// Lancement de la pastille flottante.
@@ -58,6 +59,9 @@ class HomeScreen extends StatefulWidget {
 
   /// Numéro de build de l'app installée.
   final int currentBuild;
+
+  /// Date des données du jeu en service, affichée dans le menu.
+  final String? gameDataUpdated;
 
   /// Source de la méta PvPoke.
   final MetaSource metaSource;
@@ -461,6 +465,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         onExportAccount: () => unawaited(_exportAccount(context)),
         onImportAccount: () => unawaited(_importAccount(context)),
         update: _update,
+        gameDataUpdated: widget.gameDataUpdated,
         onOpenMeta: () => Navigator.of(context).push(
           MaterialPageRoute<void>(
             builder: (_) => MetaScreen(

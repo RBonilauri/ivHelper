@@ -23,6 +23,7 @@ class IvHelperApp extends StatelessWidget {
     required this.overlayLauncher,
     this.accountFiles = const FilePickerAccountFiles(),
     this.currentBuild = 0,
+    this.gameDataUpdated,
   });
 
   /// Fichiers de sauvegarde du compte.
@@ -36,6 +37,10 @@ class IvHelperApp extends StatelessWidget {
 
   /// Numéro de build de l'app installée (0 en compilation locale).
   final int currentBuild;
+
+  /// Date des données du jeu en service (`AAAA-MM-JJ`), affichée dans le
+  /// menu.
+  final String? gameDataUpdated;
 
   /// Source de la méta PvPoke.
   final MetaSource metaSource;
@@ -73,6 +78,7 @@ class IvHelperApp extends StatelessWidget {
           overlayLauncher: overlayLauncher,
           accountFiles: accountFiles,
           currentBuild: currentBuild,
+          gameDataUpdated: gameDataUpdated,
         ),
       ),
     );
