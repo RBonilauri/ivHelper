@@ -139,18 +139,79 @@ void main() {
     );
   });
 
-  test('filtre d\'attaque : attaques enregistrées, sinon apprenables', () {
+  test('filtre d\'attaque immédiate : types ou attaques choisis (OU)', () {
     // Flambusard a enregistré Rapace seulement : Flammèche ne compte plus.
-    expect(_apply(const CollectionFilter(moveQuery: 'flammeche')),
+    expect(_apply(const CollectionFilter(fastMoves: <String>{'EMBER'})),
         <String>['Salamèche']);
     expect(
-      _apply(const CollectionFilter(moveTypes: <PokeType>{PokeType.flying})),
+      _apply(const CollectionFilter(fastTypes: <PokeType>{PokeType.water})),
+      <String>['Carapuce', 'Écayon'],
+    );
+    expect(
+      _apply(const CollectionFilter(
+        fastMoves: <String>{'EMBER'},
+        fastTypes: <PokeType>{PokeType.water},
+      )),
+      <String>['Salamèche', 'Carapuce', 'Écayon'],
+    );
+    // Rapace est une chargée : elle ne compte pas côté immédiate.
+    expect(
+      _apply(const CollectionFilter(fastTypes: <PokeType>{PokeType.flying})),
+      isEmpty,
+    );
+  });
+
+  test('filtre d\'attaque chargée, et ET / OU entre immédiate et chargée', () {
+    expect(
+      _apply(const CollectionFilter(chargedTypes: <PokeType>{PokeType.flying})),
       <String>['Flambusard'],
     );
     expect(
-      _apply(const CollectionFilter(moveTypes: <PokeType>{PokeType.water})),
+      _apply(const CollectionFilter(chargedMoves: <String>{'BRAVE_BIRD'})),
+      <String>['Flambusard'],
+    );
+    expect(
+      _apply(const CollectionFilter(chargedTypes: <PokeType>{PokeType.fire})),
+      isEmpty,
+    );
+    const both = CollectionFilter(
+      fastTypes: <PokeType>{PokeType.water},
+      chargedTypes: <PokeType>{PokeType.flying},
+    );
+    expect(both.movesEither, isFalse);
+    expect(_apply(both), isEmpty);
+    expect(_apply(both.copyWith(movesEither: true)),
+        <String>['Carapuce', 'Écayon', 'Flambusard']);
+    // Un seul côté rempli : ET et OU donnent la même chose.
+    expect(
+      _apply(const CollectionFilter(
+        fastTypes: <PokeType>{PokeType.water},
+        movesEither: true,
+      )),
       <String>['Carapuce', 'Écayon'],
     );
+    expect(both.activeCount, 2);
+    expect(const CollectionFilter(movesEither: true).activeCount, 0);
+    final cleared = both.copyWith(
+      fastTypes: const <PokeType>{},
+      chargedMoves: const <String>{'X'},
+      fastMoves: const <String>{},
+      chargedTypes: const <PokeType>{},
+    );
+    expect(cleared.chargedMoves, <String>{'X'});
+    expect(cleared.activeCount, 1);
+  });
+
+  test('attaques proposées et compte par type, selon la catégorie', () {
+    List<String> names(List<Move> moves) =>
+        <String>[for (final m in moves) m.nameFr];
+    expect(names(moveOptions(_rows, fast: true)),
+        <String>['Écume', 'Flammèche']);
+    expect(names(moveOptions(_rows, fast: false)), <String>['Rapace']);
+    expect(moveTypeCounts(_rows, fast: true),
+        <PokeType, int>{PokeType.water: 2, PokeType.fire: 1});
+    expect(moveTypeCounts(_rows, fast: false),
+        <PokeType, int>{PokeType.flying: 1});
   });
 
   test('activeCount et copyWith (retrait de la ligue et du rang)', () {

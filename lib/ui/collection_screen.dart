@@ -6,8 +6,8 @@ import '../state/collection_controller.dart';
 import 'collection_detail_screen.dart';
 import 'collection_widgets.dart';
 import 'format.dart';
+import 'move_filter.dart';
 import 'save_pokemon_sheet.dart';
-import 'search_field.dart';
 import 'type_badge.dart';
 import 'type_filter_row.dart';
 
@@ -205,8 +205,6 @@ class _Controls extends StatelessWidget {
     final total = collection.total;
     final favoriteCount =
         collection.visibleRowsUnfiltered.where((r) => r.entry.favorite).length;
-    final moveCount =
-        filter.moveTypes.length + (filter.moveQuery.trim().isEmpty ? 0 : 1);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
@@ -273,11 +271,7 @@ class _Controls extends StatelessWidget {
           spacing: 6,
           runSpacing: 6,
           children: <Widget>[
-            ActionChip(
-              avatar: const Icon(Icons.flash_on, size: 18),
-              label: Text(moveCount == 0 ? 'Attaques' : 'Attaques ($moveCount)'),
-              onPressed: () => _moveSheet(context),
-            ),
+            MoveFilterButtons(collection: collection),
             if (filter.activeCount > 0)
               ActionChip(
                 avatar: const Icon(Icons.filter_alt_off, size: 18),
@@ -336,55 +330,6 @@ class _Controls extends StatelessWidget {
       ],
     );
   }
-
-  Future<void> _moveSheet(BuildContext context) {
-    return showModalBottomSheet<void>(
-      context: context,
-      showDragHandle: true,
-      isScrollControlled: true,
-      builder: (context) => ListenableBuilder(
-        listenable: collection,
-        builder: (context, _) => SafeArea(
-          child: Padding(
-            padding: EdgeInsets.fromLTRB(
-              16,
-              0,
-              16,
-              16 + MediaQuery.viewInsetsOf(context).bottom,
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                Text(
-                  'Attaques enregistrées ; à défaut, celles que le Pokémon '
-                  'peut apprendre.',
-                  style: Theme.of(context).textTheme.bodySmall,
-                ),
-                const SizedBox(height: 8),
-                SearchField(
-                  initialValue: collection.filter.moveQuery,
-                  label: 'Nom d\'attaque (ex. Rapace)',
-                  dense: true,
-                  onChanged: (v) => collection.setFilter(
-                    collection.filter.copyWith(moveQuery: v),
-                  ),
-                ),
-                const SizedBox(height: 12),
-                _TypePicker(
-                  title: 'Attaque de type',
-                  selected: collection.filter.moveTypes,
-                  onChanged: (v) => collection.setFilter(
-                    collection.filter.copyWith(moveTypes: v),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
 }
 
 /// Filtre de type en un appui : une pastille par type présent dans la
@@ -412,58 +357,6 @@ class _TypeFilterRow extends StatelessWidget {
       onChanged: (types) => collection.setFilter(
         collection.filter.copyWith(types: types),
       ),
-    );
-  }
-}
-
-class _TypePicker extends StatelessWidget {
-  const _TypePicker({
-    required this.title,
-    required this.selected,
-    required this.onChanged,
-  });
-
-  final String title;
-  final Set<PokeType> selected;
-  final void Function(Set<PokeType>) onChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: <Widget>[
-        Row(
-          children: <Widget>[
-            Expanded(child: Text(title, style: theme.textTheme.titleSmall)),
-            if (selected.isNotEmpty)
-              TextButton(
-                onPressed: () => onChanged(const <PokeType>{}),
-                child: const Text('Tout effacer'),
-              ),
-          ],
-        ),
-        const SizedBox(height: 8),
-        Wrap(
-          spacing: 6,
-          runSpacing: 6,
-          children: <Widget>[
-            for (final t in PokeType.values)
-              FilterChip(
-                avatar: ExcludeSemantics(child: TypeBadge(t, size: 22)),
-                label: Text(t.nameFr),
-                selected: selected.contains(t),
-                showCheckmark: false,
-                onSelected: (on) => onChanged(
-                  on
-                      ? <PokeType>{...selected, t}
-                      : <PokeType>{...selected}..remove(t),
-                ),
-              ),
-          ],
-        ),
-      ],
     );
   }
 }

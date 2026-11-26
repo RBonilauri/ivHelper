@@ -809,6 +809,87 @@ void main() {
     expect(find.text('2 Pokémon sur 2'), findsOneWidget);
   });
 
+  testWidgets('collection : filtres immédiate ET/OU chargée', (tester) async {
+    await _pumpApp(tester);
+    for (final name in <String>['Flambusard', 'Passerouge']) {
+      await tester.enterText(find.byType(TextField).first, name);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Enregistrer'));
+      await tester.pumpAndSettle();
+      await tester.ensureVisible(find.text('Enregistrer dans la collection'));
+      await tester.tap(find.text('Enregistrer dans la collection'));
+      await tester.pumpAndSettle();
+      await tester.pump(const Duration(seconds: 6));
+    }
+    await tester.tap(find.byTooltip('Paramètres'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Ma collection'));
+    await tester.pumpAndSettle();
+    expect(find.text('2 Pokémon sur 2'), findsOneWidget);
+    expect(find.text('Attaques'), findsNothing);
+
+    // Immédiate : seules les attaques immédiates sont proposées.
+    await tester.tap(find.byKey(const ValueKey<String>('move-filter-fast')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey<String>('fast-type-fire')), findsOneWidget);
+    expect(find.byKey(const ValueKey<String>('fast-type-flying')), findsNothing);
+    final search = find.byKey(const ValueKey<String>('move-search-fast'));
+    await tester.enterText(
+      find.descendant(of: search, matching: find.byType(TextField)),
+      'ra',
+    );
+    await tester.pumpAndSettle();
+    expect(
+      find.byKey(const ValueKey<String>('move-option-BRAVE_BIRD')),
+      findsNothing,
+    );
+    await tester.enterText(
+      find.descendant(of: search, matching: find.byType(TextField)),
+      'calci',
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey<String>('move-option-INCINERATE')));
+    await tester.pumpAndSettle();
+    expect(
+      find.byKey(const ValueKey<String>('move-selected-INCINERATE')),
+      findsOneWidget,
+    );
+    await tester.tapAt(const Offset(400, 20));
+    await tester.pumpAndSettle();
+    expect(find.text('1 Pokémon sur 2'), findsOneWidget);
+    expect(find.text('Immédiate (1)'), findsOneWidget);
+
+    // Chargée : types des chargées seulement, puis ET → OU.
+    await tester.tap(find.byKey(const ValueKey<String>('move-filter-charged')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey<String>('charged-type-fire')), findsNothing);
+    await tester.tap(find.byKey(const ValueKey<String>('charged-type-flying')));
+    await tester.pumpAndSettle();
+    await tester.tapAt(const Offset(400, 20));
+    await tester.pumpAndSettle();
+    expect(find.text('1 Pokémon sur 2'), findsOneWidget);
+
+    final op = find.byKey(const ValueKey<String>('move-filter-op'));
+    expect(
+      find.descendant(of: op, matching: find.text('ET')),
+      findsOneWidget,
+    );
+    await tester.tap(op);
+    await tester.pumpAndSettle();
+    expect(
+      find.descendant(of: op, matching: find.text('OU')),
+      findsOneWidget,
+    );
+    expect(find.text('1 Pokémon sur 2'), findsOneWidget);
+    await tester.tap(op);
+    await tester.pumpAndSettle();
+    expect(find.descendant(of: op, matching: find.text('ET')), findsOneWidget);
+
+    await tester.tap(find.text('Effacer les filtres'));
+    await tester.pumpAndSettle();
+    expect(find.text('2 Pokémon sur 2'), findsOneWidget);
+  });
+
   testWidgets('pas de fiche méta pour un Pokémon absent de la méta de sa ligue',
       (tester) async {
     await _pumpApp(tester);
