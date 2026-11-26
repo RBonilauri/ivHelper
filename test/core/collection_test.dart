@@ -24,6 +24,7 @@ CollectionRow _row(
   int rank, {
   List<Move> recorded = const <Move>[],
   List<Move> learnable = const <Move>[],
+  bool favorite = false,
 }) {
   return CollectionRow(
     entry: CollectionEntry(
@@ -36,6 +37,7 @@ CollectionRow _row(
       percent: 90,
       cp: 1500,
       level: 40,
+      favorite: favorite,
     ),
     species: Species(
       dex: dex,
@@ -157,6 +159,7 @@ void main() {
       lucky: true,
       shiny: true,
       costume: true,
+      favorite: true,
     );
     final back = CollectionEntry.fromJson(e.toJson())!;
     expect(back.costume, isTrue);
@@ -196,6 +199,40 @@ void main() {
         'rank': 1,
       }),
       isNull,
+    );
+  });
+
+  test('favoris : filtre « favoris uniquement » et tri favoris d\'abord', () {
+    final rows = <CollectionRow>[
+      _row('A', 1, <PokeType>[PokeType.fire], League.great, 30),
+      _row('B', 2, <PokeType>[PokeType.fire], League.great, 50, favorite: true),
+      _row('C', 3, <PokeType>[PokeType.fire], League.great, 10, favorite: true),
+    ];
+    const only = CollectionFilter(favoritesOnly: true);
+    expect(only.activeCount, 1);
+    expect(_names(filterAndSort(rows, only, CollectionSort.dex)), <String>['B', 'C']);
+    expect(
+      _names(filterAndSort(rows, const CollectionFilter(), CollectionSort.favorite)),
+      <String>['C', 'B', 'A'],
+    );
+    expect(only.copyWith(favoritesOnly: false).activeCount, 0);
+  });
+
+  test('tri par rang méta : non classés à la fin, puis rang d\'IV', () {
+    final meta = <String, int?>{'Flambusard': 12, 'Écayon': 3, 'Carapuce': null};
+    expect(
+      _names(filterAndSort(
+        _rows,
+        const CollectionFilter(),
+        CollectionSort.metaRank,
+        metaRankOf: (e) => meta[e.speciesName],
+      )),
+      <String>['Écayon', 'Flambusard', 'Carapuce', 'Salamèche'],
+    );
+    // Sans méta, le tri retombe sur le rang d'IV.
+    expect(
+      _apply(const CollectionFilter(), CollectionSort.metaRank),
+      _apply(const CollectionFilter(), CollectionSort.rank),
     );
   });
 }

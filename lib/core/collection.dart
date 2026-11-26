@@ -87,6 +87,7 @@ class CollectionEntry {
     this.lucky = false,
     this.shiny = false,
     this.costume = false,
+    this.favorite = false,
   });
 
   /// Lit une entrée enregistrée, ou `null` si elle est illisible.
@@ -131,6 +132,7 @@ class CollectionEntry {
       lucky: raw['lucky'] == true,
       shiny: raw['shiny'] == true,
       costume: raw['costume'] == true,
+      favorite: raw['favorite'] == true,
     );
   }
 
@@ -185,6 +187,31 @@ class CollectionEntry {
   /// Pokémon costumé.
   final bool costume;
 
+  /// Pokémon mis en favori.
+  final bool favorite;
+
+  /// Copie avec [favorite] remplacé.
+  CollectionEntry withFavorite(bool value) => CollectionEntry(
+        id: id,
+        speciesName: speciesName,
+        iv: iv,
+        maxLevel: maxLevel,
+        league: league,
+        rank: rank,
+        percent: percent,
+        cp: cp,
+        level: level,
+        fastMove: fastMove,
+        chargedMove1: chargedMove1,
+        chargedMove2: chargedMove2,
+        shadow: shadow,
+        size: size,
+        lucky: lucky,
+        shiny: shiny,
+        costume: costume,
+        favorite: value,
+      );
+
   /// Vrai si c'est le meilleur rang possible dans sa ligue.
   bool get isRankOne => rank == 1;
 
@@ -213,6 +240,7 @@ class CollectionEntry {
         'lucky': lucky,
         'shiny': shiny,
         'costume': costume,
+        'favorite': favorite,
       };
 }
 
@@ -256,7 +284,13 @@ enum CollectionSort {
   name('Nom'),
 
   /// Par type principal.
-  type('Type');
+  type('Type'),
+
+  /// Favoris d'abord, puis par rang d'IV.
+  favorite('Favoris'),
+
+  /// Par rang dans la méta de la ligue du tag (non classés à la fin).
+  metaRank('Rang méta');
 
   const CollectionSort(this.label);
 
@@ -276,6 +310,7 @@ class CollectionFilter {
     this.types = const <PokeType>{},
     this.moveTypes = const <PokeType>{},
     this.moveQuery = '',
+    this.favoritesOnly = false,
   });
 
   /// Ligue du tag, ou `null` pour toutes.
@@ -293,13 +328,17 @@ class CollectionFilter {
   /// Il doit avoir une attaque dont le nom contient ce texte (vide : tous).
   final String moveQuery;
 
+  /// Vrai pour ne garder que les favoris.
+  final bool favoritesOnly;
+
   /// Nombre de filtres actifs.
   int get activeCount =>
       (league == null ? 0 : 1) +
       (maxRank == null ? 0 : 1) +
       (types.isEmpty ? 0 : 1) +
       (moveTypes.isEmpty ? 0 : 1) +
-      (moveQuery.trim().isEmpty ? 0 : 1);
+      (moveQuery.trim().isEmpty ? 0 : 1) +
+      (favoritesOnly ? 1 : 0);
 
   /// Copie avec les champs donnés remplacés ; [clearLeague] et [clearMaxRank]
   /// retirent ces filtres.
@@ -311,6 +350,7 @@ class CollectionFilter {
     Set<PokeType>? types,
     Set<PokeType>? moveTypes,
     String? moveQuery,
+    bool? favoritesOnly,
   }) =>
       CollectionFilter(
         league: clearLeague ? null : (league ?? this.league),
@@ -318,11 +358,13 @@ class CollectionFilter {
         types: types ?? this.types,
         moveTypes: moveTypes ?? this.moveTypes,
         moveQuery: moveQuery ?? this.moveQuery,
+        favoritesOnly: favoritesOnly ?? this.favoritesOnly,
       );
 
   /// Vrai si [row] passe tous les filtres.
   bool accepts(CollectionRow row) {
     final e = row.entry;
+    if (favoritesOnly && !e.favorite) return false;
     if (league != null && e.league != league) return false;
     final max = maxRank;
     if (max != null && e.rank > max) return false;
@@ -342,12 +384,17 @@ class CollectionFilter {
   }
 }
 
-/// Applique [filter] à [rows] puis les trie selon [sort].
+/// Rang méta d'une entrée dans la ligue de son tag, ou `null` si non classée.
+typedef MetaRankOf = int? Function(CollectionEntry entry);
+
+/// Applique [filter] à [rows] puis les trie selon [sort] ; [metaRankOf] sert
+/// au tri par rang méta (sans lui, tous sont « non classés »).
 List<CollectionRow> filterAndSort(
   Iterable<CollectionRow> rows,
   CollectionFilter filter,
-  CollectionSort sort,
-) {
+  CollectionSort sort, {
+  MetaRankOf? metaRankOf,
+}) {
   final list = rows.where(filter.accepts).toList();
   int byName(CollectionRow a, CollectionRow b) => normalizeName(
         a.species.nameFr,
@@ -356,6 +403,21 @@ List<CollectionRow> filterAndSort(
       a.entry.rank.compareTo(b.entry.rank);
   int byDex(CollectionRow a, CollectionRow b) =>
       a.species.dex.compareTo(b.species.dex);
+  int byFavorite(CollectionRow a, CollectionRow b) =>
+      (b.entry.favorite ? 1 : 0).compareTo(a.entry.favorite ? 1 : 0);
+  final metaRanks = <String, int?>{
+    if (sort == CollectionSort.metaRank && metaRankOf != null)
+      for (final r in list) r.entry.id: metaRankOf(r.entry),
+  };
+  int byMeta(CollectionRow a, CollectionRow b) {
+    final ra = metaRanks[a.entry.id];
+    final rb = metaRanks[b.entry.id];
+    if (ra == null && rb == null) return 0;
+    if (ra == null) return 1;
+    if (rb == null) return -1;
+    return ra.compareTo(rb);
+  }
+
   int typeIndex(CollectionRow r) => r.species.types.isEmpty
       ? PokeType.values.length
       : r.species.types.first.index;
@@ -365,10 +427,13 @@ List<CollectionRow> filterAndSort(
       CollectionSort.dex => byDex(a, b),
       CollectionSort.name => byName(a, b),
       CollectionSort.type => typeIndex(a).compareTo(typeIndex(b)),
+      CollectionSort.favorite => byFavorite(a, b),
+      CollectionSort.metaRank => byMeta(a, b),
     };
     if (primary != 0) return primary;
     final secondary = switch (sort) {
       CollectionSort.rank || CollectionSort.type => byDex(a, b),
+      CollectionSort.favorite || CollectionSort.metaRank => byRank(a, b),
       CollectionSort.dex || CollectionSort.name => byRank(a, b),
     };
     return secondary != 0 ? secondary : byName(a, b);

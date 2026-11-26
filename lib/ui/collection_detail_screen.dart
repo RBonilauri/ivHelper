@@ -23,6 +23,13 @@ class CollectionMetaLink {
 
   /// Actions de la fiche méta.
   final MetaActions actions;
+
+  /// Rang de [entry] dans la méta de la ligue de son tag, ou `null` (ligue
+  /// mini, méta pas encore chargée, ou espèce non classée).
+  int? metaRankOf(CollectionEntry entry) {
+    final league = MetaLeague.fromKey(entry.league.key);
+    return league == null ? null : entryFor(entry, league)?.rank;
+  }
 }
 
 /// Fiche d'un Pokémon de la collection : infos, modifier, voir le rang,
@@ -74,7 +81,9 @@ class CollectionDetailScreen extends StatelessWidget {
           onEdit: () => _edit(context, row),
           onOpen: () => onOpen(context, row.entry),
           onDelete: () => _delete(context, row.entry),
+          onFavorite: () => collection.toggleFavorite(row.entry.id),
           meta: _metaButton(context, row.entry),
+          metaRank: _metaRank(row.entry),
         );
       },
     );
@@ -107,6 +116,18 @@ class CollectionDetailScreen extends StatelessWidget {
       icon: const Icon(Icons.insights),
       label: Text(label),
     );
+  }
+
+  /// Rang méta à mettre en évidence : (texte, classé ?) ; `null` sans lien.
+  (String, bool)? _metaRank(CollectionEntry entry) {
+    final link = metaLink;
+    if (link == null) return null;
+    final league = MetaLeague.fromKey(entry.league.key);
+    if (league == null) return ('Pas de méta en ligue ${entry.league.label}', false);
+    final rank = link.metaRankOf(entry);
+    return rank == null
+        ? ('Absent de la méta ${league.label}', false)
+        : ('Méta ${league.label} · n° $rank', true);
   }
 
   Future<void> _edit(BuildContext context, CollectionRow row) {
@@ -142,7 +163,9 @@ class _Detail extends StatelessWidget {
     required this.onEdit,
     required this.onOpen,
     required this.onDelete,
+    required this.onFavorite,
     this.meta,
+    this.metaRank,
   });
 
   final CollectionRow row;
@@ -152,6 +175,10 @@ class _Detail extends StatelessWidget {
   final VoidCallback onEdit;
   final VoidCallback onOpen;
   final VoidCallback onDelete;
+  final VoidCallback onFavorite;
+
+  /// Rang méta à mettre en évidence (texte, classé ?), ou `null`.
+  final (String, bool)? metaRank;
 
   /// Bouton vers la fiche méta, ou `null`.
   final Widget? meta;
@@ -165,6 +192,14 @@ class _Detail extends StatelessWidget {
       appBar: AppBar(
         title: Text(row.species.nameFr),
         actions: <Widget>[
+          IconButton(
+            tooltip: e.favorite ? 'Retirer des favoris' : 'Ajouter aux favoris',
+            icon: Icon(
+              e.favorite ? Icons.favorite : Icons.favorite_border,
+              color: e.favorite ? favoriteRed : null,
+            ),
+            onPressed: onFavorite,
+          ),
           IconButton(
             tooltip: 'Modifier',
             icon: const Icon(Icons.edit),
@@ -202,6 +237,10 @@ class _Detail extends StatelessWidget {
                           ),
                         const Spacer(),
                         if (e.isRankOne) const RankOneBadge(),
+                        if (e.favorite) ...<Widget>[
+                          const SizedBox(width: 8),
+                          const FavoriteHeart(size: 30),
+                        ],
                       ],
                     ),
                     const SizedBox(height: 12),
@@ -220,6 +259,10 @@ class _Detail extends StatelessWidget {
                       ' · niveau max ${formatLevel(e.maxLevel)}',
                       style: theme.textTheme.bodyMedium,
                     ),
+                    if (metaRank != null) ...<Widget>[
+                      const SizedBox(height: 10),
+                      _MetaRankBanner(text: metaRank!.$1, ranked: metaRank!.$2),
+                    ],
                     const SizedBox(height: 8),
                     EntryAttributes(e, withLabels: true),
                   ],
@@ -275,6 +318,17 @@ class _Detail extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             OutlinedButton.icon(
+              onPressed: onFavorite,
+              icon: Icon(
+                e.favorite ? Icons.favorite : Icons.favorite_border,
+                color: favoriteRed,
+              ),
+              label: Text(
+                e.favorite ? 'Retirer des favoris' : 'Ajouter aux favoris',
+              ),
+            ),
+            const SizedBox(height: 8),
+            OutlinedButton.icon(
               onPressed: onEdit,
               icon: const Icon(Icons.edit),
               label: const Text('Modifier'),
@@ -285,6 +339,48 @@ class _Detail extends StatelessWidget {
             ],
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// Bandeau du rang dans la méta de la ligue du tag, bien visible.
+class _MetaRankBanner extends StatelessWidget {
+  const _MetaRankBanner({required this.text, required this.ranked});
+
+  final String text;
+  final bool ranked;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: ranked ? scheme.primaryContainer : scheme.surface.withValues(alpha: 0.7),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        children: <Widget>[
+          Icon(
+            Icons.insights,
+            size: 22,
+            color: ranked ? scheme.onPrimaryContainer : scheme.onSurfaceVariant,
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              text,
+              style: (ranked ? theme.textTheme.titleMedium : theme.textTheme.bodyMedium)
+                  ?.copyWith(
+                fontWeight: ranked ? FontWeight.w800 : null,
+                color: ranked ? scheme.onPrimaryContainer : scheme.onSurfaceVariant,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

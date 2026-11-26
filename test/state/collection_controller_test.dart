@@ -163,4 +163,23 @@ void main() {
     expect(e.chargedMove1, 'BRAVE_BIRD');
     expect(e.chargedMove2, isNull);
   });
+
+  test('favori : bascule, survit à une modification et à un rechargement', () async {
+    final store = MemorySettingsStore();
+    final c = _controller(store);
+    final e = c.add(_flambusard, _max, 51, const SaveOptions(league: League.great));
+    expect(c.entries.single.favorite, isFalse);
+    c.toggleFavorite(e.id);
+    expect(c.entries.single.favorite, isTrue);
+    c.update(e.id, const SaveOptions(league: League.great, lucky: true));
+    expect(c.entries.single.favorite, isTrue);
+    c.update(e.id, const SaveOptions(league: League.ultra));
+    expect(c.entries.single.favorite, isTrue);
+    await Future<void>.delayed(Duration.zero);
+    final reloaded = _controller(store);
+    await reloaded.load();
+    expect(reloaded.entries.single.favorite, isTrue);
+    reloaded.toggleFavorite(e.id);
+    expect(reloaded.entries.single.favorite, isFalse);
+  });
 }
