@@ -51,6 +51,10 @@ class _AdvancedSearchViewState extends State<AdvancedSearchView> {
   final PickGroup _stars = PickGroup(starTerms);
 
   MoveSlot _slot = MoveSlot.any;
+
+  /// Rubriques ouvertes (gardé ici : une rubrique sortie de l'écran est
+  /// reconstruite).
+  final Set<String> _open = <String>{};
   String _speciesQuery = '';
   String _moveQuery = '';
   final TextEditingController _speciesSearch = TextEditingController();
@@ -143,6 +147,7 @@ class _AdvancedSearchViewState extends State<AdvancedSearchView> {
               ),
               const SizedBox(height: 8),
               _Section(
+                open: _open,
                 id: 'species',
                 title: 'Pokémon ou famille',
                 group: _species,
@@ -189,6 +194,7 @@ class _AdvancedSearchViewState extends State<AdvancedSearchView> {
                 ],
               ),
               _Section(
+                open: _open,
                 id: 'types',
                 title: 'Type du Pokémon',
                 group: _types,
@@ -203,6 +209,7 @@ class _AdvancedSearchViewState extends State<AdvancedSearchView> {
                 ],
               ),
               _Section(
+                open: _open,
                 id: 'categories',
                 title: 'Légendaire, fabuleux, ultra-chimère',
                 group: _categories,
@@ -216,6 +223,7 @@ class _AdvancedSearchViewState extends State<AdvancedSearchView> {
                 ],
               ),
               _Section(
+                open: _open,
                 id: 'status',
                 title: 'Chanceux, shiny, obscur, purifié',
                 group: _status,
@@ -229,6 +237,7 @@ class _AdvancedSearchViewState extends State<AdvancedSearchView> {
                 ],
               ),
               _Section(
+                open: _open,
                 id: 'sizes',
                 title: 'Taille',
                 group: _sizes,
@@ -242,6 +251,7 @@ class _AdvancedSearchViewState extends State<AdvancedSearchView> {
                 ],
               ),
               _Section(
+                open: _open,
                 id: 'move-types-${_slot.name}',
                 title: 'Type d\'attaque',
                 group: _moveTypes[_slot]!,
@@ -276,6 +286,7 @@ class _AdvancedSearchViewState extends State<AdvancedSearchView> {
                 ],
               ),
               _Section(
+                open: _open,
                 id: 'moves',
                 title: 'Nom d\'attaque',
                 group: _moveNames,
@@ -316,6 +327,7 @@ class _AdvancedSearchViewState extends State<AdvancedSearchView> {
                 ],
               ),
               _Section(
+                open: _open,
                 id: 'elite',
                 title: 'Attaque élite',
                 group: _elite,
@@ -333,6 +345,7 @@ class _AdvancedSearchViewState extends State<AdvancedSearchView> {
                 ],
               ),
               _Section(
+                open: _open,
                 id: 'iv',
                 title: 'IV',
                 group: _stars,
@@ -373,6 +386,7 @@ class _AdvancedSearchViewState extends State<AdvancedSearchView> {
                 ],
               ),
               _Section(
+                open: _open,
                 id: 'cp',
                 title: 'PC',
                 extraCount: _filled('cp'),
@@ -402,6 +416,7 @@ class _AdvancedSearchViewState extends State<AdvancedSearchView> {
                 ],
               ),
               _Section(
+                open: _open,
                 id: 'date',
                 title: 'Date de capture',
                 extraCount: _filled('age') + _filled('year'),
@@ -481,9 +496,13 @@ class _Section extends StatelessWidget {
     required this.title,
     required this.children,
     required this.onChanged,
+    required this.open,
     this.group,
     this.extraCount = 0,
   });
+
+  /// Rubriques ouvertes, mis à jour à l'ouverture et à la fermeture.
+  final Set<String> open;
 
   final String id;
   final String title;
@@ -497,14 +516,17 @@ class _Section extends StatelessWidget {
     final theme = Theme.of(context);
     final g = group;
     final n = (g?.activeCount ?? 0) + extraCount;
+    final name = id.split('-').first;
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
       clipBehavior: Clip.antiAlias,
       child: ExpansionTile(
-        key: PageStorageKey<String>('adv-section-${id.split('-').first}'),
+        key: ValueKey<String>('adv-section-$name'),
+        initiallyExpanded: open.contains(name),
+        onExpansionChanged: (on) => on ? open.add(name) : open.remove(name),
         title: Text(
           n == 0 ? title : '$title ($n)',
-          key: ValueKey<String>('adv-title-${id.split('-').first}'),
+          key: ValueKey<String>('adv-title-$name'),
           style: theme.textTheme.titleSmall?.copyWith(
             fontWeight: n > 0 ? FontWeight.w800 : null,
           ),
