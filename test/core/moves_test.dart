@@ -4,7 +4,8 @@ import 'package:ivhelper/core/poke_type.dart';
 
 const _json = '''
 {
-  "DRAGON_BREATH": {"fast": true, "name": "Draco-Souffle", "power": 3, "type": "dragon"},
+  "DRAGON_BREATH": {"fast": true, "name": "Draco-Souffle", "power": 3, "type": "dragon",
+    "energyGain": 3, "turns": 1},
   "IRON_HEAD": {"fast": false, "name": "Tête de Fer", "power": 85, "type": "steel", "energy": 50},
   "DRACO_METEOR": {"fast": false, "name": "Draco-Météore", "power": 150, "type": "dragon",
     "energy": 65, "effects": [{"target": "self", "atk": -2, "def": 0, "chance": 1}]},
@@ -45,6 +46,14 @@ void main() {
     expect(book['OBSTRUCT']!.type, PokeType.dark);
   });
 
+  test('attaque immédiate : énergie rapportée et durée en tours', () {
+    expect(book['DRAGON_BREATH']!.energyGain, 3);
+    expect(book['DRAGON_BREATH']!.turns, 1);
+    // Valeurs par défaut pour une chargée ou des données anciennes.
+    expect(book['IRON_HEAD']!.energyGain, 0);
+    expect(book['IRON_HEAD']!.turns, 1);
+  });
+
   test('un ancien moves.json sans énergie ni effets reste lisible', () {
     final old = MoveBook.fromJson(
       '{"BRAVE_BIRD": {"fast": false, "name": "Rapace", "power": 130, "type": "flying"}}',
@@ -58,6 +67,9 @@ void main() {
     final moves = await MoveBook.load();
     final meteor = moves['DRACO_METEOR']!;
     expect(meteor.chargeBars, 1);
+    // Riposte : 6 d'énergie en 2 tours, comme dans le jeu.
+    expect(moves['COUNTER']!.energyGain, 6);
+    expect(moves['COUNTER']!.turns, 2);
     expect(meteor.effects.single.attack, -2);
     expect(moves['IRON_HEAD']!.chargeBars, 2);
     expect(

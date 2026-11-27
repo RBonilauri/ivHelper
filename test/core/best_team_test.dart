@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ivhelper/core/best_team.dart';
 import 'package:ivhelper/core/collection.dart';
+import 'package:ivhelper/core/duel.dart';
 import 'package:ivhelper/core/meta.dart';
 import 'package:ivhelper/core/moves.dart';
 import 'package:ivhelper/core/poke_type.dart';
@@ -266,6 +267,120 @@ void main() {
         ),
         isEmpty,
       );
+    });
+  });
+
+  group('duels estimés', () {
+    Move fast(PokeType t, int power, int gain, int turns) => Move(
+          id: 'F_${t.id}',
+          nameFr: 'Immédiate',
+          type: t,
+          isFast: true,
+          power: power,
+          energyGain: gain,
+          turns: turns,
+        );
+    Move charged(PokeType t, int power, int energy) => Move(
+          id: 'C_${t.id}',
+          nameFr: 'Chargée',
+          type: t,
+          isFast: false,
+          power: power,
+          energy: energy,
+        );
+    Fighter fighter(PokeType t, Move f, Move c) => Fighter(
+          types: <PokeType>[t],
+          atk: 120,
+          def: 120,
+          hp: 150,
+          fast: f,
+          charged: <Move>[c],
+        );
+    // Eau, mais une immédiate qui ne tape ni ne charge presque pas.
+    final weakWater = fighter(
+      PokeType.water,
+      fast(PokeType.water, 1, 1, 2),
+      charged(PokeType.water, 50, 100),
+    );
+    final fireFoe = fighter(
+      PokeType.fire,
+      fast(PokeType.fire, 12, 8, 1),
+      charged(PokeType.fire, 60, 40),
+    );
+
+    test('le duel remplace les types quand les attaques sont connues', () {
+      final c = TeamCandidate(
+        id: 'a',
+        species: 'Aligatueur',
+        shadow: false,
+        types: const <PokeType>[PokeType.water],
+        moveTypes: const <PokeType>[PokeType.water],
+        ivRank: 1,
+        fighter: weakWater,
+      );
+      // Par les types : Eau contre Feu.
+      expect(counters(c, _meta[0]), isTrue);
+      // Par le duel : perdu.
+      expect(counters(c, _meta[0], opponent: fireFoe), isFalse);
+    });
+
+    test('bestTeams prend les duels des adversaires connus', () {
+      TeamCandidate cand(String id, String species, PokeType t) => TeamCandidate(
+            id: id,
+            species: species,
+            shadow: false,
+            types: <PokeType>[t],
+            moveTypes: <PokeType>[t],
+            ivRank: 1,
+            fighter: t == PokeType.water ? weakWater : null,
+          );
+      final teams = bestTeams(
+        <TeamCandidate>[
+          cand('a', 'Aligatueur', PokeType.water),
+          cand('f', 'Grodoudou', PokeType.normal),
+          cand('g', 'Ronflex', PokeType.normal),
+        ],
+        _meta,
+        opponentFighters: <Fighter?>[fireFoe, null, null],
+      );
+      expect(teams.single.covered, 0);
+      expect(teams.single.threats.first, 'Feunard');
+    });
+
+    test('candidat : duel préparé avec ses IV, son niveau et ses attaques', () {
+      final f = fast(PokeType.water, 5, 8, 2);
+      final c = charged(PokeType.water, 80, 40);
+      final row = CollectionRow(
+        entry: CollectionEntry(
+          id: 'x',
+          speciesName: 'Aligatueur',
+          iv: const Iv(0, 15, 15),
+          maxLevel: 50,
+          league: League.great,
+          rank: 1,
+          percent: 100,
+          cp: 1490,
+          level: 30,
+          shadow: ShadowState.none,
+        ),
+        species: Species(
+          dex: 160,
+          nameFr: 'Aligatueur',
+          base: const BaseStats(150, 151, 198),
+          types: const <PokeType>[PokeType.water],
+        ),
+        recordedMoves: <Move>[f, c],
+        learnableMoves: const <Move>[],
+      );
+      final list = teamCandidates(
+        <CollectionRow>[row],
+        League.great,
+        MetaSnapshot(updated: '2026-11-27', leagues: const {}),
+      );
+      final fighter = list.single.fighter!;
+      expect(fighter.hp, computeHp(const BaseStats(150, 151, 198), const Iv(0, 15, 15), 30));
+      expect(fighter.fast.id, 'F_water');
+      expect(fighter.charged.single.id, 'C_water');
     });
   });
 }

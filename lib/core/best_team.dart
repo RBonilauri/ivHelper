@@ -1,5 +1,7 @@
 import 'collection.dart';
+import 'duel.dart';
 import 'meta.dart';
+import 'moves.dart';
 import 'poke_type.dart';
 
 /// Pokémon de la collection pris en compte pour « Ma meilleure équipe ».
@@ -17,7 +19,12 @@ class TeamCandidate {
     this.metaScore,
     this.beats = const <String>[],
     this.losesTo = const <String>[],
+    this.fighter,
   });
+
+  /// Prêt pour un duel estimé (IV, niveau, attaques connues), ou `null` :
+  /// on se rabat alors sur les types.
+  final Fighter? fighter;
 
   /// Identifiant de l'entrée de collection.
   final String id;
@@ -87,10 +94,15 @@ const double _superEffective = 1.6;
 
 /// Vrai si [c] contre l'adversaire [o].
 ///
-/// Les matchs PvPoke décident d'abord (ceux du candidat, puis ceux de
-/// l'adversaire) ; à défaut, il faut une attaque super efficace sur
-/// l'adversaire sans subir d'attaque super efficace de sa part.
-bool counters(TeamCandidate c, MetaEntry o) {
+/// Si les deux sont prêts pour un duel ([TeamCandidate.fighter] et
+/// [opponent]), le duel estimé décide : [c] doit gagner au moins deux des
+/// trois duels (0, 1 et 2 boucliers). Sinon, les matchs PvPoke décident
+/// (ceux du candidat, puis ceux de l'adversaire) ; à défaut, il faut une
+/// attaque super efficace sur l'adversaire sans subir d'attaque super
+/// efficace de sa part.
+bool counters(TeamCandidate c, MetaEntry o, {Fighter? opponent}) {
+  final mine = c.fighter;
+  if (mine != null && opponent != null) return beats(mine, opponent);
   if (c.beats.contains(o.name)) return true;
   if (c.losesTo.contains(o.name)) return false;
   final name = c.metaName;
@@ -116,12 +128,14 @@ const int _poolSize = 40;
 /// sont classées par couverture, puis par somme des notes méta, puis par
 /// somme des rangs d'IV. Pour une même espèce (et même état obscur), seul
 /// le meilleur rang d'IV est gardé. Liste vide s'il y a moins de trois
-/// espèces.
+/// espèces. [opponentFighters] (même ordre que [opponents]) permet les duels
+/// estimés contre les adversaires connus.
 List<TeamProposal> bestTeams(
   List<TeamCandidate> candidates,
   List<MetaEntry> opponents, {
   int top = 50,
   int count = 3,
+  List<Fighter?>? opponentFighters,
 }) {
   final foes = opponents.take(top).toList();
   final n = foes.length;
@@ -144,7 +158,17 @@ List<TeamProposal> bestTeams(
   final unique = <TeamCandidate>[for (final k in order) best[k]!];
 
   final masks = <List<bool>>[
-    for (final c in unique) <bool>[for (final o in foes) counters(c, o)],
+    for (final c in unique)
+      <bool>[
+        for (var i = 0; i < n; i++)
+          counters(
+            c,
+            foes[i],
+            opponent: opponentFighters != null && i < opponentFighters.length
+                ? opponentFighters[i]
+                : null,
+          ),
+      ],
   ];
   double weightOf(List<bool> covered) {
     var w = 0.0;
@@ -232,17 +256,20 @@ MetaLeague? metaLeagueOf(League league) => switch (league) {
 
 /// Candidats de [rows] tagués dans [league], complétés par la méta.
 ///
-/// Vide en ligue Mini, faute de méta.
+/// Vide en ligue Mini, faute de méta. Chaque candidat est préparé pour les
+/// duels estimés avec ses IV, son niveau et ses attaques : enregistrées,
+/// sinon celles conseillées par la méta (retrouvées dans [moves]).
 List<TeamCandidate> teamCandidates(
   List<CollectionRow> rows,
   League league,
-  MetaSnapshot meta,
-) {
+  MetaSnapshot meta, {
+  MoveBook? moves,
+}) {
   final metaLeague = metaLeagueOf(league);
   if (metaLeague == null) return const <TeamCandidate>[];
   return <TeamCandidate>[
     for (final row in rows)
-      if (row.entry.league == league) _candidate(row, metaLeague, meta),
+      if (row.entry.league == league) _candidate(row, metaLeague, meta, moves),
   ];
 }
 
@@ -250,9 +277,33 @@ TeamCandidate _candidate(
   CollectionRow row,
   MetaLeague league,
   MetaSnapshot meta,
+  MoveBook? moves,
 ) {
   final shadow = row.entry.shadow == ShadowState.shadow;
   final entry = meta.entryFor(row.entry.speciesName, league, shadow: shadow);
+  final recordedFast = <Move>[
+    for (final m in row.recordedMoves)
+      if (m.isFast) m,
+  ];
+  final recordedCharged = <Move>[
+    for (final m in row.recordedMoves)
+      if (!m.isFast) m,
+  ];
+  final metaFast = entry == null ? null : moves?[entry.fast.id];
+  final metaCharged = <Move>[
+    if (entry != null && moves != null)
+      for (final c in entry.charged)
+        if (moves[c.id] case final move?) move,
+  ];
+  final fighter = Fighter.of(
+    base: row.species.base,
+    iv: row.entry.iv,
+    level: row.entry.level,
+    types: row.species.types,
+    fast: recordedFast.isNotEmpty ? recordedFast.first : metaFast,
+    charged: recordedCharged.isNotEmpty ? recordedCharged : metaCharged,
+    shadow: shadow,
+  );
   final List<PokeType> moveTypes;
   if (row.recordedMoves.isNotEmpty) {
     moveTypes = <PokeType>[for (final m in row.recordedMoves) m.type];
@@ -276,6 +327,7 @@ TeamCandidate _candidate(
     metaScore: entry?.score,
     beats: entry?.bestMatchups ?? const <String>[],
     losesTo: entry?.worstMatchups ?? const <String>[],
+    fighter: fighter,
   );
 }
 

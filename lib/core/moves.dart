@@ -54,7 +54,16 @@ class Move {
     this.power = 0,
     this.energy = 0,
     this.effects = const <StatChange>[],
+    this.energyGain = 0,
+    this.turns = 1,
   });
+
+  /// Énergie rapportée par une attaque immédiate (0 si inconnue ou
+  /// chargée).
+  final int energyGain;
+
+  /// Durée d'une attaque immédiate en tours de 0,5 s (1 par défaut).
+  final int turns;
 
   /// Identifiant des données (par exemple `INCINERATE`).
   final String id;
@@ -104,6 +113,8 @@ class MoveBook {
           isFast: raw['fast'] as bool,
           power: (raw['power'] as num?)?.toInt() ?? 0,
           energy: (raw['energy'] as num?)?.toInt() ?? 0,
+          energyGain: (raw['energyGain'] as num?)?.toInt() ?? 0,
+          turns: (raw['turns'] as num?)?.toInt() ?? 1,
           effects: <StatChange>[
             for (final e in (raw['effects'] as List<dynamic>?) ?? <dynamic>[])
               _statChange(e as Map<String, dynamic>),

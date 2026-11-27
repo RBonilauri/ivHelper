@@ -93,6 +93,8 @@ class TeamBuilderScreen extends StatelessWidget {
       builder: (context) => BestTeamSheet(
         meta: meta,
         rows: collection.visibleRowsUnfiltered,
+        repository: collection.repository,
+        moves: collection.moves,
       ),
     );
     if (pick == null) return;

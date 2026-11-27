@@ -205,6 +205,10 @@ def main(gamemaster, species_csv, moves_csv, move_names_csv, out_species, out_mo
         }
         if not fast and m.get("energy", 0) > 0:
             moves[m["moveId"]]["energy"] = m["energy"]
+        if fast and m.get("energyGain", 0) > 0:
+            # Énergie rapportée et durée en tours de 0,5 s (combat de dresseurs).
+            moves[m["moveId"]]["energyGain"] = m["energyGain"]
+            moves[m["moveId"]]["turns"] = m.get("turns") or max(1, m.get("cooldown", 500) // 500)
         effects = move_effects(m)
         if effects:
             moves[m["moveId"]]["effects"] = effects
