@@ -54,7 +54,15 @@ class Move {
     this.power = 0,
     this.energy = 0,
     this.effects = const <StatChange>[],
+    this.energyGain = 0,
+    this.turns = 1,
   });
+
+  /// Squelette.
+  final int energyGain;
+
+  /// Squelette.
+  final int turns;
 
   /// Identifiant des données (par exemple `INCINERATE`).
   final String id;

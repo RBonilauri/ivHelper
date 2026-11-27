@@ -1,4 +1,5 @@
 import 'collection.dart';
+import 'duel.dart';
 import 'meta.dart';
 import 'poke_type.dart';
 
@@ -17,7 +18,11 @@ class TeamCandidate {
     this.metaScore,
     this.beats = const <String>[],
     this.losesTo = const <String>[],
+    this.fighter,
   });
+
+  /// Squelette.
+  final Fighter? fighter;
 
   /// Identifiant de l'entrée de collection.
   final String id;
@@ -90,7 +95,7 @@ const double _superEffective = 1.6;
 /// Les matchs PvPoke décident d'abord (ceux du candidat, puis ceux de
 /// l'adversaire) ; à défaut, il faut une attaque super efficace sur
 /// l'adversaire sans subir d'attaque super efficace de sa part.
-bool counters(TeamCandidate c, MetaEntry o) {
+bool counters(TeamCandidate c, MetaEntry o, {Fighter? opponent}) {
   if (c.beats.contains(o.name)) return true;
   if (c.losesTo.contains(o.name)) return false;
   final name = c.metaName;
@@ -122,6 +127,7 @@ List<TeamProposal> bestTeams(
   List<MetaEntry> opponents, {
   int top = 50,
   int count = 3,
+  List<Fighter?>? opponentFighters,
 }) {
   final foes = opponents.take(top).toList();
   final n = foes.length;
