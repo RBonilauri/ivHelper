@@ -348,7 +348,11 @@ class CollectionFilter {
     this.chargedMoves = const <String>{},
     this.chargedTypes = const <PokeType>{},
     this.movesEither = false,
+    this.query = '',
   });
+
+  /// Squelette.
+  final String query;
 
   /// Ligue du tag, ou `null` pour toutes.
   final League? league;
@@ -413,6 +417,7 @@ class CollectionFilter {
     Set<String>? chargedMoves,
     Set<PokeType>? chargedTypes,
     bool? movesEither,
+    String? query,
   }) =>
       CollectionFilter(
         league: clearLeague ? null : (league ?? this.league),
@@ -426,6 +431,7 @@ class CollectionFilter {
         chargedMoves: chargedMoves ?? this.chargedMoves,
         chargedTypes: chargedTypes ?? this.chargedTypes,
         movesEither: movesEither ?? this.movesEither,
+        query: query ?? this.query,
       );
 
   /// Vrai si [row] passe tous les filtres ; [metaRankOf] donne le rang méta

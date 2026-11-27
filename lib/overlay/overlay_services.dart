@@ -171,6 +171,15 @@ abstract interface class OverlayLauncher {
   Future<String?> start();
 }
 
+/// Squelette.
+abstract interface class LaunchActions {
+  /// Squelette.
+  void listen(void Function() onBubble);
+
+  /// Squelette.
+  Future<void> leaveApp();
+}
+
 /// Lancement réel : autorisation de superposition, capture, pastille.
 class PluginOverlayLauncher implements OverlayLauncher {
   /// Crée le lanceur.

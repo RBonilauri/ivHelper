@@ -44,12 +44,16 @@ class HomeScreen extends StatefulWidget {
     required this.updateSource,
     required this.currentBuild,
     required this.overlayLauncher,
+    this.launchActions,
     required this.accountFiles,
     this.gameDataUpdated,
   });
 
   /// Lancement de la pastille flottante.
   final OverlayLauncher overlayLauncher;
+
+  /// Lancements rapides de la pastille, ou `null`.
+  final LaunchActions? launchActions;
 
   /// Fichiers de sauvegarde du compte (export et import).
   final AccountFiles accountFiles;
