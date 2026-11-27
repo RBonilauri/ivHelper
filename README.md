@@ -39,9 +39,11 @@ Une pastille flotte par-dessus Pokémon GO. Sur la fiche d'un Pokémon, touche �
 
 Il faut autoriser l'affichage par-dessus les autres applis et la capture d'écran (demandée à chaque lancement). Le bouton ⏻ ou la notification « Arrêter » ferme tout.
 
+**Lancement rapide**, sans passer par le menu : appui long sur l'icône d'ivHelper puis « Lancer la pastille », ou la tuile **« Pastille ivHelper »** des réglages rapides (à ajouter une fois en modifiant les tuiles du volet de notifications). L'appli lance la pastille puis revient au jeu ; en cas de refus d'une autorisation, le message reste affiché dans l'appli.
+
 ### Menu
 
-- **Ma collection** : liste ou mosaïque (au moins 3 par ligne), case à la couleur du premier type, bordure dorée pour un rang 1, cœur pour les favoris, rang méta de la ligue.
+- **Ma collection** : champ de recherche par nom (accents et majuscules ignorés), liste ou mosaïque (au moins 3 par ligne), case à la couleur du premier type, bordure dorée pour un rang 1, cœur pour les favoris, rang méta de la ligue.
   - Panneau **Filtres** (replié par défaut), combinables : favoris, ligue, rang d'IV et rang de ligue (Top 1, 10, 50), types du Pokémon, attaques **Immédiate** ET/OU **Chargée** (par nom ou par type).
   - Tris : rang, Pokédex, nom, type, favoris, rang méta.
   - Fiche : attaques avec barres d'énergie et effets, favori, modifier, voir le rang, voir la fiche méta de sa ligue, supprimer (avec confirmation).

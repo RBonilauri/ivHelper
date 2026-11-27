@@ -8,6 +8,7 @@ import 'collection_widgets.dart';
 import 'format.dart';
 import 'move_filter.dart';
 import 'save_pokemon_sheet.dart';
+import 'search_field.dart';
 import 'type_badge.dart';
 import 'type_filter_row.dart';
 
@@ -229,6 +230,15 @@ class _Controls extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
+        SearchField(
+          key: const ValueKey<String>('collection-search'),
+          label: 'Rechercher un Pokémon',
+          initialValue: filter.query,
+          dense: true,
+          onChanged: (text) =>
+              collection.setFilter(collection.filter.copyWith(query: text)),
+        ),
+        const SizedBox(height: 8),
         // Wrap : sur un écran étroit ou en grand texte, le tri passe à la
         // ligne au lieu de déborder.
         SizedBox(
@@ -256,8 +266,10 @@ class _Controls extends StatelessWidget {
                   IconButton(
                     tooltip: 'Effacer les filtres',
                     icon: const Icon(Icons.filter_alt_off),
-                    onPressed: () =>
-                        collection.setFilter(const CollectionFilter()),
+                    // La recherche reste : elle n'est pas un filtre du
+                    // panneau.
+                    onPressed: () => collection
+                        .setFilter(CollectionFilter(query: filter.query)),
                   ),
               ],
             ),
@@ -310,7 +322,9 @@ class _Controls extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.only(top: 8),
             child: Text(
-              'Aucun Pokémon ne correspond à ces filtres.',
+              filter.activeCount == 0
+                  ? 'Aucun Pokémon ne correspond à ta recherche.'
+                  : 'Aucun Pokémon ne correspond à ces filtres.',
               style: theme.textTheme.bodyMedium,
             ),
           ),

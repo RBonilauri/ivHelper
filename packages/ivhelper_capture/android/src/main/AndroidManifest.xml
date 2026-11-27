@@ -19,6 +19,18 @@
             android:exported="false"
             android:foregroundServiceType="mediaProjection" />
 
+        <!-- Tuile « Pastille ivHelper » des réglages rapides. -->
+        <service
+            android:name="fr.ivhelper.capture.BubbleTileService"
+            android:exported="true"
+            android:icon="@drawable/ivhelper_bubble"
+            android:label="Pastille ivHelper"
+            android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
+            <intent-filter>
+                <action android:name="android.service.quicksettings.action.QS_TILE" />
+            </intent-filter>
+        </service>
+
         <!-- Service de la pastille (plugin flutter_overlay_window). -->
         <service
             android:name="flutter.overlay.window.flutter_overlay_window.OverlayService"

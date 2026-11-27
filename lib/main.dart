@@ -34,6 +34,7 @@ Future<void> main() async {
         metaSource: const HttpMetaSource(),
         updateSource: const GitHubUpdateSource(),
         overlayLauncher: const PluginOverlayLauncher(),
+        launchActions: const PluginLaunchActions(),
         currentBuild: currentBuildNumber,
         gameDataUpdated: data.updated,
       ),

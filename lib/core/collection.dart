@@ -351,7 +351,9 @@ class CollectionFilter {
     this.query = '',
   });
 
-  /// Squelette.
+  /// Texte cherché dans le nom de l'espèce (accents et majuscules ignorés ;
+  /// vide : tous). Hors du panneau des filtres : pas compté dans
+  /// [activeCount].
   final String query;
 
   /// Ligue du tag, ou `null` pour toutes.
@@ -438,6 +440,10 @@ class CollectionFilter {
   /// (sans lui, ou non classé, le filtre de rang de ligue refuse l'entrée).
   bool accepts(CollectionRow row, [MetaRankOf? metaRankOf]) {
     final e = row.entry;
+    final q = normalizeName(query.trim());
+    if (q.isNotEmpty && !normalizeName(row.species.nameFr).contains(q)) {
+      return false;
+    }
     if (favoritesOnly && !e.favorite) return false;
     if (league != null && e.league != league) return false;
     final max = maxRank;
