@@ -1404,4 +1404,104 @@ void main() {
     await tester.pump(const Duration(seconds: 10));
     await tester.pumpAndSettle();
   });
+
+  String cupsMeta() => fakeMetaJson(
+        cups: <Object?>[
+          fakeCupJson(
+            entries: <Map<String, Object?>>[
+              fakeMetaEntry(name: 'Altaria', species: 'Altaria'),
+              fakeMetaEntry(rank: 2),
+            ],
+            eligible: <String>['Altaria', 'Flambusard'],
+          ),
+          fakeCupJson(
+            key: 'trail-1500',
+            title: 'Devon Trail Cup',
+            entries: <Map<String, Object?>>[
+              fakeMetaEntry(name: 'Altaria', species: 'Altaria'),
+            ],
+            eligible: <String>['Altaria'],
+          ),
+        ],
+      );
+
+  testWidgets('méta : classement d\'une coupe', (tester) async {
+    await _pumpApp(tester, meta: cupsMeta());
+    await tester.tap(find.byTooltip('Paramètres'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Méta'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey<String>('meta-board-spectral-1500')));
+    await tester.pumpAndSettle();
+    expect(
+      find.descendant(
+        of: find.byKey(const ValueKey<String>('meta-1')),
+        matching: find.text('Altaria'),
+      ),
+      findsOneWidget,
+    );
+    expect(find.text('Possédés en Battle Frontier (Spectral)'), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey<String>('meta-1')));
+    await tester.pumpAndSettle();
+    expect(find.text('Battle Frontier (Spectral) · rang 1'), findsOneWidget);
+    await tester.pageBack();
+    await tester.pumpAndSettle();
+    // Retour à une ligue.
+    await tester.tap(find.text('Super'));
+    await tester.pumpAndSettle();
+    expect(
+      find.descendant(
+        of: find.byKey(const ValueKey<String>('meta-1')),
+        matching: find.text('Flambusard'),
+      ),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('accueil : coupes en cours qui acceptent le Pokémon',
+      (tester) async {
+    await _pumpApp(tester, meta: cupsMeta());
+    await tester.enterText(find.byType(TextField).first, 'Flambusard');
+    await tester.pumpAndSettle();
+    final card = find.byKey(const ValueKey<String>('cups-card'));
+    await tester.ensureVisible(card);
+    expect(
+      find.descendant(
+        of: find.byKey(const ValueKey<String>('cup-spectral-1500')),
+        matching: find.text('n° 2'),
+      ),
+      findsOneWidget,
+    );
+    // Pas admis dans la Devon Trail Cup.
+    expect(find.byKey(const ValueKey<String>('cup-trail-1500')), findsNothing);
+  });
+
+  testWidgets('collection : filtre par coupe', (tester) async {
+    await _pumpApp(tester, meta: cupsMeta());
+    await tester.enterText(find.byType(TextField).first, 'Flambusard');
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Enregistrer'));
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('Enregistrer dans la collection'));
+    await tester.tap(find.text('Enregistrer dans la collection'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('Paramètres'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Ma collection'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey<String>('filters-toggle')));
+    await tester.pumpAndSettle();
+    final spectral = find.byKey(const ValueKey<String>('cup-filter-spectral-1500'));
+    await tester.ensureVisible(spectral);
+    await tester.tap(spectral);
+    await tester.pumpAndSettle();
+    expect(find.text('1 Pokémon sur 1'), findsOneWidget);
+    final trail = find.byKey(const ValueKey<String>('cup-filter-trail-1500'));
+    await tester.ensureVisible(trail);
+    await tester.tap(trail);
+    await tester.pumpAndSettle();
+    expect(find.text('0 Pokémon sur 1'), findsOneWidget);
+    await tester.pump(const Duration(seconds: 10));
+    await tester.pumpAndSettle();
+  });
 }

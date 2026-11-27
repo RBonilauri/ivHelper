@@ -1,4 +1,5 @@
 import 'league.dart';
+import 'meta.dart';
 import 'moves.dart';
 import 'poke_type.dart';
 import 'species_repository.dart';
@@ -349,7 +350,11 @@ class CollectionFilter {
     this.chargedTypes = const <PokeType>{},
     this.movesEither = false,
     this.query = '',
+    this.cup,
   });
+
+  /// Squelette.
+  final MetaBoard? cup;
 
   /// Texte cherché dans le nom de l'espèce (accents et majuscules ignorés ;
   /// vide : tous). Hors du panneau des filtres : pas compté dans
@@ -420,6 +425,8 @@ class CollectionFilter {
     Set<PokeType>? chargedTypes,
     bool? movesEither,
     String? query,
+    MetaBoard? cup,
+    bool clearCup = false,
   }) =>
       CollectionFilter(
         league: clearLeague ? null : (league ?? this.league),
@@ -434,6 +441,7 @@ class CollectionFilter {
         chargedTypes: chargedTypes ?? this.chargedTypes,
         movesEither: movesEither ?? this.movesEither,
         query: query ?? this.query,
+        cup: clearCup ? null : (cup ?? this.cup),
       );
 
   /// Vrai si [row] passe tous les filtres ; [metaRankOf] donne le rang méta

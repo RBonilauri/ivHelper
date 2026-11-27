@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'league.dart';
 import 'poke_type.dart';
 import 'species_repository.dart';
 
@@ -112,10 +113,96 @@ class MetaEntry {
   final List<String> worstMatchups;
 }
 
+/// Squelette.
+class MetaBoard {
+  /// Squelette.
+  const MetaBoard({
+    required this.key,
+    required this.label,
+    required this.capLabel,
+    required this.league,
+    required this.entries,
+    this.eligible,
+  });
+
+  /// Squelette.
+  final String key;
+
+  /// Squelette.
+  final String label;
+
+  /// Squelette.
+  final String capLabel;
+
+  /// Squelette.
+  final League league;
+
+  /// Squelette.
+  final List<MetaEntry> entries;
+
+  /// Squelette.
+  final Set<String>? eligible;
+
+  /// Squelette.
+  bool get isCup => false;
+
+  /// Squelette.
+  bool allows(String speciesName, {bool shadow = false}) => false;
+
+  /// Squelette.
+  MetaEntry? entryFor(String speciesName, {bool shadow = false}) => null;
+}
+
+/// Squelette.
+class CupStanding {
+  /// Squelette.
+  const CupStanding(this.cup, this.entry);
+
+  /// Squelette.
+  final MetaBoard cup;
+
+  /// Squelette.
+  final MetaEntry? entry;
+}
+
+/// Squelette.
+List<CupStanding> cupStandings(
+  MetaSnapshot meta,
+  String speciesName, {
+  League? league,
+  bool shadow = false,
+}) =>
+    const <CupStanding>[];
+
+/// Squelette.
+String cupStandingLabel(CupStanding standing) => '';
+
 /// La méta d'une date donnée, par ligue.
 class MetaSnapshot {
   /// Crée une méta.
-  const MetaSnapshot({required this.updated, required this.leagues});
+  const MetaSnapshot({
+    required this.updated,
+    required this.leagues,
+    this.cups = const <MetaBoard>[],
+  });
+
+  /// Squelette.
+  final List<MetaBoard> cups;
+
+  /// Squelette.
+  List<MetaBoard> get boards => const <MetaBoard>[];
+
+  /// Squelette.
+  MetaBoard boardOf(MetaLeague league) => MetaBoard(
+        key: league.key,
+        label: league.label,
+        capLabel: league.cap,
+        league: League.great,
+        entries: leagues[league] ?? const <MetaEntry>[],
+      );
+
+  /// Squelette.
+  MetaBoard? boardByKey(String key) => null;
 
   /// Lit `meta.json` produit par `tool/build_meta.py`.
   ///

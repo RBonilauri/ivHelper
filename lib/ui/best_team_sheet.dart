@@ -52,7 +52,7 @@ class _BestTeamSheetState extends State<BestTeamSheet> {
         final proposals = data == null || metaLeague == null
             ? const <TeamProposal>[]
             : bestTeams(
-                teamCandidates(widget.rows, _league, data),
+                teamCandidates(widget.rows, data.boardOf(metaLeague)),
                 data.leagues[metaLeague] ?? const <MetaEntry>[],
               );
         return Column(

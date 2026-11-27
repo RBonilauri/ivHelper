@@ -71,6 +71,17 @@ final String _metaJson = jsonEncode(<String, Object?>{
     'ultra': <Object?>[],
     'master': <Object?>[],
   },
+  'cups': <Object?>[
+    <String, Object?>{
+      'key': 'spectral-1500',
+      'title': 'Battle Frontier (Spectral)',
+      'league': 'great',
+      'entries': <Object?>[
+        _opponent(1, 'Feunard', <String>['fire'], 'fire'),
+      ],
+      'eligible': <String>['Tortank', 'Simiabraz'],
+    },
+  ],
 });
 
 void main() {
@@ -125,6 +136,17 @@ void main() {
     expect(
       find.text('Il faut au moins trois espèces différentes tagguées en '
           'ligue Hyper dans ta collection.'),
+      findsOneWidget,
+    );
+    // Coupe : Élekable n'y est pas admis, il ne reste que deux espèces.
+    await tester.tap(
+      find.byKey(const ValueKey<String>('best-league-spectral-1500')),
+    );
+    await tester.pumpAndSettle();
+    expect(
+      find.text('Il faut au moins trois espèces différentes admises en '
+          'Battle Frontier (Spectral) et tagguées en ligue Super dans ta '
+          'collection.'),
       findsOneWidget,
     );
     await tester.tap(find.byKey(const ValueKey<String>('best-league-great')));
