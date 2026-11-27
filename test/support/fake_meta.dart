@@ -10,7 +10,6 @@ String fakeMetaJson({
   String species = 'Flambusard',
   List<String> best = const <String>['Florges'],
   bool withAltaria = false,
-  List<Object?>? cups,
 }) =>
     jsonEncode(<String, Object?>{
       'updated': updated,
@@ -66,50 +65,7 @@ String fakeMetaJson({
         'ultra': <Object?>[],
         'master': <Object?>[],
       },
-      if (cups != null) 'cups': cups,
     });
-
-/// Entrée de méta minimale (Feu/Vol, Calcination et Rapace).
-Map<String, Object?> fakeMetaEntry({
-  int rank = 1,
-  String name = 'Flambusard',
-  String? species = 'Flambusard',
-  bool shadow = false,
-}) =>
-    <String, Object?>{
-      'rank': rank,
-      'name': name,
-      'species': species,
-      'shadow': shadow,
-      'types': <String>['fire', 'flying'],
-      'score': 90,
-      'fast': <String, String>{
-        'id': 'INCINERATE',
-        'name': 'Calcination',
-        'type': 'fire',
-      },
-      'charged': <Object?>[
-        <String, String>{'id': 'BRAVE_BIRD', 'name': 'Rapace', 'type': 'flying'},
-      ],
-      'bestMatchups': <String>[],
-      'worstMatchups': <String>[],
-    };
-
-/// Coupe minimale : Flambusard n° 1, admis avec [eligible].
-Map<String, Object?> fakeCupJson({
-  String key = 'spectral-1500',
-  String title = 'Battle Frontier (Spectral)',
-  String league = 'great',
-  List<Map<String, Object?>>? entries,
-  List<String> eligible = const <String>['Flambusard'],
-}) =>
-    <String, Object?>{
-      'key': key,
-      'title': title,
-      'league': league,
-      'entries': entries ?? <Map<String, Object?>>[fakeMetaEntry()],
-      'eligible': eligible,
-    };
 
 /// Source de méta en mémoire, sans réseau.
 class FakeMetaSource implements MetaSource {

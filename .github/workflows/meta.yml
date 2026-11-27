@@ -29,14 +29,6 @@ jobs:
           for f in pokemon_species_names moves move_names; do
             curl -sSfLO "$A/$f.csv"
           done
-          # Coupes mises en avant par PvPoke ; une coupe sans classement
-          # publié est ignorée.
-          python3 "$GITHUB_WORKSPACE/tool/build_meta.py" --formats gamemaster.json |
-            while read -r cup cp; do
-              curl -sSfL -o "rankings-$cup-$cp.json" \
-                "$P/rankings/$cup/overall/rankings-$cp.json" ||
-                { rm -f "rankings-$cup-$cp.json"; echo "Pas de classement pour $cup ($cp)"; }
-            done
       - name: Générer la méta
         run: python3 tool/build_meta.py /tmp/src assets/meta.json
       - name: Générer les espèces et les attaques

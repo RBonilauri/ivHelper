@@ -1,7 +1,6 @@
 import 'package:material_ui/material_ui.dart';
 
 import '../core/collection.dart';
-import '../core/meta.dart';
 import '../core/poke_type.dart';
 import '../state/collection_controller.dart';
 import 'collection_detail_screen.dart';
@@ -74,11 +73,7 @@ class CollectionScreen extends StatelessWidget {
                 SliverPadding(
                   padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
                   sliver: SliverToBoxAdapter(
-                    child: _Controls(
-                      collection: collection,
-                      shown: rows.length,
-                      cups: metaLink?.cups?.call() ?? const <MetaBoard>[],
-                    ),
+                    child: _Controls(collection: collection, shown: rows.length),
                   ),
                 ),
                 SliverPadding(
@@ -220,15 +215,10 @@ List<(int?, String, String?)> _rankOptions(String keyPrefix) =>
 /// En-tête de la collection : bouton « Filtres » (panneau replié par
 /// défaut), effacement rapide, nombre de Pokémon et tri.
 class _Controls extends StatelessWidget {
-  const _Controls({
-    required this.collection,
-    required this.shown,
-    required this.cups,
-  });
+  const _Controls({required this.collection, required this.shown});
 
   final CollectionController collection;
   final int shown;
-  final List<MetaBoard> cups;
 
   @override
   Widget build(BuildContext context) {
@@ -311,7 +301,7 @@ class _Controls extends StatelessWidget {
           duration: const Duration(milliseconds: 200),
           alignment: Alignment.topCenter,
           child: open
-              ? _FilterPanel(collection: collection, cups: cups)
+              ? _FilterPanel(collection: collection)
               : const SizedBox(width: double.infinity),
         ),
         const SizedBox(height: 6),
@@ -346,12 +336,9 @@ class _Controls extends StatelessWidget {
 /// Panneau des filtres, dans une carte : favoris, ligue, rangs, types,
 /// attaques, puis « Effacer les filtres ».
 class _FilterPanel extends StatelessWidget {
-  const _FilterPanel({required this.collection, required this.cups});
+  const _FilterPanel({required this.collection});
 
   final CollectionController collection;
-
-  /// Coupes en cours (vide si la méta n'en a pas).
-  final List<MetaBoard> cups;
 
   @override
   Widget build(BuildContext context) {
@@ -394,24 +381,6 @@ class _FilterPanel extends StatelessWidget {
                     : f.copyWith(league: l),
               ),
             ),
-            if (cups.isNotEmpty)
-              _ChoiceLine<String?>(
-                title: 'Coupe',
-                options: <(String?, String, String?)>[
-                  (null, 'Aucune', 'cup-filter-none'),
-                  for (final c in cups)
-                    (c.key, '${c.label} · ${c.capLabel}', 'cup-filter-${c.key}'),
-                ],
-                selected: filter.cup?.key,
-                onSelected: (key) {
-                  final cup = cups.where((c) => c.key == key).firstOrNull;
-                  set(
-                    (f) => cup == null
-                        ? f.copyWith(clearCup: true)
-                        : f.copyWith(cup: cup),
-                  );
-                },
-              ),
             _ChoiceLine<int?>(
               title: 'Rang d\'IV',
               options: _rankOptions('iv-rank'),
@@ -443,8 +412,7 @@ class _FilterPanel extends StatelessWidget {
               Align(
                 alignment: AlignmentDirectional.centerEnd,
                 child: TextButton.icon(
-                  onPressed: () =>
-                      set((f) => CollectionFilter(query: f.query)),
+                  onPressed: () => set((_) => const CollectionFilter()),
                   icon: const Icon(Icons.filter_alt_off, size: 18),
                   label: const Text('Effacer les filtres'),
                 ),

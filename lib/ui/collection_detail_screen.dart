@@ -16,14 +16,7 @@ import 'info_button.dart';
 /// Lien d'un Pokémon de la collection vers sa fiche méta.
 class CollectionMetaLink {
   /// Crée le lien.
-  const CollectionMetaLink({
-    required this.entryFor,
-    required this.actions,
-    this.cups,
-  });
-
-  /// Coupes en cours de la méta chargée, pour le filtre par coupe.
-  final List<MetaBoard> Function()? cups;
+  const CollectionMetaLink({required this.entryFor, required this.actions});
 
   /// Entrée méta de [entry] dans [league] (même espèce, forme obscure si
   /// possible), ou `null` si l'espèce n'y est pas classée.
@@ -116,7 +109,7 @@ class CollectionDetailScreen extends StatelessWidget {
                 MaterialPageRoute<void>(
                   builder: (_) => MetaDetailScreen(
                     entry: metaEntry,
-                    boardLabel: league.label,
+                    league: league,
                     actions: link.actions,
                   ),
                 ),

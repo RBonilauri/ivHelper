@@ -19,7 +19,6 @@ import '../state/team_controller.dart';
 import '../state/update_controller.dart';
 import 'collection_detail_screen.dart';
 import 'collection_screen.dart';
-import 'cups_card.dart';
 import 'iv_bar.dart';
 import 'iv_logo.dart';
 import 'meta_screen.dart';
@@ -161,7 +160,6 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                 shadow: entry.shadow == ShadowState.shadow,
               ),
               actions: _metaActions,
-              cups: () => _meta.data?.cups ?? const <MetaBoard>[],
             ),
           ),
         ),
@@ -379,8 +377,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
 
   /// Meilleur rang en collection pour [entry] dans [league] : même espèce,
   /// même état obscur, tag de la ligue.
-  int? _ownedRank(MetaEntry entry, MetaBoard board) {
-    final target = board.league;
+  int? _ownedRank(MetaEntry entry, MetaLeague league) {
+    final target = League.fromKey(league.key);
     int? best;
     for (final e in _collection.entries) {
       if (e.speciesName != entry.species || e.league != target) continue;
@@ -695,7 +693,6 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         result: result,
         onLeagueChanged: (league) => _league = league,
       ),
-      CupsCard(meta: _meta, speciesName: species.nameFr),
     ];
   }
 }

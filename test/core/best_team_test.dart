@@ -225,7 +225,8 @@ void main() {
           row('b', 'Tortank', League.ultra),
           row('c', 'Aligatueur', League.great, recorded: <Move>[ember]),
         ],
-        meta.boardOf(MetaLeague.great),
+        League.great,
+        meta,
       );
       expect(<String>[for (final c in list) c.id], <String>['a', 'c']);
       final a = list.first;
@@ -250,36 +251,21 @@ void main() {
           row('d', 'Aligatueur', League.great,
               learnable: <Move>[bubble, ember]),
         ],
-        meta.boardOf(MetaLeague.great),
+        League.great,
+        meta,
       );
       expect(list.single.moveTypes, <PokeType>[PokeType.water, PokeType.fire]);
     });
 
-    test('ligue Mini : pas de méta', () {
-      expect(metaLeagueOf(League.little), isNull);
-      expect(metaLeagueOf(League.ultra), MetaLeague.ultra);
-    });
-
-    test('coupe : seuls les Pokémon admis et tagués dans sa ligue', () {
-      final cup = MetaBoard(
-        key: 'spectral-1500',
-        label: 'Battle Frontier (Spectral)',
-        capLabel: '1500',
-        league: League.great,
-        entries: meta.boardOf(MetaLeague.great).entries,
-        eligible: const <String>{'Tortank (Obscur)', 'Florizarre'},
+    test('ligue Mini : pas de méta, pas de candidat', () {
+      expect(
+        teamCandidates(
+          <CollectionRow>[row('a', 'Tortank', League.little)],
+          League.little,
+          meta,
+        ),
+        isEmpty,
       );
-      final list = teamCandidates(
-        <CollectionRow>[
-          row('a', 'Tortank', League.great, shadow: ShadowState.shadow),
-          row('b', 'Tortank', League.great),
-          row('c', 'Aligatueur', League.great),
-          row('e', 'Florizarre', League.ultra),
-        ],
-        cup,
-      );
-      expect(<String>[for (final c in list) c.id], <String>['a']);
-      expect(list.single.metaRank, 7);
     });
   });
 }
