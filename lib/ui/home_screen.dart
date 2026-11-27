@@ -130,14 +130,15 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   /// Lance la pastille sans passer par le menu, puis revient à l'appli
   /// précédente (le jeu) ; en cas de refus, le message reste dans l'appli.
   Future<void> _quickBubble() async {
-    final messenger = ScaffoldMessenger.maybeOf(context);
+    // Peut être appelé depuis initState (appli ouverte par le raccourci) :
+    // le contexte n'est lu qu'après l'attente.
     final error = await widget.overlayLauncher.start();
     if (!mounted) return;
     if (error == null) {
       await widget.launchActions?.leaveApp();
       return;
     }
-    messenger
+    ScaffoldMessenger.maybeOf(context)
       ?..hideCurrentSnackBar()
       ..showSnackBar(
         SnackBar(duration: const Duration(seconds: 6), content: Text(error)),
