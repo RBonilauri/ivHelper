@@ -20,3 +20,5 @@ La tâche planifiée `.github/workflows/meta.yml` le régénère chaque jour et 
 La même tâche régénère `assets/species.json` et `assets/moves.json` avec `tool/build_species.py` (le résultat est identique tant que PvPoke ne change rien). S'ils changent, elle écrit la date du jour dans `assets/game_data_version.json` (`{"updated": "AAAA-MM-JJ"}`) ; l'appli télécharge alors les deux fichiers depuis `main` et les met en service au retour suivant dans l'appli.
 
 Les formes alternatives aux stats ou types différents (Kyurem Noir/Blanc, Motisma, Deoxys, Dialga et Palkia Originels…) sont incluses dans `species.json` avec un libellé anglais entre parenthèses ; les costumes, de mêmes stats que la forme de base, restent écartés.
+
+Dans `moves.json`, les attaques immédiates ont aussi `energyGain` (énergie rapportée) et `turns` (durée en tours de 0,5 s), repris de PvPoke, pour les duels estimés de « Ma meilleure équipe ».

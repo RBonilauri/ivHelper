@@ -2,7 +2,10 @@ import 'package:material_ui/material_ui.dart';
 
 import '../core/best_team.dart';
 import '../core/collection.dart';
+import '../core/duel.dart';
 import '../core/meta.dart';
+import '../core/moves.dart';
+import '../core/species_repository.dart';
 import '../state/meta_controller.dart';
 import 'format.dart';
 import 'type_badge.dart';
@@ -11,10 +14,14 @@ import 'type_badge.dart';
 const String bestTeamExplanation =
     'Parmi tes Pokémon tagués dans la ligue, les trois espèces différentes '
     'qui contrent le plus d\'adversaires du top 50 de la méta PvPoke (le haut '
-    'du classement compte davantage). Un Pokémon contre un adversaire si '
-    'PvPoke le donne gagnant, sinon s\'il le touche en super efficace sans '
-    'subir de super efficace. À égalité : meilleure note méta, puis meilleur '
-    'rang d\'IV.';
+    'du classement compte davantage). Contre chaque adversaire (meilleurs IV '
+    'de la ligue, attaques conseillées par PvPoke), un duel est estimé tour '
+    'par tour avec tes IV et tes attaques : dégâts selon les stats, le type '
+    'et le bonus de même type, énergie de l\'attaque immédiate, coût des '
+    'chargées. Ton Pokémon le contre s\'il gagne avec 0, 1 et 2 boucliers au '
+    'moins deux fois sur trois. Sans attaques connues, on se rabat sur les '
+    'matchs PvPoke et les types. À égalité : meilleure note méta, puis '
+    'meilleur rang d\'IV.';
 
 /// Ligues proposées (pas de méta en Mini).
 const List<League> _leagues = <League>[League.great, League.ultra, League.master];
@@ -26,7 +33,13 @@ const int _threatsShown = 5;
 /// équipes tirées de [rows] ; renvoie celle choisie.
 class BestTeamSheet extends StatefulWidget {
   /// Crée la feuille.
-  const BestTeamSheet({super.key, required this.meta, required this.rows});
+  const BestTeamSheet({
+    super.key,
+    required this.meta,
+    required this.rows,
+    required this.repository,
+    required this.moves,
+  });
 
   /// Méta PvPoke.
   final MetaController meta;
@@ -34,12 +47,37 @@ class BestTeamSheet extends StatefulWidget {
   /// Toute la collection.
   final List<CollectionRow> rows;
 
+  /// Espèces, pour les stats des adversaires de la méta.
+  final SpeciesRepository repository;
+
+  /// Attaques, pour les duels estimés.
+  final MoveBook moves;
+
   @override
   State<BestTeamSheet> createState() => _BestTeamSheetState();
 }
 
 class _BestTeamSheetState extends State<BestTeamSheet> {
   League _league = League.great;
+
+  /// Propositions déjà calculées, par méta et ligue (les duels sont
+  /// coûteux).
+  final Map<String, List<TeamProposal>> _cache = <String, List<TeamProposal>>{};
+
+  List<TeamProposal> _proposals(MetaSnapshot data, MetaLeague metaLeague) {
+    return _cache.putIfAbsent('${data.updated}|${metaLeague.key}', () {
+      final opponents = data.leagues[metaLeague] ?? const <MetaEntry>[];
+      final foes = opponents.take(50).toList();
+      return bestTeams(
+        teamCandidates(widget.rows, _league, data, moves: widget.moves),
+        foes,
+        opponentFighters: <Fighter?>[
+          for (final o in foes)
+            metaFighter(o, _league, widget.repository, widget.moves),
+        ],
+      );
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -51,10 +89,7 @@ class _BestTeamSheetState extends State<BestTeamSheet> {
         final metaLeague = metaLeagueOf(_league);
         final proposals = data == null || metaLeague == null
             ? const <TeamProposal>[]
-            : bestTeams(
-                teamCandidates(widget.rows, _league, data),
-                data.leagues[metaLeague] ?? const <MetaEntry>[],
-              );
+            : _proposals(data, metaLeague);
         return Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
