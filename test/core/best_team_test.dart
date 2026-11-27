@@ -1,7 +1,11 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ivhelper/core/best_team.dart';
+import 'package:ivhelper/core/collection.dart';
 import 'package:ivhelper/core/meta.dart';
+import 'package:ivhelper/core/moves.dart';
 import 'package:ivhelper/core/poke_type.dart';
+import 'package:ivhelper/core/species_repository.dart';
+import 'package:ivhelper/core/stats.dart';
 
 MetaMove _m(PokeType t) => MetaMove(id: t.id, nameFr: t.nameFr, type: t);
 
@@ -131,5 +135,137 @@ void main() {
       ], _meta),
       isEmpty,
     );
+  });
+
+  test('contrer : les matchs PvPoke de l\'adversaire comptent aussi', () {
+    final normal = TeamCandidate(
+      id: 'x',
+      species: 'Ronflex',
+      metaName: 'Ronflex',
+      shadow: false,
+      types: const <PokeType>[PokeType.normal],
+      moveTypes: const <PokeType>[PokeType.normal],
+      ivRank: 1,
+    );
+    final scared = MetaEntry(
+      rank: 1,
+      name: 'Feunard',
+      species: 'Feunard',
+      shadow: false,
+      types: const <PokeType>[PokeType.fire],
+      score: 90,
+      fast: _m(PokeType.fire),
+      charged: const <MetaMove>[],
+      bestMatchups: const <String>[],
+      worstMatchups: const <String>['Ronflex'],
+    );
+    expect(counters(normal, scared), isTrue);
+  });
+
+  group('candidats de la collection', () {
+    const bubble =
+        Move(id: 'BUBBLE', nameFr: 'Écume', type: PokeType.water, isFast: true);
+    const ember =
+        Move(id: 'EMBER', nameFr: 'Flammèche', type: PokeType.fire, isFast: true);
+    CollectionRow row(
+      String id,
+      String name,
+      League league, {
+      int rank = 5,
+      ShadowState shadow = ShadowState.none,
+      List<Move> recorded = const <Move>[],
+      List<Move> learnable = const <Move>[],
+    }) =>
+        CollectionRow(
+          entry: CollectionEntry(
+            id: id,
+            speciesName: name,
+            iv: const Iv(0, 15, 15),
+            maxLevel: 50,
+            league: league,
+            rank: rank,
+            percent: 99,
+            cp: 1490,
+            level: 30,
+            shadow: shadow,
+          ),
+          species: Species(
+            dex: 1,
+            nameFr: name,
+            base: const BaseStats(100, 100, 100),
+            types: const <PokeType>[PokeType.water],
+          ),
+          recordedMoves: recorded,
+          learnableMoves: learnable,
+        );
+    final meta = MetaSnapshot(
+      updated: '2026-11-27',
+      leagues: <MetaLeague, List<MetaEntry>>{
+        MetaLeague.great: <MetaEntry>[
+          MetaEntry(
+            rank: 7,
+            name: 'Tortank (Obscur)',
+            species: 'Tortank',
+            shadow: true,
+            types: const <PokeType>[PokeType.water],
+            score: 88,
+            fast: _m(PokeType.water),
+            charged: <MetaMove>[_m(PokeType.ice)],
+            bestMatchups: const <String>['Feunard'],
+            worstMatchups: const <String>['Ptéra'],
+          ),
+        ],
+      },
+    );
+
+    test('seuls les Pokémon tagués dans la ligue, avec la méta', () {
+      final list = teamCandidates(
+        <CollectionRow>[
+          row('a', 'Tortank', League.great, shadow: ShadowState.shadow, rank: 3),
+          row('b', 'Tortank', League.ultra),
+          row('c', 'Aligatueur', League.great, recorded: <Move>[ember]),
+        ],
+        League.great,
+        meta,
+      );
+      expect(<String>[for (final c in list) c.id], <String>['a', 'c']);
+      final a = list.first;
+      expect(a.shadow, isTrue);
+      expect(a.metaRank, 7);
+      expect(a.metaScore, 88);
+      expect(a.metaName, 'Tortank (Obscur)');
+      expect(a.beats, <String>['Feunard']);
+      expect(a.losesTo, <String>['Ptéra']);
+      expect(a.ivRank, 3);
+      // Sans attaque enregistrée : celles conseillées par la méta.
+      expect(a.moveTypes, <PokeType>[PokeType.water, PokeType.ice]);
+      // Attaques enregistrées d'abord ; espèce absente de la méta.
+      final c = list.last;
+      expect(c.moveTypes, <PokeType>[PokeType.fire]);
+      expect(c.metaRank, isNull);
+    });
+
+    test('hors méta et sans attaque : les attaques apprenables', () {
+      final list = teamCandidates(
+        <CollectionRow>[
+          row('d', 'Aligatueur', League.great,
+              learnable: <Move>[bubble, ember]),
+        ],
+        League.great,
+        meta,
+      );
+      expect(list.single.moveTypes, <PokeType>[PokeType.water, PokeType.fire]);
+    });
+
+    test('ligue Mini : pas de méta, pas de candidat', () {
+      expect(
+        teamCandidates(
+          <CollectionRow>[row('a', 'Tortank', League.little)],
+          League.little,
+          meta,
+        ),
+        isEmpty,
+      );
+    });
   });
 }

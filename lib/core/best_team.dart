@@ -1,3 +1,4 @@
+import 'collection.dart';
 import 'meta.dart';
 import 'poke_type.dart';
 
@@ -11,6 +12,7 @@ class TeamCandidate {
     required this.types,
     required this.moveTypes,
     required this.ivRank,
+    this.metaName,
     this.metaRank,
     this.metaScore,
     this.beats = const <String>[],
@@ -34,6 +36,9 @@ class TeamCandidate {
 
   /// Squelette.
   final int ivRank;
+
+  /// Squelette.
+  final String? metaName;
 
   /// Squelette.
   final int? metaRank;
@@ -86,3 +91,11 @@ List<TeamProposal> bestTeams(
   int count = 3,
 }) =>
     const <TeamProposal>[];
+
+/// Squelette.
+List<TeamCandidate> teamCandidates(
+  List<CollectionRow> rows,
+  League league,
+  MetaSnapshot meta,
+) =>
+    const <TeamCandidate>[];
