@@ -25,6 +25,7 @@ Tu as un Pokémon avec ses IV (Attaque / Défense / PV). Tu veux savoir **où il
 - **Dernières recherches** : sans Pokémon saisi, les 8 dernières (une par espèce, avec leurs IV).
 - **Quatre volets : Mini · 500, Super · 1500, Hyper · 2500, Master · sans limite**, avec ton rang, ton pourcentage et le haut du classement : top 10, puis « Afficher 10 de plus ».
 - **Niveau maximal** 50 par défaut, ou 51 (bonus meilleur ami). **Plancher d'IV** « Min 10/10/10 » (216 combinaisons).
+- **Coupes en cours** : sous les volets, les coupes PvPoke qui acceptent ce Pokémon (Battle Frontier, Devon Trail Cup…) et sa place dans leur méta (« n° 12 », « hors top 100 »). Le rang des IV est celui de la ligue de même limite de PC.
 - **Enregistrer** dans la collection, avec la ligue et le rang (recalculé à chaque ouverture avec les données actuelles), et en option : attaques (celles de la méta en gras), obscur ou purifié, taille (XXS à XXL), chanceux, shiny, costume. Doublons permis.
 
 ### Superposition (Android)
@@ -33,7 +34,7 @@ Une pastille flotte par-dessus Pokémon GO. Sur la fiche d'un Pokémon, touche �
 
 - ivHelper **capture l'écran et lit** le nom, les PC, les PV et les trois barres d'IV, et reconnaît le stade d'évolution.
 - **Tableau stades × ligues** avec rang et pourcentage ; une case choisit le stade et la ligue.
-- Pour la case choisie : **rang dans la méta** de la ligue, et **coût pour monter** au niveau visé (poussières, bonbons, bonbons L), recalculé selon chanceux, obscur ou purifié (pré-cochés quand l'écran les montre).
+- Pour la case choisie : **rang dans la méta** de la ligue et dans les **coupes** de même limite de PC qui l'acceptent, et **coût pour monter** au niveau visé (poussières, bonbons, bonbons L), recalculé selon chanceux, obscur ou purifié (pré-cochés quand l'écran les montre).
 - **Enregistrer** dans la collection, et **Copier PVP#<rang>** pour renommer le Pokémon dans le jeu.
 - Tout se corrige à la main (espèce, barres, meilleur ami, décoché par défaut).
 
@@ -44,14 +45,14 @@ Il faut autoriser l'affichage par-dessus les autres applis et la capture d'écra
 ### Menu
 
 - **Ma collection** : champ de recherche par nom (accents et majuscules ignorés), liste ou mosaïque (au moins 3 par ligne), case à la couleur du premier type, bordure dorée pour un rang 1, cœur pour les favoris, rang méta de la ligue.
-  - Panneau **Filtres** (replié par défaut), combinables : favoris, ligue, rang d'IV et rang de ligue (Top 1, 10, 50), types du Pokémon, attaques **Immédiate** ET/OU **Chargée** (par nom ou par type).
+  - Panneau **Filtres** (replié par défaut), combinables : favoris, ligue, **coupe** (Pokémon admis et tagués dans sa ligue ; le rang de ligue devient alors celui de la coupe), rang d'IV et rang de ligue (Top 1, 10, 50), types du Pokémon, attaques **Immédiate** ET/OU **Chargée** (par nom ou par type).
   - Tris : rang, Pokédex, nom, type, favoris, rang méta.
   - Fiche : attaques avec barres d'énergie et effets, favori, modifier, voir le rang, voir la fiche méta de sa ligue, supprimer (avec confirmation).
-- **Méta** : le top 300 PvPoke en Super, Hyper et Master (formes obscures comprises), mis à jour chaque jour.
+- **Méta** : le top 300 PvPoke en Super, Hyper et Master (formes obscures comprises), et le top 100 de chaque **coupe en cours** mise en avant par PvPoke (puces « Coupes en cours » sous les ligues), mis à jour chaque jour.
   - Filtres : nom, types du Pokémon, types des attaques recommandées, « Possédés en <ligue> ».
   - Les Pokémon que tu as sont bordés de jaune avec ton meilleur rang.
   - Fiche : attaques recommandées, meilleurs matchs et pires adversaires (en jaune ceux que tu possèdes), « Voir le rang de mes IV », « Ajouter à mon équipe ».
-- **Team builder** : 3 Pokémon, saisis ou importés de la collection, une immédiate et deux chargées chacun ; faiblesses, résistances, couverture offensive, et bilan d'équipe repliable. L'équipe est conservée. Le bouton **« Ma meilleure équipe »** propose, pour la ligue Super, Hyper ou Master, les trois espèces de ta collection (taguées dans cette ligue) qui contrent le plus d'adversaires du top 50 de la méta PvPoke, avec le pourcentage couvert et les menaces restantes ; « Utiliser cette équipe » les place dans les trois emplacements.
+- **Team builder** : 3 Pokémon, saisis ou importés de la collection, une immédiate et deux chargées chacun ; faiblesses, résistances, couverture offensive, et bilan d'équipe repliable. L'équipe est conservée. Le bouton **« Ma meilleure équipe »** propose, pour la ligue Super, Hyper ou Master ou pour une coupe en cours, les trois espèces de ta collection (taguées dans cette ligue, et admises dans la coupe) qui contrent le plus d'adversaires du top 50 de la méta PvPoke, avec le pourcentage couvert et les menaces restantes ; « Utiliser cette équipe » les place dans les trois emplacements.
 - **Table des types** : touche un type, ou deux pour un double type, pour voir sa défense et son attaque.
 - **Chaînes de recherche** : le texte à coller dans la recherche du jeu.
   - Onglet **Rang PvP** : la chaîne qui retrouve les meilleurs IV d'une espèce pour une ligue (top 10, 50 ou 100), et des chaînes prêtes à l'emploi.
@@ -68,7 +69,7 @@ L'app n'est pas sur le Play Store.
 
 **Première installation** : onglet **Releases** du dépôt, dernière version, télécharger `ivhelper.apk` et l'ouvrir sur le téléphone (autoriser les sources inconnues).
 
-**Mises à jour** : chaque fusion dans `main` publie une Release `v1.1.N` signée avec la clé fixe d'ivHelper. Au démarrage, l'app interroge GitHub ; si une version plus récente existe, une bannière propose « Mettre à jour ». L'APK se télécharge dans l'app, l'installeur d'Android s'ouvre et l'appli se ferme (pour ne pas laisser une seconde fiche dans les applis récentes) ; la nouvelle version garde ta collection, ton équipe et tes réglages. Le menu affiche la version installée et un bouton « Vérifier les mises à jour ». En cas d'échec, « Via le navigateur » ouvre l'APK directement.
+**Mises à jour** : chaque fusion dans `main` publie une Release `v1.2.N` signée avec la clé fixe d'ivHelper. Au démarrage, l'app interroge GitHub ; si une version plus récente existe, une bannière propose « Mettre à jour ». L'APK se télécharge dans l'app, l'installeur d'Android s'ouvre et l'appli se ferme (pour ne pas laisser une seconde fiche dans les applis récentes) ; la nouvelle version garde ta collection, ton équipe et tes réglages. Le menu affiche la version installée et un bouton « Vérifier les mises à jour ». En cas d'échec, « Via le navigateur » ouvre l'APK directement.
 
 **Clé de signature** : la CI signe avec la clé fournie par les secrets du dépôt `ANDROID_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS` et `ANDROID_KEY_PASSWORD` (`tool/configure_signing.py`). Sans ces secrets, l'APK est signé avec une clé de débogage et aucune Release n'est publiée. Les APK de chaque exécution restent disponibles en artefact `ivhelper-apk` dans l'onglet Actions.
 
@@ -138,6 +139,7 @@ Chaque couche a ses tests : `test/core`, `test/state`, `test/settings`, `test/ui
 - [x] **Phase 1 bis** : team builder, table des types, méta à jour, collection, mises à jour dans l'app
 - [x] **Phases 2 et 3 (1.1)** : pastille flottante Android, lecture de l'écran, tableau stades × ligues, rang méta et coût de montée
 - [x] **Outils** : chaînes de recherche (simple et avancée), export et import du compte
+- [x] **1.2** : coupes PvPoke en cours (méta, éligibilité, collection, meilleure équipe, pastille)
 - [ ] **Phase 4** : parcours iPhone (analyse de la dernière capture d'écran)
 
 Le détail est dans [le plan](docs/superpowers/plans/2026-11-24-ivhelper.md) et [le design](docs/superpowers/specs/2026-11-24-pvp-rank-overlay-design.md).

@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'league.dart';
 import 'poke_type.dart';
 import 'species_repository.dart';
 
@@ -112,10 +113,151 @@ class MetaEntry {
   final List<String> worstMatchups;
 }
 
+/// Un classement de la méta : une ligue (Super, Hyper, Master) ou une coupe
+/// PvPoke en cours (avec ses règles d'admission).
+class MetaBoard {
+  /// Crée un classement ; [eligible] `null` pour une ligue ouverte à tous.
+  const MetaBoard({
+    required this.key,
+    required this.label,
+    required this.capLabel,
+    required this.league,
+    required this.entries,
+    this.eligible,
+  });
+
+  /// Clé : `great`, `ultra`, `master`, ou `<coupe>-<PC>` (`spectral-1500`).
+  final String key;
+
+  /// Nom affiché (« Super », « Battle Frontier (Spectral) »).
+  final String label;
+
+  /// Plafond affiché (« 1500 », « sans limite »).
+  final String capLabel;
+
+  /// Ligue dont la coupe reprend la limite de PC (et donc le rang d'IV).
+  final League league;
+
+  /// Classement, du meilleur au moins bon.
+  final List<MetaEntry> entries;
+
+  /// Espèces admises (« Tortank », « Tortank (Obscur) » pour la forme
+  /// obscure), ou `null` pour une ligue ouverte à tous.
+  final Set<String>? eligible;
+
+  /// Vrai pour une coupe.
+  bool get isCup => eligible != null;
+
+  /// Vrai si l'espèce [speciesName] (forme obscure si [shadow]) peut
+  /// participer.
+  bool allows(String speciesName, {bool shadow = false}) {
+    final admitted = eligible;
+    return admitted == null ||
+        admitted.contains(shadow ? '$speciesName (Obscur)' : speciesName);
+  }
+
+  /// Entrée de [speciesName] : la forme obscure si [shadow] et qu'elle est
+  /// classée, sinon la première forme classée ; `null` si absente.
+  MetaEntry? entryFor(String speciesName, {bool shadow = false}) {
+    final matches = <MetaEntry>[
+      for (final e in entries)
+        if (e.species == speciesName) e,
+    ];
+    if (matches.isEmpty) return null;
+    return matches.firstWhere(
+      (e) => e.shadow == shadow,
+      orElse: () => matches.first,
+    );
+  }
+}
+
+/// Place d'une espèce dans une coupe qui l'accepte : son entrée du
+/// classement, ou `null` si elle est hors du top gardé.
+class CupStanding {
+  /// Crée la place.
+  const CupStanding(this.cup, this.entry);
+
+  /// La coupe.
+  final MetaBoard cup;
+
+  /// Entrée du classement, ou `null` (hors top).
+  final MetaEntry? entry;
+}
+
+/// Coupes en cours de [meta] qui acceptent [speciesName] (forme obscure si
+/// [shadow]), limitées à celles de [league] si elle est donnée.
+List<CupStanding> cupStandings(
+  MetaSnapshot meta,
+  String speciesName, {
+  League? league,
+  bool shadow = false,
+}) =>
+    <CupStanding>[
+      for (final cup in meta.cups)
+        if ((league == null || cup.league == league) &&
+            cup.allows(speciesName, shadow: shadow))
+          CupStanding(cup, cup.entryFor(speciesName, shadow: shadow)),
+    ];
+
+/// Ligne de la pastille pour les coupes de [league] : « Coupes : <coupe>
+/// n° 4 · <coupe> hors top 100 », « Coupes Super : aucune ne l'accepte », ou
+/// `null` s'il n'y a pas de coupe dans cette ligue (ou pas de méta).
+String? cupsLine(
+  MetaSnapshot? meta,
+  String speciesName,
+  League league, {
+  bool shadow = false,
+}) {
+  if (meta == null || !meta.cups.any((c) => c.league == league)) return null;
+  final standings =
+      cupStandings(meta, speciesName, league: league, shadow: shadow);
+  if (standings.isEmpty) return 'Coupes ${league.label} : aucune ne l\'accepte';
+  return 'Coupes : ${standings.map((s) => '${s.cup.label} ${cupStandingLabel(s)}').join(' · ')}';
+}
+
+/// « n° 12 », ou « hors top 100 » si l'espèce n'est pas dans le classement
+/// gardé.
+String cupStandingLabel(CupStanding standing) {
+  final entry = standing.entry;
+  return entry == null
+      ? 'hors top ${standing.cup.entries.length}'
+      : 'n° ${entry.rank}';
+}
+
 /// La méta d'une date donnée, par ligue.
 class MetaSnapshot {
   /// Crée une méta.
-  const MetaSnapshot({required this.updated, required this.leagues});
+  const MetaSnapshot({
+    required this.updated,
+    required this.leagues,
+    this.cups = const <MetaBoard>[],
+  });
+
+  /// Coupes PvPoke en cours (vide pour une méta d'avant les coupes).
+  final List<MetaBoard> cups;
+
+  /// Les trois ligues, puis les coupes.
+  List<MetaBoard> get boards => <MetaBoard>[
+        for (final l in MetaLeague.values) boardOf(l),
+        ...cups,
+      ];
+
+  /// Classement de la ligue [league].
+  MetaBoard boardOf(MetaLeague league) => MetaBoard(
+        key: league.key,
+        label: league.label,
+        capLabel: league.cap,
+        league: League.fromKey(league.key)!,
+        entries: leagues[league] ?? const <MetaEntry>[],
+      );
+
+  /// Classement de clé [key] (ligue ou coupe), ou `null`.
+  MetaBoard? boardByKey(String key) {
+    for (final b in boards) {
+      if (b.key == key) return b;
+    }
+    return null;
+  }
 
   /// Lit `meta.json` produit par `tool/build_meta.py`.
   ///
@@ -134,6 +276,10 @@ class MetaSnapshot {
                 _entry(raw as Map<String, dynamic>),
             ],
         },
+        cups: <MetaBoard>[
+          for (final raw in (root['cups'] as List<dynamic>?) ?? const <dynamic>[])
+            if (_cup(raw as Map<String, dynamic>) case final cup?) cup,
+        ],
       );
     } on FormatException {
       rethrow;
@@ -207,6 +353,23 @@ class MetaSnapshot {
 
   /// Vrai si cette méta est plus récente que [other].
   bool isNewerThan(MetaSnapshot other) => updated.compareTo(other.updated) > 0;
+}
+
+/// Coupe de `meta.json`, ou `null` si sa limite de PC est inconnue.
+MetaBoard? _cup(Map<String, dynamic> raw) {
+  final league = League.fromKey(raw['league']);
+  if (league == null) return null;
+  return MetaBoard(
+    key: raw['key'] as String,
+    label: raw['title'] as String,
+    capLabel: league.capLabel,
+    league: league,
+    entries: <MetaEntry>[
+      for (final e in raw['entries'] as List<dynamic>)
+        _entry(e as Map<String, dynamic>),
+    ],
+    eligible: _strings(raw['eligible']).toSet(),
+  );
 }
 
 MetaEntry _entry(Map<String, dynamic> raw) => MetaEntry(
