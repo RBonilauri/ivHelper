@@ -1,6 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ivhelper/core/collection.dart';
-import 'package:ivhelper/core/meta.dart';
 import 'package:ivhelper/core/moves.dart';
 import 'package:ivhelper/core/poke_type.dart';
 import 'package:ivhelper/core/species_repository.dart';
@@ -337,39 +336,5 @@ void main() {
     // La recherche n'est pas comptée parmi les filtres du panneau.
     expect(const CollectionFilter(query: 'a').activeCount, 0);
     expect(const CollectionFilter().copyWith(query: 'sal').query, 'sal');
-  });
-
-  test('filtre de coupe : admis dans la coupe et tagués dans sa ligue', () {
-    MetaEntry entry(String name, int rank) => MetaEntry(
-          rank: rank,
-          name: name,
-          species: name,
-          shadow: false,
-          types: const <PokeType>[PokeType.water],
-          score: 80,
-          fast: const MetaMove(id: 'BUBBLE', nameFr: 'Écume', type: PokeType.water),
-          charged: const <MetaMove>[],
-          bestMatchups: const <String>[],
-          worstMatchups: const <String>[],
-        );
-    final cup = MetaBoard(
-      key: 'spectral-1500',
-      label: 'Battle Frontier (Spectral)',
-      capLabel: '1500',
-      league: League.great,
-      entries: <MetaEntry>[entry('Écayon', 3)],
-      eligible: const <String>{'Écayon', 'Flambusard', 'Carapuce'},
-    );
-    // Salamèche n'est pas admis ; Flambusard et Carapuce sont tagués dans
-    // une autre ligue.
-    expect(_apply(CollectionFilter(cup: cup)), <String>['Écayon']);
-    expect(CollectionFilter(cup: cup).activeCount, 1);
-    expect(CollectionFilter(cup: cup).copyWith(clearCup: true).cup, isNull);
-    // Avec une coupe, le rang de ligue est celui de la méta de la coupe.
-    expect(
-      _apply(CollectionFilter(cup: cup, maxMetaRank: 10)),
-      <String>['Écayon'],
-    );
-    expect(_apply(CollectionFilter(cup: cup, maxMetaRank: 1)), isEmpty);
   });
 }

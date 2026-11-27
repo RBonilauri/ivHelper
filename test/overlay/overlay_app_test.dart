@@ -278,54 +278,5 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Pas de méta en ligue Mini'), findsOneWidget);
   });
-
-  testWidgets('la pastille montre les coupes de la ligue choisie',
-      (tester) async {
-    tester.view.physicalSize = const Size(900, 2600);
-    tester.view.devicePixelRatio = 1;
-    addTearDown(tester.view.reset);
-    final repo = SpeciesRepository(const <Species>[_zubat, _golbat, _crobat]);
-    await tester.pumpWidget(
-      OverlayApp(
-        repository: repo,
-        moves: MoveBook(const <Move>[]),
-        settings: SettingsController(MemorySettingsStore()),
-        window: FakeOverlayWindow(),
-        meta: MetaSnapshot.fromJson(
-          fakeMetaJson(
-            name: 'Nostenfer',
-            species: 'Nostenfer',
-            cups: <Object?>[
-              fakeCupJson(
-                entries: <Map<String, Object?>>[
-                  fakeMetaEntry(name: 'Nostenfer', species: 'Nostenfer'),
-                ],
-                eligible: <String>['Nostenfer'],
-              ),
-            ],
-          ),
-        ),
-        scanner: FakeScreenScanner(
-          ScanResult(
-            species: _zubat,
-            family: repo.familyOf(_zubat),
-            iv: const Iv(0, 13, 10),
-            text: const ScreenText(cp: 24, hpMax: 21),
-            level: 2,
-          ),
-        ),
-      ),
-    );
-    await tester.tap(find.byKey(const ValueKey<String>('overlay-bubble')));
-    await tester.pumpAndSettle();
-    await tester.tap(find.byKey(const ValueKey<String>('cell-Nostenfer-great')));
-    await tester.pumpAndSettle();
-    String text(String key) =>
-        tester.widget<Text>(find.byKey(ValueKey<String>(key))).data!;
-    expect(text('cups-rank'), 'Coupes : Battle Frontier (Spectral) n° 1');
-    // Forme obscure : pas admise dans cette coupe.
-    await tester.tap(find.widgetWithText(FilterChip, 'Obscur'));
-    await tester.pumpAndSettle();
-    expect(text('cups-rank'), 'Coupes Super : aucune ne l\'accepte');
-  });
 }
+

@@ -1,5 +1,4 @@
 import 'league.dart';
-import 'meta.dart';
 import 'moves.dart';
 import 'poke_type.dart';
 import 'species_repository.dart';
@@ -350,12 +349,7 @@ class CollectionFilter {
     this.chargedTypes = const <PokeType>{},
     this.movesEither = false,
     this.query = '',
-    this.cup,
   });
-
-  /// Coupe : ne garde que les Pokémon qui y sont admis et tagués dans sa
-  /// ligue ; le filtre de rang de ligue prend alors la méta de la coupe.
-  final MetaBoard? cup;
 
   /// Texte cherché dans le nom de l'espèce (accents et majuscules ignorés ;
   /// vide : tous). Hors du panneau des filtres : pas compté dans
@@ -407,8 +401,7 @@ class CollectionFilter {
       (types.isEmpty ? 0 : 1) +
       (filtersFast ? 1 : 0) +
       (filtersCharged ? 1 : 0) +
-      (favoritesOnly ? 1 : 0) +
-      (cup == null ? 0 : 1);
+      (favoritesOnly ? 1 : 0);
 
   /// Copie avec les champs donnés remplacés ; [clearLeague], [clearMaxRank] et
   /// [clearMaxMetaRank] retirent ces filtres.
@@ -427,8 +420,6 @@ class CollectionFilter {
     Set<PokeType>? chargedTypes,
     bool? movesEither,
     String? query,
-    MetaBoard? cup,
-    bool clearCup = false,
   }) =>
       CollectionFilter(
         league: clearLeague ? null : (league ?? this.league),
@@ -443,7 +434,6 @@ class CollectionFilter {
         chargedTypes: chargedTypes ?? this.chargedTypes,
         movesEither: movesEither ?? this.movesEither,
         query: query ?? this.query,
-        cup: clearCup ? null : (cup ?? this.cup),
       );
 
   /// Vrai si [row] passe tous les filtres ; [metaRankOf] donne le rang méta
@@ -456,20 +446,11 @@ class CollectionFilter {
     }
     if (favoritesOnly && !e.favorite) return false;
     if (league != null && e.league != league) return false;
-    final shadow = e.shadow == ShadowState.shadow;
-    final cup = this.cup;
-    if (cup != null &&
-        (e.league != cup.league ||
-            !cup.allows(e.speciesName, shadow: shadow))) {
-      return false;
-    }
     final max = maxRank;
     if (max != null && e.rank > max) return false;
     final maxMeta = maxMetaRank;
     if (maxMeta != null) {
-      final meta = cup != null
-          ? cup.entryFor(e.speciesName, shadow: shadow)?.rank
-          : metaRankOf?.call(e);
+      final meta = metaRankOf?.call(e);
       if (meta == null || meta > maxMeta) return false;
     }
     if (types.isNotEmpty && !row.species.types.any(types.contains)) {

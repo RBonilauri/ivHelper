@@ -597,18 +597,6 @@ class _LeagueDetails extends StatelessWidget {
               key: const ValueKey<String>('meta-rank'),
               style: theme.textTheme.titleSmall,
             ),
-            if (cupsLine(
-                  meta,
-                  species.nameFr,
-                  league,
-                  shadow: shadow == ShadowState.shadow,
-                )
-                case final cups?)
-              Text(
-                cups,
-                key: const ValueKey<String>('cups-rank'),
-                style: theme.textTheme.bodySmall,
-              ),
             const SizedBox(height: 6),
             Wrap(
               spacing: 6,
