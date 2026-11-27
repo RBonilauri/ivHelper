@@ -348,7 +348,13 @@ class CollectionFilter {
     this.chargedMoves = const <String>{},
     this.chargedTypes = const <PokeType>{},
     this.movesEither = false,
+    this.query = '',
   });
+
+  /// Texte cherché dans le nom de l'espèce (accents et majuscules ignorés ;
+  /// vide : tous). Hors du panneau des filtres : pas compté dans
+  /// [activeCount].
+  final String query;
 
   /// Ligue du tag, ou `null` pour toutes.
   final League? league;
@@ -413,6 +419,7 @@ class CollectionFilter {
     Set<String>? chargedMoves,
     Set<PokeType>? chargedTypes,
     bool? movesEither,
+    String? query,
   }) =>
       CollectionFilter(
         league: clearLeague ? null : (league ?? this.league),
@@ -426,12 +433,17 @@ class CollectionFilter {
         chargedMoves: chargedMoves ?? this.chargedMoves,
         chargedTypes: chargedTypes ?? this.chargedTypes,
         movesEither: movesEither ?? this.movesEither,
+        query: query ?? this.query,
       );
 
   /// Vrai si [row] passe tous les filtres ; [metaRankOf] donne le rang méta
   /// (sans lui, ou non classé, le filtre de rang de ligue refuse l'entrée).
   bool accepts(CollectionRow row, [MetaRankOf? metaRankOf]) {
     final e = row.entry;
+    final q = normalizeName(query.trim());
+    if (q.isNotEmpty && !normalizeName(row.species.nameFr).contains(q)) {
+      return false;
+    }
     if (favoritesOnly && !e.favorite) return false;
     if (league != null && e.league != league) return false;
     final max = maxRank;

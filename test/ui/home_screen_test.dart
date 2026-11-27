@@ -54,6 +54,8 @@ Future<void> _pumpApp(
   int currentBuild = 0,
   FakeAccountFiles? files,
   String? gameDataUpdated,
+  FakeOverlayLauncher? overlay,
+  FakeLaunchActions? launchActions,
 }) async {
   tester.view.physicalSize = const Size(800, 2200);
   tester.view.devicePixelRatio = 1;
@@ -65,7 +67,8 @@ Future<void> _pumpApp(
       settings: SettingsController(MemorySettingsStore()),
       metaSource: FakeMetaSource(local: meta ?? fakeMetaJson()),
       updateSource: FakeUpdateSource(latest: releaseJson(5)),
-      overlayLauncher: FakeOverlayLauncher(),
+      overlayLauncher: overlay ?? FakeOverlayLauncher(),
+      launchActions: launchActions,
       accountFiles: files ?? FakeAccountFiles(),
       currentBuild: currentBuild,
       gameDataUpdated: gameDataUpdated,
@@ -1339,5 +1342,66 @@ void main() {
     final date = find.byKey(const ValueKey<String>('game-data-date'));
     await tester.ensureVisible(date);
     expect(find.text('Données du jeu du 25/11/2026'), findsOneWidget);
+  });
+
+  testWidgets('collection : recherche par nom', (tester) async {
+    await _pumpApp(tester);
+    await tester.enterText(find.byType(TextField).first, 'Flambusard');
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Enregistrer'));
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('Enregistrer dans la collection'));
+    await tester.tap(find.text('Enregistrer dans la collection'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('Paramètres'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Ma collection'));
+    await tester.pumpAndSettle();
+    final search = find.descendant(
+      of: find.byKey(const ValueKey<String>('collection-search')),
+      matching: find.byType(TextField),
+    );
+    await tester.enterText(search, 'passe');
+    await tester.pumpAndSettle();
+    expect(find.text('0 Pokémon sur 1'), findsOneWidget);
+    expect(find.text('Aucun Pokémon ne correspond à ta recherche.'), findsOneWidget);
+    await tester.enterText(search, 'FLAMBU');
+    await tester.pumpAndSettle();
+    expect(find.text('1 Pokémon sur 1'), findsOneWidget);
+    await tester.tap(find.byTooltip('Effacer'));
+    await tester.pumpAndSettle();
+    expect(find.text('1 Pokémon sur 1'), findsOneWidget);
+    await tester.pump(const Duration(seconds: 10));
+    await tester.pumpAndSettle();
+  });
+
+  testWidgets('raccourci ou tuile : lance la pastille et revient au jeu',
+      (tester) async {
+    final overlay = FakeOverlayLauncher();
+    // Appli ouverte par le raccourci : la demande attend l'écran d'accueil.
+    final actions = FakeLaunchActions(pending: true);
+    await _pumpApp(tester, overlay: overlay, launchActions: actions);
+    await tester.pumpAndSettle();
+    expect(overlay.starts, 1);
+    expect(actions.leaves, 1);
+    // Appli déjà ouverte.
+    actions.fire();
+    await tester.pumpAndSettle();
+    expect(overlay.starts, 2);
+    expect(actions.leaves, 2);
+  });
+
+  testWidgets('raccourci refusé : le message reste dans l\'appli',
+      (tester) async {
+    final overlay = FakeOverlayLauncher(error: 'La capture d\'écran a été refusée.');
+    final actions = FakeLaunchActions();
+    await _pumpApp(tester, overlay: overlay, launchActions: actions);
+    actions.fire();
+    await tester.pumpAndSettle();
+    expect(overlay.starts, 1);
+    expect(actions.leaves, 0);
+    expect(find.text('La capture d\'écran a été refusée.'), findsOneWidget);
+    await tester.pump(const Duration(seconds: 10));
+    await tester.pumpAndSettle();
   });
 }

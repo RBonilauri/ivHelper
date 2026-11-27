@@ -102,4 +102,21 @@ class IvhelperCapture {
   /// c'était possible (faux depuis la pastille, sans écran).
   static Future<bool> closeTask() async =>
       await _channel.invokeMethod<bool>('closeTask') ?? false;
+
+  /// Demande de lancement rapide en attente (`bubble` pour la pastille,
+  /// depuis le raccourci de l'icône ou la tuile des réglages rapides), ou
+  /// `null` ; elle est retirée une fois lue.
+  static Future<String?> takeLaunchAction() =>
+      _channel.invokeMethod<String>('takeLaunchAction');
+
+  /// Appelle [onAvailable] quand une demande de lancement rapide arrive alors
+  /// que l'appli est déjà ouverte ; la lire avec [takeLaunchAction].
+  static void onLaunchAction(Future<void> Function() onAvailable) {
+    _channel.setMethodCallHandler((call) async {
+      if (call.method == 'launchActionAvailable') await onAvailable();
+    });
+  }
+
+  /// Passe l'appli en arrière-plan : l'appli précédente (le jeu) revient.
+  static Future<void> moveToBack() => _channel.invokeMethod<void>('moveToBack');
 }

@@ -83,6 +83,12 @@ jobs:
           "$AAPT2" dump xmltree --file AndroidManifest.xml build/app/outputs/flutter-apk/app-release.apk > "$RUNNER_TEMP/manifest.txt"
           grep -A12 'MainActivity' "$RUNNER_TEMP/manifest.txt" | grep 'launchMode'
           grep -A12 'MainActivity' "$RUNNER_TEMP/manifest.txt" | grep -q 'launchMode(0x0101001d)=2'
+      - name: Vérifier la tuile des réglages rapides
+        run: |
+          # Tuile « Pastille ivHelper » : service exporté, protégé par la
+          # permission système, qui répond à l'action QS_TILE.
+          grep -A14 'BubbleTileService' "$RUNNER_TEMP/manifest.txt" | grep -q 'BIND_QUICK_SETTINGS_TILE'
+          grep -A20 'BubbleTileService' "$RUNNER_TEMP/manifest.txt" | grep -q 'android.service.quicksettings.action.QS_TILE'
       - name: Vérifier les composants ML Kit dans l'APK
         run: |
           DEXDUMP=$(ls "$ANDROID_HOME"/build-tools/*/dexdump | sort -V | tail -1)

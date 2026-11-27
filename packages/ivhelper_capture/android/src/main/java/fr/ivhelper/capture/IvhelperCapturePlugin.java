@@ -5,12 +5,16 @@ import android.content.ClipData;
 import android.content.ClipboardManager;
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.ShortcutInfo;
+import android.content.pm.ShortcutManager;
 import android.graphics.Bitmap;
+import android.graphics.drawable.Icon;
+import android.os.Build;
 import android.os.Handler;
 import android.os.Looper;
 
-
 import java.io.File;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -19,38 +23,114 @@ import io.flutter.embedding.engine.plugins.activity.ActivityAware;
 import io.flutter.embedding.engine.plugins.activity.ActivityPluginBinding;
 import io.flutter.plugin.common.MethodCall;
 import io.flutter.plugin.common.MethodChannel;
+import io.flutter.plugin.common.PluginRegistry;
 
 /**
- * Canal « ivhelper/capture » : autorisation, capture et arrêt, et fermeture
- * de la tâche de l'appli (mise à jour).
+ * Canal « ivhelper/capture » : autorisation, capture et arrêt, fermeture de
+ * la tâche de l'appli (mise à jour), et lancements rapides de la pastille
+ * (raccourci de l'icône, tuile des réglages rapides).
  */
 public class IvhelperCapturePlugin
-        implements FlutterPlugin, ActivityAware, MethodChannel.MethodCallHandler {
+        implements FlutterPlugin, ActivityAware, MethodChannel.MethodCallHandler,
+        PluginRegistry.NewIntentListener {
+    /** Extra de l'intent qui ouvre l'appli pour un lancement rapide. */
+    static final String EXTRA_ACTION = "fr.ivhelper.capture.ACTION";
+
+    /** Lancement rapide de la pastille. */
+    static final String ACTION_BUBBLE = "bubble";
+
     private static final Handler MAIN = new Handler(Looper.getMainLooper());
     private static MethodChannel.Result pendingConsent;
+    private static String pendingAction;
 
     private MethodChannel channel;
     private Context context;
     private Activity activity;
+    private ActivityPluginBinding activityBinding;
 
     @Override
     public void onAttachedToActivity(ActivityPluginBinding binding) {
-        activity = binding.getActivity();
+        attach(binding);
+        readAction(activity.getIntent());
+        installShortcut(activity);
     }
 
     @Override
     public void onDetachedFromActivityForConfigChanges() {
-        activity = null;
+        detach();
     }
 
     @Override
     public void onReattachedToActivityForConfigChanges(ActivityPluginBinding binding) {
-        activity = binding.getActivity();
+        attach(binding);
     }
 
     @Override
     public void onDetachedFromActivity() {
+        detach();
+    }
+
+    private void attach(ActivityPluginBinding binding) {
+        activityBinding = binding;
+        activity = binding.getActivity();
+        binding.addOnNewIntentListener(this);
+    }
+
+    private void detach() {
+        if (activityBinding != null) {
+            activityBinding.removeOnNewIntentListener(this);
+        }
+        activityBinding = null;
         activity = null;
+    }
+
+    /** L'appli, déjà ouverte (singleTask), reçoit un nouveau lancement. */
+    @Override
+    public boolean onNewIntent(Intent intent) {
+        if (!readAction(intent)) return false;
+        // Prévient le Dart, qui lit la demande avec « takeLaunchAction ».
+        if (channel != null) channel.invokeMethod("launchActionAvailable", null);
+        return true;
+    }
+
+    /** Garde la demande de lancement rapide de [intent] ; vrai s'il y en a une. */
+    private static boolean readAction(Intent intent) {
+        if (intent == null) return false;
+        final String action = intent.getStringExtra(EXTRA_ACTION);
+        if (action == null) return false;
+        // Retirée pour qu'une recréation de l'activité ne la rejoue pas.
+        intent.removeExtra(EXTRA_ACTION);
+        pendingAction = action;
+        return true;
+    }
+
+    /** Intent qui ouvre l'appli et demande la pastille. */
+    static Intent bubbleIntent(Context context) {
+        Intent intent = context.getPackageManager()
+                .getLaunchIntentForPackage(context.getPackageName());
+        if (intent == null) return null;
+        intent.putExtra(EXTRA_ACTION, ACTION_BUBBLE);
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        return intent;
+    }
+
+    /** Raccourci « Lancer la pastille » (appui long sur l'icône). */
+    private static void installShortcut(Activity activity) {
+        if (Build.VERSION.SDK_INT < 25) return;
+        try {
+            final ShortcutManager manager = activity.getSystemService(ShortcutManager.class);
+            final Intent intent = bubbleIntent(activity);
+            if (manager == null || intent == null) return;
+            final ShortcutInfo info = new ShortcutInfo.Builder(activity, "bubble")
+                    .setShortLabel("Pastille")
+                    .setLongLabel("Lancer la pastille")
+                    .setIcon(Icon.createWithResource(activity, R.drawable.ivhelper_bubble))
+                    .setIntent(intent)
+                    .build();
+            manager.setDynamicShortcuts(Collections.singletonList(info));
+        } catch (RuntimeException e) {
+            // Lanceur sans raccourcis ou limite atteinte : rien de grave.
+        }
     }
 
     @Override
@@ -135,6 +215,16 @@ public class IvhelperCapturePlugin
                 break;
             case "stop":
                 CaptureService.stopAll(context);
+                result.success(null);
+                break;
+            case "takeLaunchAction":
+                result.success(pendingAction);
+                pendingAction = null;
+                break;
+            case "moveToBack":
+                if (activity != null) {
+                    activity.moveTaskToBack(true);
+                }
                 result.success(null);
                 break;
             case "closeTask":

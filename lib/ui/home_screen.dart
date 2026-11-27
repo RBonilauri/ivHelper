@@ -44,12 +44,16 @@ class HomeScreen extends StatefulWidget {
     required this.updateSource,
     required this.currentBuild,
     required this.overlayLauncher,
+    this.launchActions,
     required this.accountFiles,
     this.gameDataUpdated,
   });
 
   /// Lancement de la pastille flottante.
   final OverlayLauncher overlayLauncher;
+
+  /// Lancements rapides de la pastille, ou `null`.
+  final LaunchActions? launchActions;
 
   /// Fichiers de sauvegarde du compte (export et import).
   final AccountFiles accountFiles;
@@ -119,6 +123,26 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     // Les compilations locales (build 0) ne cherchent pas de mise à jour au
     // démarrage ; le bouton du menu reste disponible.
     if (widget.currentBuild > 0) unawaited(_update.check());
+    // Raccourci de l'icône ou tuile des réglages rapides : pastille directe.
+    widget.launchActions?.listen(() => unawaited(_quickBubble()));
+  }
+
+  /// Lance la pastille sans passer par le menu, puis revient à l'appli
+  /// précédente (le jeu) ; en cas de refus, le message reste dans l'appli.
+  Future<void> _quickBubble() async {
+    // Peut être appelé depuis initState (appli ouverte par le raccourci) :
+    // le contexte n'est lu qu'après l'attente.
+    final error = await widget.overlayLauncher.start();
+    if (!mounted) return;
+    if (error == null) {
+      await widget.launchActions?.leaveApp();
+      return;
+    }
+    ScaffoldMessenger.maybeOf(context)
+      ?..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(duration: const Duration(seconds: 6), content: Text(error)),
+      );
   }
 
   void _openCollection(BuildContext context) {

@@ -21,6 +21,7 @@ class IvHelperApp extends StatelessWidget {
     required this.metaSource,
     required this.updateSource,
     required this.overlayLauncher,
+    this.launchActions,
     this.accountFiles = const FilePickerAccountFiles(),
     this.currentBuild = 0,
     this.gameDataUpdated,
@@ -31,6 +32,10 @@ class IvHelperApp extends StatelessWidget {
 
   /// Lancement de la pastille flottante.
   final OverlayLauncher overlayLauncher;
+
+  /// Lancements rapides de la pastille (raccourci de l'icône, tuile des
+  /// réglages rapides), ou `null`.
+  final LaunchActions? launchActions;
 
   /// Source des mises à jour de l'app.
   final UpdateSource updateSource;
@@ -76,6 +81,7 @@ class IvHelperApp extends StatelessWidget {
           metaSource: metaSource,
           updateSource: updateSource,
           overlayLauncher: overlayLauncher,
+          launchActions: launchActions,
           accountFiles: accountFiles,
           currentBuild: currentBuild,
           gameDataUpdated: gameDataUpdated,

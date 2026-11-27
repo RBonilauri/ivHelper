@@ -171,6 +171,39 @@ abstract interface class OverlayLauncher {
   Future<String?> start();
 }
 
+/// Lancements rapides de la pastille : appui long sur l'icône de l'appli
+/// (raccourci « Lancer la pastille ») et tuile des réglages rapides
+/// d'Android.
+abstract interface class LaunchActions {
+  /// Appelle [onBubble] à chaque demande, y compris celle qui a ouvert
+  /// l'appli avant l'écoute.
+  void listen(void Function() onBubble);
+
+  /// Renvoie l'appli en arrière-plan pour retrouver l'appli précédente (le
+  /// jeu).
+  Future<void> leaveApp();
+}
+
+/// Lancements rapides reçus par le plugin local `ivhelper_capture`.
+class PluginLaunchActions implements LaunchActions {
+  /// Crée la source.
+  const PluginLaunchActions();
+
+  @override
+  void listen(void Function() onBubble) {
+    if (!Platform.isAndroid) return;
+    IvhelperCapture.onLaunchAction(() async {
+      if (await IvhelperCapture.takeLaunchAction() == 'bubble') onBubble();
+    });
+    unawaited(() async {
+      if (await IvhelperCapture.takeLaunchAction() == 'bubble') onBubble();
+    }());
+  }
+
+  @override
+  Future<void> leaveApp() => IvhelperCapture.moveToBack();
+}
+
 /// Lancement réel : autorisation de superposition, capture, pastille.
 class PluginOverlayLauncher implements OverlayLauncher {
   /// Crée le lanceur.

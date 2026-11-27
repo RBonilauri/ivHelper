@@ -58,3 +58,32 @@ class FakeScreenScanner implements ScreenScanner {
   @override
   Future<ScanResult> scan() async => result;
 }
+
+/// Lancements rapides simulés (raccourci de l'icône, tuile).
+class FakeLaunchActions implements LaunchActions {
+  /// Crée la source ; [pending] simule une appli ouverte par un raccourci.
+  FakeLaunchActions({this.pending = false});
+
+  /// Vrai si une demande attend l'écoute.
+  bool pending;
+
+  void Function()? _onBubble;
+
+  /// Nombre de retours à l'appli précédente.
+  int leaves = 0;
+
+  @override
+  void listen(void Function() onBubble) {
+    _onBubble = onBubble;
+    if (pending) {
+      pending = false;
+      onBubble();
+    }
+  }
+
+  /// Simule un appui sur le raccourci ou la tuile, appli ouverte.
+  void fire() => _onBubble?.call();
+
+  @override
+  Future<void> leaveApp() async => leaves++;
+}

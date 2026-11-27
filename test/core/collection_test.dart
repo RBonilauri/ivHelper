@@ -321,4 +321,20 @@ void main() {
       _apply(const CollectionFilter(), CollectionSort.rank),
     );
   });
+
+  test('recherche par nom : sans accents ni majuscules, combinée aux filtres', () {
+    expect(_apply(const CollectionFilter(query: 'flambu')), <String>['Flambusard']);
+    expect(_apply(const CollectionFilter(query: 'ECAY')), <String>['Écayon']);
+    expect(_apply(const CollectionFilter(query: 'a')),
+        <String>['Salamèche', 'Carapuce', 'Écayon', 'Flambusard']);
+    expect(_apply(const CollectionFilter(query: '  ')), hasLength(4));
+    expect(_apply(const CollectionFilter(query: 'pikachu')), isEmpty);
+    expect(
+      _apply(const CollectionFilter(query: 'a', league: League.great)),
+      <String>['Salamèche', 'Écayon'],
+    );
+    // La recherche n'est pas comptée parmi les filtres du panneau.
+    expect(const CollectionFilter(query: 'a').activeCount, 0);
+    expect(const CollectionFilter().copyWith(query: 'sal').query, 'sal');
+  });
 }
