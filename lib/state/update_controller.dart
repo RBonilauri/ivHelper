@@ -64,7 +64,7 @@ class UpdateController extends ChangeNotifier {
       ? 'développement'
       : (currentVersionName.isNotEmpty
           ? currentVersionName
-          : '1.1.$currentBuild');
+          : '1.2.$currentBuild');
 
   /// Cherche une version plus récente.
   Future<void> check() async {

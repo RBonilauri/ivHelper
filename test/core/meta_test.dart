@@ -135,5 +135,24 @@ void main() {
         'spectral-1500',
       );
     });
+
+    test('ligne des coupes d\'une ligue, pour la pastille', () {
+      expect(
+        cupsLine(withCups, 'Altaria', League.great, shadow: true),
+        'Coupes : Battle Frontier (Spectral) hors top 1',
+      );
+      expect(
+        cupsLine(withCups, 'Altaria', League.great),
+        'Coupes Super : aucune ne l\'accepte',
+      );
+      expect(
+        cupsLine(withCups, 'Altaria', League.ultra),
+        'Coupes : Battle Frontier (Cauldron) n° 1',
+      );
+      // Aucune coupe dans cette ligue, ou pas de coupes du tout.
+      expect(cupsLine(withCups, 'Altaria', League.master), isNull);
+      expect(cupsLine(data, 'Altaria', League.great), isNull);
+      expect(cupsLine(null, 'Altaria', League.great), isNull);
+    });
   });
 }

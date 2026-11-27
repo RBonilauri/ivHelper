@@ -353,7 +353,8 @@ class CollectionFilter {
     this.cup,
   });
 
-  /// Squelette.
+  /// Coupe : ne garde que les Pokémon qui y sont admis et tagués dans sa
+  /// ligue ; le filtre de rang de ligue prend alors la méta de la coupe.
   final MetaBoard? cup;
 
   /// Texte cherché dans le nom de l'espèce (accents et majuscules ignorés ;
@@ -406,7 +407,8 @@ class CollectionFilter {
       (types.isEmpty ? 0 : 1) +
       (filtersFast ? 1 : 0) +
       (filtersCharged ? 1 : 0) +
-      (favoritesOnly ? 1 : 0);
+      (favoritesOnly ? 1 : 0) +
+      (cup == null ? 0 : 1);
 
   /// Copie avec les champs donnés remplacés ; [clearLeague], [clearMaxRank] et
   /// [clearMaxMetaRank] retirent ces filtres.
@@ -454,11 +456,20 @@ class CollectionFilter {
     }
     if (favoritesOnly && !e.favorite) return false;
     if (league != null && e.league != league) return false;
+    final shadow = e.shadow == ShadowState.shadow;
+    final cup = this.cup;
+    if (cup != null &&
+        (e.league != cup.league ||
+            !cup.allows(e.speciesName, shadow: shadow))) {
+      return false;
+    }
     final max = maxRank;
     if (max != null && e.rank > max) return false;
     final maxMeta = maxMetaRank;
     if (maxMeta != null) {
-      final meta = metaRankOf?.call(e);
+      final meta = cup != null
+          ? cup.entryFor(e.speciesName, shadow: shadow)?.rank
+          : metaRankOf?.call(e);
       if (meta == null || meta > maxMeta) return false;
     }
     if (types.isNotEmpty && !row.species.types.any(types.contains)) {

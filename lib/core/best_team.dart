@@ -230,17 +230,18 @@ MetaLeague? metaLeagueOf(League league) => switch (league) {
       League.master => MetaLeague.master,
     };
 
-/// Candidats de [rows] tagués dans [league], complétés par la méta.
-///
-/// Vide en ligue Mini, faute de méta.
-List<TeamCandidate> teamCandidates(List<CollectionRow> rows, MetaBoard board) {
-  final metaLeague = metaLeagueOf(board.league);
-  if (metaLeague == null) return const <TeamCandidate>[];
-  return <TeamCandidate>[
-    for (final row in rows)
-      if (row.entry.league == board.league) _candidate(row, board),
-  ];
-}
+/// Candidats de [rows] pour le classement [board] (ligue ou coupe) : tagués
+/// dans sa ligue et admis (coupe), complétés par sa méta.
+List<TeamCandidate> teamCandidates(List<CollectionRow> rows, MetaBoard board) =>
+    <TeamCandidate>[
+      for (final row in rows)
+        if (row.entry.league == board.league &&
+            board.allows(
+              row.entry.speciesName,
+              shadow: row.entry.shadow == ShadowState.shadow,
+            ))
+          _candidate(row, board),
+    ];
 
 TeamCandidate _candidate(CollectionRow row, MetaBoard board) {
   final shadow = row.entry.shadow == ShadowState.shadow;

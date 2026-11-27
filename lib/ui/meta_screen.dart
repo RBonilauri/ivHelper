@@ -31,8 +31,8 @@ class MetaActions {
   final MoveBook? moves;
 
   /// Meilleur rang d'un Pokémon de la collection correspondant à [entry]
-  /// (même espèce, obscur ou non, tag de [league]), ou `null`.
-  final int? Function(MetaEntry entry, MetaLeague league) ownedRank;
+  /// (même espèce, obscur ou non, tag de la ligue de [board]), ou `null`.
+  final int? Function(MetaEntry entry, MetaBoard board) ownedRank;
 
   /// Vrai si l'espèce nommée [name] est dans la collection.
   final bool Function(String name) isOwned;
@@ -44,7 +44,8 @@ class MetaActions {
   final void Function(BuildContext context, MetaEntry entry) addToTeam;
 }
 
-/// Onglet Méta : classement PvPoke en Super, Hyper et Master.
+/// Onglet Méta : classement PvPoke en Super, Hyper et Master, et dans les
+/// coupes en cours.
 class MetaScreen extends StatefulWidget {
   /// Crée l'onglet.
   const MetaScreen({
@@ -68,7 +69,8 @@ class MetaScreen extends StatefulWidget {
 }
 
 class _MetaScreenState extends State<MetaScreen> {
-  MetaLeague _league = MetaLeague.great;
+  /// Clé du classement affiché : ligue (`great`…) ou coupe.
+  String _board = 'great';
   String _filter = '';
   Set<PokeType> _types = const <PokeType>{};
   Set<PokeType> _moveTypes = const <PokeType>{};
@@ -123,14 +125,16 @@ class _MetaScreenState extends State<MetaScreen> {
                 ),
               );
             }
-            final league = data.leagues[_league] ?? const <MetaEntry>[];
+            final board =
+                data.boardByKey(_board) ?? data.boardOf(MetaLeague.great);
+            final league = board.entries;
             final entries = filterMeta(
               league,
               query: _filter,
               types: _types,
               moveTypes: _moveTypes,
               keep: _ownedOnly
-                  ? (e) => widget.actions.ownedRank(e, _league) != null
+                  ? (e) => widget.actions.ownedRank(e, board) != null
                   : null,
             );
             return ListView.builder(
@@ -141,19 +145,19 @@ class _MetaScreenState extends State<MetaScreen> {
                   return _header(
                     theme,
                     data,
-                    league,
+                    board,
                     empty: entries.isEmpty,
                   );
                 }
                 final e = entries[i - 1];
                 return _MetaTile(
                   entry: e,
-                  ownedRank: widget.actions.ownedRank(e, _league),
+                  ownedRank: widget.actions.ownedRank(e, board),
                   onTap: () => Navigator.of(context).push(
                     MaterialPageRoute<void>(
                       builder: (_) => MetaDetailScreen(
                         entry: e,
-                        league: _league,
+                        boardLabel: board.label,
                         actions: widget.actions,
                       ),
                     ),
@@ -170,9 +174,10 @@ class _MetaScreenState extends State<MetaScreen> {
   Widget _header(
     ThemeData theme,
     MetaSnapshot data,
-    List<MetaEntry> league, {
+    MetaBoard board, {
     required bool empty,
   }) {
+    final league = board.entries;
     final typeCounts = <PokeType, int>{};
     final moveCounts = <PokeType, int>{};
     for (final e in league) {
@@ -186,12 +191,14 @@ class _MetaScreenState extends State<MetaScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
-        SegmentedButton<MetaLeague>(
+        SegmentedButton<String>(
           showSelectedIcon: false,
-          segments: <ButtonSegment<MetaLeague>>[
+          // Aucune ligue choisie quand une coupe est affichée.
+          emptySelectionAllowed: true,
+          segments: <ButtonSegment<String>>[
             for (final l in MetaLeague.values)
-              ButtonSegment<MetaLeague>(
-                value: l,
+              ButtonSegment<String>(
+                value: l.key,
                 label: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: <Widget>[
@@ -201,9 +208,30 @@ class _MetaScreenState extends State<MetaScreen> {
                 ),
               ),
           ],
-          selected: <MetaLeague>{_league},
-          onSelectionChanged: (s) => setState(() => _league = s.first),
+          selected: <String>{if (!board.isCup) board.key},
+          onSelectionChanged: (s) {
+            if (s.isNotEmpty) setState(() => _board = s.first);
+          },
         ),
+        if (data.cups.isNotEmpty) ...<Widget>[
+          const SizedBox(height: 8),
+          Text('Coupes en cours', style: theme.textTheme.labelLarge),
+          const SizedBox(height: 4),
+          Wrap(
+            spacing: 8,
+            runSpacing: 4,
+            children: <Widget>[
+              for (final cup in data.cups)
+                ChoiceChip(
+                  key: ValueKey<String>('meta-board-${cup.key}'),
+                  avatar: const Icon(Icons.emoji_events_outlined, size: 18),
+                  label: Text('${cup.label} · ${cup.capLabel}'),
+                  selected: cup.key == board.key,
+                  onSelected: (_) => setState(() => _board = cup.key),
+                ),
+            ],
+          ),
+        ],
         const SizedBox(height: 4),
         Row(
           children: <Widget>[
@@ -235,7 +263,7 @@ class _MetaScreenState extends State<MetaScreen> {
         FilterChip(
           key: const ValueKey<String>('meta-owned'),
           avatar: const Icon(Icons.check_circle_outline, size: 18),
-          label: Text('Possédés en ${_league.label}'),
+          label: Text('Possédés en ${board.label}'),
           selected: _ownedOnly,
           onSelected: (on) => setState(() => _ownedOnly = on),
         ),
@@ -394,19 +422,19 @@ class _MetaTile extends StatelessWidget {
 
 /// Fiche d'un Pokémon de la méta.
 class MetaDetailScreen extends StatelessWidget {
-  /// Crée la fiche de [entry] dans [league].
+  /// Crée la fiche de [entry] dans le classement [boardLabel].
   const MetaDetailScreen({
     super.key,
     required this.entry,
-    required this.league,
+    required this.boardLabel,
     required this.actions,
   });
 
   /// Pokémon affiché.
   final MetaEntry entry;
 
-  /// Ligue du classement.
-  final MetaLeague league;
+  /// Nom du classement : ligue (« Super ») ou coupe.
+  final String boardLabel;
 
   /// Actions proposées.
   final MetaActions actions;
@@ -420,7 +448,7 @@ class MetaDetailScreen extends StatelessWidget {
         title: Text(entry.name),
         actions: const <Widget>[
           InfoButton(
-            'Source : classement général PvPoke (pvpoke.com).',
+            'Source : classements PvPoke (pvpoke.com).',
             key: ValueKey<String>('info-meta-source'),
           ),
           SizedBox(width: 8),
@@ -442,7 +470,7 @@ class MetaDetailScreen extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: <Widget>[
                     Text(
-                      '${league.label} · rang ${entry.rank}',
+                      '$boardLabel · rang ${entry.rank}',
                       style: theme.textTheme.titleMedium,
                     ),
                     if (score != null)

@@ -9,15 +9,12 @@ import 'type_badge.dart';
 
 /// Explication de « Ma meilleure équipe », dans la bulle « i ».
 const String bestTeamExplanation =
-    'Parmi tes Pokémon tagués dans la ligue, les trois espèces différentes '
+    'Parmi tes Pokémon tagués dans la ligue (et admis, pour une coupe), les trois espèces différentes '
     'qui contrent le plus d\'adversaires du top 50 de la méta PvPoke (le haut '
     'du classement compte davantage). Un Pokémon contre un adversaire si '
     'PvPoke le donne gagnant, sinon s\'il le touche en super efficace sans '
     'subir de super efficace. À égalité : meilleure note méta, puis meilleur '
     'rang d\'IV.';
-
-/// Ligues proposées (pas de méta en Mini).
-const List<League> _leagues = <League>[League.great, League.ultra, League.master];
 
 /// Nombre de menaces affichées par proposition.
 const int _threatsShown = 5;
@@ -39,7 +36,8 @@ class BestTeamSheet extends StatefulWidget {
 }
 
 class _BestTeamSheetState extends State<BestTeamSheet> {
-  League _league = League.great;
+  /// Clé du classement choisi : ligue (`great`…) ou coupe.
+  String _board = 'great';
 
   @override
   Widget build(BuildContext context) {
@@ -48,13 +46,12 @@ class _BestTeamSheetState extends State<BestTeamSheet> {
       listenable: widget.meta,
       builder: (context, _) {
         final data = widget.meta.data;
-        final metaLeague = metaLeagueOf(_league);
-        final proposals = data == null || metaLeague == null
+        final boards = data?.boards ?? const <MetaBoard>[];
+        final board = data?.boardByKey(_board) ??
+            (boards.isEmpty ? null : boards.first);
+        final proposals = board == null
             ? const <TeamProposal>[]
-            : bestTeams(
-                teamCandidates(widget.rows, data.boardOf(metaLeague)),
-                data.leagues[metaLeague] ?? const <MetaEntry>[],
-              );
+            : bestTeams(teamCandidates(widget.rows, board), board.entries);
         return Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -70,24 +67,32 @@ class _BestTeamSheetState extends State<BestTeamSheet> {
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Wrap(
                 spacing: 8,
+                runSpacing: 4,
                 children: <Widget>[
-                  for (final l in _leagues)
+                  for (final b in boards)
                     ChoiceChip(
-                      key: ValueKey<String>('best-league-${l.key}'),
-                      label: Text(l.label),
-                      selected: l == _league,
-                      onSelected: (_) => setState(() => _league = l),
+                      key: ValueKey<String>('best-league-${b.key}'),
+                      avatar: b.isCup
+                          ? const Icon(Icons.emoji_events_outlined, size: 18)
+                          : null,
+                      label: Text(b.label),
+                      selected: b.key == board?.key,
+                      onSelected: (_) => setState(() => _board = b.key),
                     ),
                 ],
               ),
             ),
             const SizedBox(height: 8),
-            if (data == null)
+            if (board == null)
               const _Message('La méta PvPoke n\'est pas encore chargée.')
             else if (proposals.isEmpty)
               _Message(
-                'Il faut au moins trois espèces différentes tagguées en '
-                'ligue ${_league.label} dans ta collection.',
+                board.isCup
+                    ? 'Il faut au moins trois espèces différentes admises en '
+                        '${board.label} et tagguées en ligue '
+                        '${board.league.label} dans ta collection.'
+                    : 'Il faut au moins trois espèces différentes tagguées en '
+                        'ligue ${board.label} dans ta collection.',
               )
             else
               Flexible(
