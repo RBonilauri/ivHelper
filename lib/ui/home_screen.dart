@@ -254,6 +254,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
           builder: (_) => TeamBuilderScreen(
             team: _team,
             collection: _collection,
+            meta: _meta,
           ),
         ),
       ),
