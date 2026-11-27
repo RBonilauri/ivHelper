@@ -1,14 +1,19 @@
+import 'dart:async';
+
 import 'package:material_ui/material_ui.dart';
 
+import '../core/best_team.dart';
 import '../core/collection.dart';
 import '../core/moves.dart';
 import '../core/poke_type.dart';
 import '../core/species_repository.dart';
 import '../state/collection_controller.dart';
+import '../state/meta_controller.dart';
 import '../state/team_controller.dart';
 import 'collection_widgets.dart';
 import 'format.dart';
 import 'move_label.dart';
+import 'best_team_sheet.dart';
 import 'search_field.dart';
 import 'type_badge.dart';
 import 'info_button.dart';
@@ -23,6 +28,7 @@ class TeamBuilderScreen extends StatelessWidget {
     super.key,
     required this.team,
     required this.collection,
+    this.meta,
   });
 
   /// État de l'équipe.
@@ -31,8 +37,12 @@ class TeamBuilderScreen extends StatelessWidget {
   /// Collection, source des imports.
   final CollectionController collection;
 
+  /// Méta PvPoke, pour « Ma meilleure équipe » (bouton absent si `null`).
+  final MetaController? meta;
+
   @override
   Widget build(BuildContext context) {
+    final meta = this.meta;
     return Scaffold(
       appBar: AppBar(title: const Text('Team builder')),
       body: SafeArea(
@@ -41,6 +51,26 @@ class TeamBuilderScreen extends StatelessWidget {
           builder: (context, _) => ListView(
             padding: const EdgeInsets.all(16),
             children: <Widget>[
+              if (meta != null) ...<Widget>[
+                Row(
+                  children: <Widget>[
+                    Expanded(
+                      child: FilledButton.tonalIcon(
+                        key: const ValueKey<String>('best-team'),
+                        onPressed: () => _openBestTeam(context, meta),
+                        icon: const Icon(Icons.auto_awesome),
+                        label: const Text('Ma meilleure équipe'),
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    const InfoButton(
+                      bestTeamExplanation,
+                      key: ValueKey<String>('info-best-team'),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+              ],
               for (var i = 0; i < TeamController.size; i++) ...<Widget>[
                 _SlotCard(team: team, collection: collection, index: i),
                 const SizedBox(height: 12),
@@ -51,6 +81,40 @@ class TeamBuilderScreen extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  Future<void> _openBestTeam(BuildContext context, MetaController meta) async {
+    unawaited(meta.ensureLoaded());
+    final pick = await showModalBottomSheet<TeamProposal>(
+      context: context,
+      showDragHandle: true,
+      isScrollControlled: true,
+      useSafeArea: true,
+      builder: (context) => BestTeamSheet(
+        meta: meta,
+        rows: collection.visibleRowsUnfiltered,
+      ),
+    );
+    if (pick == null) return;
+    // Vider d'abord : un membre peut déjà occuper un autre emplacement.
+    for (var i = 0; i < TeamController.size; i++) {
+      team.setSpecies(i, null);
+    }
+    for (var i = 0; i < pick.members.length; i++) {
+      final row = collection.rowOf(pick.members[i].id);
+      if (row == null) continue;
+      final e = row.entry;
+      team.importFromCollection(
+        i,
+        e.id,
+        row.species,
+        fastId: e.fastMove,
+        chargedIds: <String>[
+          if (e.chargedMove1 != null) e.chargedMove1!,
+          if (e.chargedMove2 != null) e.chargedMove2!,
+        ],
+      );
+    }
   }
 }
 
